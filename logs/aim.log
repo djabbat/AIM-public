@@ -1,0 +1,222 @@
+2026-03-15 01:48:21 [INFO] patient_intake: Найдено папок пациентов: 6
+2026-03-15 01:48:21 [INFO] patient_intake: Пациент: Badriashvili_Vladimeri_
+2026-03-15 01:48:21 [INFO] patient_intake:   Результат: Уже обработано (используй --force для повторного анализа)
+2026-03-15 01:48:21 [INFO] patient_intake: Пациент: Baurjan_Alima_2015_05_27
+2026-03-15 01:48:21 [INFO] patient_intake:   OCR: 18cb6cc6-47f1-47b0-9799-58d007bdae44.jpeg ...
+2026-03-15 01:48:21 [DEBUG] ocr_engine: OCR: 18cb6cc6-47f1-47b0-9799-58d007bdae44.jpeg
+2026-03-15 01:48:30 [DEBUG] ocr_engine:   tesseract: 2379 chars
+2026-03-15 01:48:30 [INFO] patient_intake:   ✓
+2026-03-15 01:48:30 [INFO] patient_intake:   OCR: 1d13e121-73c2-48dd-a9cd-02bb28b0f77e.jpeg ...
+2026-03-15 01:48:30 [DEBUG] ocr_engine: OCR: 1d13e121-73c2-48dd-a9cd-02bb28b0f77e.jpeg
+2026-03-15 01:48:35 [DEBUG] ocr_engine:   tesseract: 1921 chars
+2026-03-15 01:48:35 [INFO] patient_intake:   ✓
+2026-03-15 01:48:35 [INFO] patient_intake:   OCR: 1fa583c1-0d6d-4c30-bfa9-5d741c70e1de.jpeg ...
+2026-03-15 01:48:35 [DEBUG] ocr_engine: OCR: 1fa583c1-0d6d-4c30-bfa9-5d741c70e1de.jpeg
+2026-03-15 01:48:44 [DEBUG] ocr_engine:   tesseract: 2973 chars
+2026-03-15 01:48:44 [INFO] patient_intake:   ✓
+2026-03-15 01:48:44 [INFO] patient_intake:   OCR: 2cc78324-7465-4ab3-800f-da577c8f57e7.jpeg ...
+2026-03-15 01:48:44 [DEBUG] ocr_engine: OCR: 2cc78324-7465-4ab3-800f-da577c8f57e7.jpeg
+2026-03-15 01:48:50 [DEBUG] ocr_engine:   tesseract: 1806 chars
+2026-03-15 01:48:50 [INFO] patient_intake:   ✓
+2026-03-15 01:48:50 [INFO] patient_intake:   OCR: d42b9b29-2875-496b-a7c5-9d08e09a1259.jpeg ...
+2026-03-15 01:48:50 [DEBUG] ocr_engine: OCR: d42b9b29-2875-496b-a7c5-9d08e09a1259.jpeg
+2026-03-15 01:48:55 [DEBUG] ocr_engine:   tesseract: 1901 chars
+2026-03-15 01:48:55 [INFO] patient_intake:   ✓
+2026-03-15 01:48:55 [INFO] patient_intake:   OCR: dec7f847-6884-46ba-bdc2-6b01b233df43.jpeg ...
+2026-03-15 01:48:55 [DEBUG] ocr_engine: OCR: dec7f847-6884-46ba-bdc2-6b01b233df43.jpeg
+2026-03-15 01:49:04 [DEBUG] ocr_engine:   tesseract: 2382 chars
+2026-03-15 01:49:04 [INFO] patient_intake:   ✓
+2026-03-15 01:49:04 [INFO] patient_intake:   Генерация анализа...
+2026-03-15 01:51:56 [INFO] patient_intake: Найдено папок пациентов: 6
+2026-03-15 01:51:56 [INFO] patient_intake: Пациент: Badriashvili_Vladimeri_
+2026-03-15 01:51:56 [INFO] patient_intake:   Генерация анализа...
+2026-03-15 01:51:59 [INFO] patient_intake: Найдено папок пациентов: 6
+2026-03-15 01:51:59 [INFO] patient_intake: Пациент: Badriashvili_Vladimeri_
+2026-03-15 01:51:59 [INFO] patient_intake:   Генерация анализа...
+2026-03-15 01:52:01 [INFO] patient_intake: Найдено папок пациентов: 6
+2026-03-15 01:52:01 [INFO] patient_intake: Пациент: Badriashvili_Vladimeri_
+2026-03-15 01:52:01 [INFO] patient_intake:   OCR: 38efa3b8-c296-4760-86d9-52c0ace2be96.jpeg ...
+2026-03-15 01:52:01 [DEBUG] ocr_engine: OCR: 38efa3b8-c296-4760-86d9-52c0ace2be96.jpeg
+2026-03-15 01:52:07 [DEBUG] ocr_engine:   tesseract: 953 chars
+2026-03-15 01:52:07 [INFO] patient_intake:   ✓
+2026-03-15 01:52:07 [INFO] patient_intake:   OCR: 8034a858-ac75-4bee-b435-edeabcdd0f95.jpeg ...
+2026-03-15 01:52:07 [DEBUG] ocr_engine: OCR: 8034a858-ac75-4bee-b435-edeabcdd0f95.jpeg
+2026-03-15 01:52:13 [DEBUG] ocr_engine:   tesseract: 1617 chars
+2026-03-15 01:52:13 [INFO] patient_intake:   ✓
+2026-03-15 01:52:13 [INFO] patient_intake:   Генерация анализа...
+2026-03-15 01:53:48 [INFO] patient_intake:   ✓
+2026-03-15 01:53:48 [DEBUG] patient_intake: Knowledge recorded for Baurjan Alima: 0 dx
+2026-03-15 01:53:48 [INFO] patient_intake:   Результат: Обработано: OCR: 18cb6cc6-47f1-47b0-9799-58d007bdae44.jpeg, OCR: 1d13e121-73c2-48dd-a9cd-02bb28b0f77e.jpeg, OCR: 1fa583c1-0d6d-4c30-bfa9-5d741c70e1de.jpeg, OCR: 2cc78324-7465-4ab3-800f-da577c8f57e7.jpeg, OCR: d42b9b29-2875-496b-a7c5-9d08e09a1259.jpeg, OCR: dec7f847-6884-46ba-bdc2-6b01b233df43.jpeg, Анализ обновлён
+2026-03-15 01:53:48 [INFO] patient_intake: Пациент: Beridze_Keti_2026_03_12
+2026-03-15 01:53:48 [INFO] patient_intake:   PDF: IL_26_03_13_2841275_.pdf ...
+2026-03-15 01:53:48 [INFO] patient_intake:   ✓
+2026-03-15 01:53:48 [INFO] patient_intake:   PDF: IL_26_03_13_2841276_.pdf ...
+2026-03-15 01:53:49 [INFO] patient_intake:   ✓
+2026-03-15 01:53:49 [INFO] patient_intake:   PDF: IL_26_03_13_2841277_.pdf ...
+2026-03-15 01:53:49 [INFO] patient_intake:   ✓
+2026-03-15 01:53:49 [INFO] patient_intake:   Генерация анализа...
+2026-03-15 01:54:54 [INFO] patient_intake: Найдено папок пациентов: 6
+2026-03-15 01:54:54 [INFO] patient_intake: Пациент: Badriashvili_Vladimeri_
+2026-03-15 01:54:54 [INFO] patient_intake:   Генерация анализа...
+2026-03-15 01:54:56 [INFO] patient_intake: Найдено папок пациентов: 6
+2026-03-15 01:54:56 [INFO] patient_intake: Пациент: Badriashvili_Vladimeri_
+2026-03-15 01:54:56 [INFO] patient_intake:   Генерация анализа...
+2026-03-15 01:57:02 [INFO] patient_intake:   ✓
+2026-03-15 01:57:02 [DEBUG] patient_intake: Knowledge recorded for Badriashvili Vladimeri: 0 dx
+2026-03-15 01:57:02 [INFO] patient_intake:   Результат: Обработано: Анализ обновлён
+2026-03-15 01:57:02 [INFO] patient_intake: Пациент: Baurjan_Alima_2015_05_27
+2026-03-15 01:57:02 [INFO] patient_intake:   Результат: Уже обработано (используй --force для повторного анализа)
+2026-03-15 01:57:02 [INFO] patient_intake: Пациент: Beridze_Keti_2026_03_12
+2026-03-15 01:57:02 [INFO] patient_intake:   PDF: IL_26_03_13_2841275_.pdf ...
+2026-03-15 01:57:02 [INFO] patient_intake:   ✓
+2026-03-15 01:57:02 [INFO] patient_intake:   PDF: IL_26_03_13_2841276_.pdf ...
+2026-03-15 01:57:03 [INFO] patient_intake:   ✓
+2026-03-15 01:57:03 [INFO] patient_intake:   PDF: IL_26_03_13_2841277_.pdf ...
+2026-03-15 01:57:03 [INFO] patient_intake:   ✓
+2026-03-15 01:57:03 [INFO] patient_intake:   Генерация анализа...
+2026-03-15 01:58:45 [INFO] patient_intake:   ✓
+2026-03-15 01:58:45 [DEBUG] patient_intake: Knowledge recorded for Badriashvili Vladimeri: 0 dx
+2026-03-15 01:58:45 [INFO] patient_intake:   Результат: Обработано: Анализ обновлён
+2026-03-15 01:58:45 [INFO] patient_intake: Пациент: Baurjan_Alima_2015_05_27
+2026-03-15 01:58:45 [INFO] patient_intake:   Результат: Уже обработано (используй --force для повторного анализа)
+2026-03-15 01:58:45 [INFO] patient_intake: Пациент: Beridze_Keti_2026_03_12
+2026-03-15 01:58:45 [INFO] patient_intake:   PDF: IL_26_03_13_2841275_.pdf ...
+2026-03-15 01:58:45 [INFO] patient_intake:   ✓
+2026-03-15 01:58:45 [INFO] patient_intake:   PDF: IL_26_03_13_2841276_.pdf ...
+2026-03-15 01:58:46 [INFO] patient_intake:   ✓
+2026-03-15 01:58:46 [INFO] patient_intake:   PDF: IL_26_03_13_2841277_.pdf ...
+2026-03-15 01:58:46 [INFO] patient_intake:   ✓
+2026-03-15 01:58:46 [INFO] patient_intake:   Генерация анализа...
+2026-03-15 02:01:55 [INFO] patient_intake:   ✓
+2026-03-15 02:01:55 [DEBUG] patient_intake: Knowledge recorded for Badriashvili Vladimeri: 7 dx
+2026-03-15 02:01:55 [INFO] patient_intake:   Результат: Обработано: OCR: 38efa3b8-c296-4760-86d9-52c0ace2be96.jpeg, OCR: 8034a858-ac75-4bee-b435-edeabcdd0f95.jpeg, Анализ обновлён
+2026-03-15 02:01:55 [INFO] patient_intake: Пациент: Baurjan_Alima_2015_05_27
+2026-03-15 02:01:55 [INFO] patient_intake:   OCR: 18cb6cc6-47f1-47b0-9799-58d007bdae44.jpeg ...
+2026-03-15 02:01:55 [DEBUG] ocr_engine: OCR: 18cb6cc6-47f1-47b0-9799-58d007bdae44.jpeg
+2026-03-15 02:02:05 [DEBUG] ocr_engine:   tesseract: 2379 chars
+2026-03-15 02:02:05 [INFO] patient_intake:   ✓
+2026-03-15 02:02:05 [INFO] patient_intake:   OCR: 1d13e121-73c2-48dd-a9cd-02bb28b0f77e.jpeg ...
+2026-03-15 02:02:05 [DEBUG] ocr_engine: OCR: 1d13e121-73c2-48dd-a9cd-02bb28b0f77e.jpeg
+2026-03-15 02:02:13 [DEBUG] ocr_engine:   tesseract: 1921 chars
+2026-03-15 02:02:13 [INFO] patient_intake:   ✓
+2026-03-15 02:02:13 [INFO] patient_intake:   OCR: 1fa583c1-0d6d-4c30-bfa9-5d741c70e1de.jpeg ...
+2026-03-15 02:02:13 [DEBUG] ocr_engine: OCR: 1fa583c1-0d6d-4c30-bfa9-5d741c70e1de.jpeg
+2026-03-15 02:02:24 [DEBUG] ocr_engine:   tesseract: 2973 chars
+2026-03-15 02:02:24 [INFO] patient_intake:   ✓
+2026-03-15 02:02:24 [INFO] patient_intake:   OCR: 2cc78324-7465-4ab3-800f-da577c8f57e7.jpeg ...
+2026-03-15 02:02:24 [DEBUG] ocr_engine: OCR: 2cc78324-7465-4ab3-800f-da577c8f57e7.jpeg
+2026-03-15 02:02:32 [DEBUG] ocr_engine:   tesseract: 1806 chars
+2026-03-15 02:02:32 [INFO] patient_intake:   ✓
+2026-03-15 02:02:32 [INFO] patient_intake:   OCR: d42b9b29-2875-496b-a7c5-9d08e09a1259.jpeg ...
+2026-03-15 02:02:32 [DEBUG] ocr_engine: OCR: d42b9b29-2875-496b-a7c5-9d08e09a1259.jpeg
+2026-03-15 02:02:40 [DEBUG] ocr_engine:   tesseract: 1901 chars
+2026-03-15 02:02:40 [INFO] patient_intake:   ✓
+2026-03-15 02:02:40 [INFO] patient_intake:   OCR: dec7f847-6884-46ba-bdc2-6b01b233df43.jpeg ...
+2026-03-15 02:02:40 [DEBUG] ocr_engine: OCR: dec7f847-6884-46ba-bdc2-6b01b233df43.jpeg
+2026-03-15 02:02:51 [DEBUG] ocr_engine:   tesseract: 2382 chars
+2026-03-15 02:02:51 [INFO] patient_intake:   ✓
+2026-03-15 02:02:51 [INFO] patient_intake:   Генерация анализа...
+2026-03-15 02:06:51 [INFO] patient_intake:   ✓
+2026-03-15 02:06:51 [DEBUG] patient_intake: Knowledge recorded for Beridze Keti: 0 dx
+2026-03-15 02:06:51 [INFO] patient_intake:   Результат: Обработано: PDF: IL_26_03_13_2841275_.pdf, PDF: IL_26_03_13_2841276_.pdf, PDF: IL_26_03_13_2841277_.pdf, Анализ обновлён
+2026-03-15 02:06:51 [INFO] patient_intake: Пациент: Feradze_Maia_1981_12_20
+2026-03-15 02:06:51 [INFO] patient_intake:   OCR: 7c8d0830-4d40-435b-bdf2-b4961d5b7d00.jpeg ...
+2026-03-15 02:06:51 [DEBUG] ocr_engine: OCR: 7c8d0830-4d40-435b-bdf2-b4961d5b7d00.jpeg
+2026-03-15 02:06:57 [DEBUG] ocr_engine:   tesseract: 2712 chars
+2026-03-15 02:06:57 [INFO] patient_intake:   ✓
+2026-03-15 02:06:57 [INFO] patient_intake:   OCR: b5531a4f-68db-410a-af68-2f0182ffbdfa.jpeg ...
+2026-03-15 02:06:57 [DEBUG] ocr_engine: OCR: b5531a4f-68db-410a-af68-2f0182ffbdfa.jpeg
+2026-03-15 02:07:01 [DEBUG] ocr_engine:   tesseract: 1872 chars
+2026-03-15 02:07:01 [INFO] patient_intake:   ✓
+2026-03-15 02:07:01 [INFO] patient_intake:   OCR: c2066c80-f923-40d4-8445-451dd49116ff.jpeg ...
+2026-03-15 02:07:01 [DEBUG] ocr_engine: OCR: c2066c80-f923-40d4-8445-451dd49116ff.jpeg
+2026-03-15 02:07:04 [DEBUG] ocr_engine:   tesseract: 879 chars
+2026-03-15 02:07:04 [INFO] patient_intake:   ✓
+2026-03-15 02:07:04 [INFO] patient_intake:   Генерация анализа...
+2026-03-15 02:13:00 [INFO] patient_intake:   ✓
+2026-03-15 02:13:00 [DEBUG] patient_intake: Knowledge recorded for Badriashvili Vladimeri: 0 dx
+2026-03-15 02:13:00 [INFO] patient_intake:   Результат: Обработано: Анализ обновлён
+2026-03-15 02:13:00 [INFO] patient_intake: Пациент: Baurjan_Alima_2015_05_27
+2026-03-15 02:13:00 [INFO] patient_intake:   Результат: Уже обработано (используй --force для повторного анализа)
+2026-03-15 02:13:00 [INFO] patient_intake: Пациент: Beridze_Keti_2026_03_12
+2026-03-15 02:13:00 [INFO] patient_intake:   Результат: Уже обработано (используй --force для повторного анализа)
+2026-03-15 02:13:00 [INFO] patient_intake: Пациент: Feradze_Maia_1981_12_20
+2026-03-15 02:13:00 [INFO] patient_intake:   OCR: 7c8d0830-4d40-435b-bdf2-b4961d5b7d00.jpeg ...
+2026-03-15 02:13:00 [DEBUG] ocr_engine: OCR: 7c8d0830-4d40-435b-bdf2-b4961d5b7d00.jpeg
+2026-03-15 02:13:06 [DEBUG] ocr_engine:   tesseract: 2712 chars
+2026-03-15 02:13:06 [INFO] patient_intake:   ✓
+2026-03-15 02:13:06 [INFO] patient_intake:   OCR: b5531a4f-68db-410a-af68-2f0182ffbdfa.jpeg ...
+2026-03-15 02:13:06 [DEBUG] ocr_engine: OCR: b5531a4f-68db-410a-af68-2f0182ffbdfa.jpeg
+2026-03-15 02:13:10 [DEBUG] ocr_engine:   tesseract: 1872 chars
+2026-03-15 02:13:10 [INFO] patient_intake:   ✓
+2026-03-15 02:13:10 [INFO] patient_intake:   OCR: c2066c80-f923-40d4-8445-451dd49116ff.jpeg ...
+2026-03-15 02:13:10 [DEBUG] ocr_engine: OCR: c2066c80-f923-40d4-8445-451dd49116ff.jpeg
+2026-03-15 02:13:13 [DEBUG] ocr_engine:   tesseract: 879 chars
+2026-03-15 02:13:13 [INFO] patient_intake:   ✓
+2026-03-15 02:13:13 [INFO] patient_intake:   Генерация анализа...
+2026-03-15 02:16:25 [INFO] patient_intake:   ✓
+2026-03-15 02:16:25 [DEBUG] patient_intake: Knowledge recorded for Badriashvili Vladimeri: 2 dx
+2026-03-15 02:16:25 [INFO] patient_intake:   Результат: Обработано: Анализ обновлён
+2026-03-15 02:16:25 [INFO] patient_intake: Пациент: Baurjan_Alima_2015_05_27
+2026-03-15 02:16:25 [INFO] patient_intake:   Результат: Уже обработано (используй --force для повторного анализа)
+2026-03-15 02:16:25 [INFO] patient_intake: Пациент: Beridze_Keti_2026_03_12
+2026-03-15 02:16:25 [INFO] patient_intake:   Результат: Уже обработано (используй --force для повторного анализа)
+2026-03-15 02:16:25 [INFO] patient_intake: Пациент: Feradze_Maia_1981_12_20
+2026-03-15 02:16:25 [INFO] patient_intake:   OCR: 7c8d0830-4d40-435b-bdf2-b4961d5b7d00.jpeg ...
+2026-03-15 02:16:25 [DEBUG] ocr_engine: OCR: 7c8d0830-4d40-435b-bdf2-b4961d5b7d00.jpeg
+2026-03-15 02:16:31 [DEBUG] ocr_engine:   tesseract: 2712 chars
+2026-03-15 02:16:31 [INFO] patient_intake:   ✓
+2026-03-15 02:16:31 [INFO] patient_intake:   OCR: b5531a4f-68db-410a-af68-2f0182ffbdfa.jpeg ...
+2026-03-15 02:16:31 [DEBUG] ocr_engine: OCR: b5531a4f-68db-410a-af68-2f0182ffbdfa.jpeg
+2026-03-15 02:16:35 [DEBUG] ocr_engine:   tesseract: 1872 chars
+2026-03-15 02:16:35 [INFO] patient_intake:   ✓
+2026-03-15 02:16:35 [INFO] patient_intake:   OCR: c2066c80-f923-40d4-8445-451dd49116ff.jpeg ...
+2026-03-15 02:16:35 [DEBUG] ocr_engine: OCR: c2066c80-f923-40d4-8445-451dd49116ff.jpeg
+2026-03-15 02:16:37 [DEBUG] ocr_engine:   tesseract: 879 chars
+2026-03-15 02:16:37 [INFO] patient_intake:   ✓
+2026-03-15 02:16:37 [INFO] patient_intake:   Генерация анализа...
+2026-03-15 02:21:01 [INFO] patient_intake:   ✓
+2026-03-15 02:21:01 [DEBUG] patient_intake: Knowledge recorded for Beridze Keti: 0 dx
+2026-03-15 02:21:01 [INFO] patient_intake:   Результат: Обработано: PDF: IL_26_03_13_2841275_.pdf, PDF: IL_26_03_13_2841276_.pdf, PDF: IL_26_03_13_2841277_.pdf, Анализ обновлён
+2026-03-15 02:21:01 [INFO] patient_intake: Пациент: Feradze_Maia_1981_12_20
+2026-03-15 02:21:01 [INFO] patient_intake:   OCR: 7c8d0830-4d40-435b-bdf2-b4961d5b7d00.jpeg ...
+2026-03-15 02:21:01 [DEBUG] ocr_engine: OCR: 7c8d0830-4d40-435b-bdf2-b4961d5b7d00.jpeg
+2026-03-15 02:21:07 [DEBUG] ocr_engine:   tesseract: 2712 chars
+2026-03-15 02:21:07 [INFO] patient_intake:   ✓
+2026-03-15 02:21:07 [INFO] patient_intake:   OCR: b5531a4f-68db-410a-af68-2f0182ffbdfa.jpeg ...
+2026-03-15 02:21:07 [DEBUG] ocr_engine: OCR: b5531a4f-68db-410a-af68-2f0182ffbdfa.jpeg
+2026-03-15 02:21:12 [DEBUG] ocr_engine:   tesseract: 1872 chars
+2026-03-15 02:21:12 [INFO] patient_intake:   ✓
+2026-03-15 02:21:12 [INFO] patient_intake:   OCR: c2066c80-f923-40d4-8445-451dd49116ff.jpeg ...
+2026-03-15 02:21:12 [DEBUG] ocr_engine: OCR: c2066c80-f923-40d4-8445-451dd49116ff.jpeg
+2026-03-15 02:21:15 [DEBUG] ocr_engine:   tesseract: 879 chars
+2026-03-15 02:21:15 [INFO] patient_intake:   ✓
+2026-03-15 02:21:15 [INFO] patient_intake:   Генерация анализа...
+2026-03-15 02:28:45 [INFO] patient_intake:   ✓
+2026-03-15 02:28:45 [DEBUG] patient_intake: Knowledge recorded for Beridze Keti: 0 dx
+2026-03-15 02:28:45 [INFO] patient_intake:   Результат: Обработано: PDF: IL_26_03_13_2841275_.pdf, PDF: IL_26_03_13_2841276_.pdf, PDF: IL_26_03_13_2841277_.pdf, Анализ обновлён
+2026-03-15 02:28:45 [INFO] patient_intake: Пациент: Feradze_Maia_1981_12_20
+2026-03-15 02:28:45 [INFO] patient_intake:   OCR: 7c8d0830-4d40-435b-bdf2-b4961d5b7d00.jpeg ...
+2026-03-15 02:28:45 [DEBUG] ocr_engine: OCR: 7c8d0830-4d40-435b-bdf2-b4961d5b7d00.jpeg
+2026-03-15 02:28:51 [DEBUG] ocr_engine:   tesseract: 2712 chars
+2026-03-15 02:28:51 [INFO] patient_intake:   ✓
+2026-03-15 02:28:51 [INFO] patient_intake:   OCR: b5531a4f-68db-410a-af68-2f0182ffbdfa.jpeg ...
+2026-03-15 02:28:51 [DEBUG] ocr_engine: OCR: b5531a4f-68db-410a-af68-2f0182ffbdfa.jpeg
+2026-03-15 02:28:56 [DEBUG] ocr_engine:   tesseract: 1872 chars
+2026-03-15 02:28:56 [INFO] patient_intake:   ✓
+2026-03-15 02:28:56 [INFO] patient_intake:   OCR: c2066c80-f923-40d4-8445-451dd49116ff.jpeg ...
+2026-03-15 02:28:56 [DEBUG] ocr_engine: OCR: c2066c80-f923-40d4-8445-451dd49116ff.jpeg
+2026-03-15 02:28:58 [DEBUG] ocr_engine:   tesseract: 879 chars
+2026-03-15 02:28:58 [INFO] patient_intake:   ✓
+2026-03-15 02:28:58 [INFO] patient_intake:   Генерация анализа...
+2026-03-15 02:33:47 [INFO] patient_intake:   ✓
+2026-03-15 02:33:47 [DEBUG] patient_intake: Knowledge recorded for Baurjan Alima: 0 dx
+2026-03-15 02:33:47 [INFO] patient_intake:   Результат: Обработано: OCR: 18cb6cc6-47f1-47b0-9799-58d007bdae44.jpeg, OCR: 1d13e121-73c2-48dd-a9cd-02bb28b0f77e.jpeg, OCR: 1fa583c1-0d6d-4c30-bfa9-5d741c70e1de.jpeg, OCR: 2cc78324-7465-4ab3-800f-da577c8f57e7.jpeg, OCR: d42b9b29-2875-496b-a7c5-9d08e09a1259.jpeg, OCR: dec7f847-6884-46ba-bdc2-6b01b233df43.jpeg, Анализ обновлён
+2026-03-15 02:33:47 [INFO] patient_intake: Пациент: Beridze_Keti_2026_03_12
+2026-03-15 02:33:47 [INFO] patient_intake:   PDF: IL_26_03_13_2841275_.pdf ...
+2026-03-15 02:33:47 [INFO] patient_intake:   ✓
+2026-03-15 02:33:47 [INFO] patient_intake:   PDF: IL_26_03_13_2841276_.pdf ...
+2026-03-15 02:33:47 [INFO] patient_intake:   ✓
+2026-03-15 02:33:47 [INFO] patient_intake:   PDF: IL_26_03_13_2841277_.pdf ...
+2026-03-15 02:33:48 [INFO] patient_intake:   ✓
+2026-03-15 02:33:48 [INFO] patient_intake:   Генерация анализа...

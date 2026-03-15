@@ -1,0 +1,376 @@
+#!/usr/bin/env python3
+import os
+import sys
+import time
+import threading
+from datetime import datetime
+
+# Добавляем путь к виртуальному окружению
+VENV_PATH = os.path.expanduser("~/AI/venv/lib/python3.*/site-packages")
+import glob
+site_packages = glob.glob(VENV_PATH)
+if site_packages:
+    sys.path.append(site_packages[0])
+
+try:
+    import ollama
+except ImportError:
+    print("❌ Ollama не установлен. Запустите: source ~/AI/venv/bin/activate && pip install ollama")
+    sys.exit(1)
+
+class AISystem:
+    def __init__(self):
+        self.root = os.path.expanduser("~/AI")
+        self.desktop = os.path.expanduser("~/Documents")
+        self.projects = {}
+        self.running = True
+        self.model = "llama3.2"
+        
+        print("\n" + "="*60)
+        print("🤖 МНОГОАГЕНТНАЯ AI СИСТЕМА")
+        print("="*60)
+        print(f"📁 Система: {self.root}")
+        print(f"📁 Проекты: {self.desktop}")
+        print("="*60)
+        
+        self.check_ollama()
+        self.scan_projects()
+        self.watch_desktop()
+    
+    def check_ollama(self):
+        try:
+            ollama.list()
+            print("✅ Ollama работает")
+        except:
+            print("⚠️ Ollama не запущен. Запустите: ollama serve")
+    
+    def scan_projects(self):
+        print("\n🔍 Поиск проектов...")
+        for item in os.listdir(self.desktop):
+            path = os.path.join(self.desktop, item)
+            if os.path.isdir(path) and not item.startswith('.'):
+                self.projects[item] = {
+                    'path': path,
+                    'files': self.get_files(path)
+                }
+                print(f"  ✅ {item}")
+    
+    def get_files(self, path):
+        files = []
+        for root, dirs, filenames in os.walk(path):
+            return [f for f in filenames if not f.startswith('.')][:20]
+        return []
+    
+    def watch_desktop(self):
+        def monitor():
+            while self.running:
+                time.sleep(5)
+                current = set(os.listdir(self.desktop))
+                existing = set(self.projects.keys())
+                
+                for item in current:
+                    path = os.path.join(self.desktop, item)
+                    if os.path.isdir(path) and not item.startswith('.') and item not in existing:
+                        print(f"\n✨ Новый проект: {item}")
+                        self.projects[item] = {
+                            'path': path,
+                            'files': self.get_files(path)
+                        }
+                        self.analyze_project(item)
+        
+        thread = threading.Thread(target=monitor, daemon=True)
+        thread.start()
+    
+    def analyze_project(self, name):
+        project = self.projects.get(name)
+        if not project:
+            return
+        
+        print(f"\n🤖 Анализ проекта: {name}")
+        
+        prompt = f"""Проект: {name}
+Файлы: {project['files'][:10]}
+
+Что это за проект? Как его развивать?"""
+        
+        try:
+            response = ollama.chat(model=self.model, messages=[
+                {'role': 'user', 'content': prompt}
+            ])
+            
+            analysis = response['message']['content']
+            
+            with open(os.path.join(project['path'], '_ai_analysis.txt'), 'w', encoding='utf-8') as f:
+                f.write(f"AI АНАЛИЗ\n")
+                f.write("="*40 + "\n")
+                f.write(analysis)
+            
+            print(f"  ✅ Анализ сохранен")
+            
+        except Exception as e:
+            print(f"  ❌ Ошибка: {e}")
+    
+    def list_projects(self):
+        print("\n📋 ПРОЕКТЫ:")
+        if not self.projects:
+            print("  Нет проектов")
+            return
+        
+        for name, info in self.projects.items():
+            print(f"  📁 {name} ({len(info['files'])} файлов)")
+    
+    def analyze_any_project(self):
+        path = input("\nВведите путь к проекту: ").strip()
+        if os.path.exists(path):
+            print(f"\n🔍 Анализ проекта: {path}")
+            os.system(f"python3 todo_analyzer.py '{path}'")
+        else:
+            print("❌ Путь не существует")
+    
+    def analyze_todo(self):
+        print("\n📋 АНАЛИЗ TODO.MD")
+        print("="*40)
+        
+        self.list_projects()
+        name = input("\nВведите имя проекта для анализа TODO: ").strip()
+        
+        if name not in self.projects:
+            print("❌ Проект не найден")
+            return
+        
+        project_path = self.projects[name]['path']
+        todo_path = os.path.join(project_path, 'TODO.md')
+        
+        if not os.path.exists(todo_path):
+            print(f"\n⚠️ TODO.md не найден в проекте {name}")
+            create = input("Создать TODO.md? (y/n): ").strip().lower()
+            if create == 'y':
+                self.create_todo(project_path, name)
+            return
+        
+        with open(todo_path, 'r', encoding='utf-8') as f:
+            todo_content = f.read()
+        
+        print(f"\n📄 Текущий TODO.md:")
+        print("-"*40)
+        print(todo_content[:500] + "..." if len(todo_content) > 500 else todo_content)
+        
+        prompt = f"""Проект: {name}
+        
+TODO.md:
+{todo_content[:2000]}
+
+Файлы в проекте:
+{chr(10).join([f"- {f}" for f in self.projects[name]['files'][:20]])}
+
+Проанализируй TODO.md и предложи:
+1. Какие задачи уже выполнены?
+2. Какие задачи делать дальше?
+3. В каком порядке?
+4. Конкретные шаги для следующей задачи"""
+        
+        try:
+            print("\n🤖 AI анализирует...")
+            response = ollama.chat(model=self.model, messages=[
+                {'role': 'user', 'content': prompt}
+            ])
+            
+            analysis = response['message']['content']
+            
+            analysis_file = os.path.join(project_path, '_todo_analysis.md')
+            with open(analysis_file, 'w', encoding='utf-8') as f:
+                f.write(f"# Анализ TODO.md для {name}\n")
+                f.write(f"Дата: {datetime.now()}\n")
+                f.write("="*50 + "\n\n")
+                f.write(analysis)
+            
+            print(f"\n✅ Анализ сохранен: {analysis_file}")
+            print("\n" + "="*40)
+            print(analysis)
+            
+        except Exception as e:
+            print(f"❌ Ошибка: {e}")
+    
+    def create_todo(self, project_path, project_name):
+        prompt = f"""Проект: {project_name}
+
+Файлы в проекте:
+{chr(10).join([f"- {f}" for f in os.listdir(project_path)[:20]])}
+
+Создай TODO.md для этого проекта со списком задач."""
+        
+        try:
+            print("\n🤖 AI создает TODO.md...")
+            response = ollama.chat(model=self.model, messages=[
+                {'role': 'user', 'content': prompt}
+            ])
+            
+            todo = response['message']['content']
+            
+            todo_path = os.path.join(project_path, 'TODO.md')
+            with open(todo_path, 'w', encoding='utf-8') as f:
+                f.write(f"# TODO: {project_name}\n\n")
+                f.write(f"Создано AI: {datetime.now()}\n")
+                f.write("="*40 + "\n\n")
+                f.write(todo)
+            
+            print(f"\n✅ TODO.md создан: {todo_path}")
+            
+        except Exception as e:
+            print(f"❌ Ошибка: {e}")
+    
+    def update_todo(self):
+        print("\n📝 ОБНОВЛЕНИЕ TODO.MD")
+        print("="*40)
+        
+        self.list_projects()
+        name = input("\nВведите имя проекта: ").strip()
+        
+        if name not in self.projects:
+            print("❌ Проект не найден")
+            return
+        
+        project_path = self.projects[name]['path']
+        todo_path = os.path.join(project_path, 'TODO.md')
+        
+        if not os.path.exists(todo_path):
+            print("❌ TODO.md не найден")
+            return
+        
+        with open(todo_path, 'r', encoding='utf-8') as f:
+            todo_content = f.read()
+        
+        prompt = f"""Проект: {name}
+
+Текущий TODO.md:
+{todo_content[:2000]}
+
+Файлы в проекте:
+{chr(10).join([f"- {f}" for f in self.projects[name]['files'][:20]])}
+
+Какие задачи уже выполнены? Отметь их как [x]."""
+        
+        try:
+            print("\n🤖 AI обновляет TODO.md...")
+            response = ollama.chat(model=self.model, messages=[
+                {'role': 'user', 'content': prompt}
+            ])
+            
+            updated = response['message']['content']
+            
+            with open(todo_path, 'w', encoding='utf-8') as f:
+                f.write(f"# TODO: {name} (обновлено {datetime.now()})\n\n")
+                f.write(updated)
+            
+            print(f"\n✅ TODO.md обновлен")
+            
+        except Exception as e:
+            print(f"❌ Ошибка: {e}")
+    
+    def run_multi_agent(self):
+        """Запускает многоагентную систему"""
+        try:
+            from agents import Orchestrator
+            ai = Orchestrator()
+            
+            while True:
+                print("\n" + "="*50)
+                print("🤖 МНОГОАГЕНТНАЯ СИСТЕМА")
+                print("="*50)
+                print("1. Выполнить задачу")
+                print("2. Статистика агентов")
+                print("3. Коллаборация агентов")
+                print("4. Назад в главное меню")
+                print("="*50)
+                
+                choice = input("\n👉 Выбор: ").strip()
+                
+                if choice == '1':
+                    task = input("Задача: ").strip()
+                    result = ai.delegate(task)
+                    print(f"\n✅ Результат:\n{result}")
+                
+                elif choice == '2':
+                    ai.stats()
+                
+                elif choice == '3':
+                    task = input("Задача для коллаборации: ").strip()
+                    print("Доступные агенты: linguist, programmer, analyst, architect, tester")
+                    agents = input("Агенты (через запятую): ").strip().split(',')
+                    agents = [a.strip() for a in agents]
+                    result = ai.collaborate(task, agents)
+                    print(f"\n✅ Результат:\n{result}")
+                
+                elif choice == '4':
+                    break
+                
+                input("\nНажмите Enter для продолжения...")
+                    
+        except Exception as e:
+            print(f"❌ Ошибка загрузки агентов: {e}")
+            print("Убедитесь что файл agents.py существует")
+    
+    def run(self):
+        while self.running:
+            print("\n" + "="*40)
+            print("ГЛАВНОЕ МЕНЮ:")
+            print("1. Показать проекты")
+            print("2. Анализ проекта")
+            print("3. Анализ всех проектов")
+            print("4. Анализ любого проекта (по пути)")
+            print("5. 📋 Анализ TODO.md")
+            print("6. 📝 Создать TODO.md")
+            print("7. 🔄 Обновить TODO.md")
+            print("8. 🤖 Многоагентная система")
+            print("9. Выход")
+            print("="*40)
+            
+            choice = input("\n👉 Выбор: ").strip()
+            
+            if choice == "1":
+                self.list_projects()
+            
+            elif choice == "2":
+                self.list_projects()
+                name = input("Имя проекта: ").strip()
+                if name in self.projects:
+                    self.analyze_project(name)
+                else:
+                    print("❌ Проект не найден")
+            
+            elif choice == "3":
+                for name in self.projects:
+                    self.analyze_project(name)
+                    time.sleep(2)
+            
+            elif choice == "4":
+                self.analyze_any_project()
+            
+            elif choice == "5":
+                self.analyze_todo()
+            
+            elif choice == "6":
+                self.list_projects()
+                name = input("Имя проекта: ").strip()
+                if name in self.projects:
+                    self.create_todo(self.projects[name]["path"], name)
+                else:
+                    print("❌ Проект не найден")
+            
+            elif choice == "7":
+                self.update_todo()
+            
+            elif choice == "8":
+                self.run_multi_agent()
+            
+            elif choice == "9":
+                self.running = False
+                print("👋 До свидания!")
+                break
+            
+            else:
+                print("❌ Неверный выбор")
+
+if __name__ == "__main__":
+    system = AISystem()
+    system.run()
