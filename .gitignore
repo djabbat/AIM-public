@@ -1,6 +1,7 @@
-Patients/*
-!Patients/.gitkeep
-
+# Исключить всё в Patients
+Patients/
+# Но сохранить .gitkeep (разкомментировать если нужно)
+# !Patients/.gitkeep
 
 # Python
 __pycache__/
