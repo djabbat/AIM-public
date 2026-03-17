@@ -1,1 +1,0 @@
-cd ~ && tar -czf AI_Complete_Build.tar.gz AI/ && echo "✅ Архив создан: ~/AI_Complete_Build.tar.gz"

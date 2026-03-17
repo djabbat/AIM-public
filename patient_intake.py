@@ -20,10 +20,11 @@ from pathlib import Path
 from datetime import date, datetime
 from typing import Optional, Dict, List
 
-import ollama
-
 from config import (PATIENTS_DIR as DOCUMENTS_DIR, INBOX_DIR,
                     PROCESSED_LOG, MODEL, get_logger)
+from llm import ask_llm as _ask_llm_ds
+import db as _db
+_db.init_db()
 log = get_logger("patient_intake")
 
 FOLDER_RE = re.compile(
@@ -37,57 +38,68 @@ FOLDER_RE = re.compile(
 _processed_cache: Optional[set] = None
 
 def load_processed() -> set:
+    """Compat wrapper — возвращает пустой set; реальная проверка через db.is_processed()."""
     global _processed_cache
     if _processed_cache is None:
-        if os.path.exists(PROCESSED_LOG):
-            with open(PROCESSED_LOG) as f:
-                _processed_cache = set(json.load(f))
-        else:
-            _processed_cache = set()
+        _processed_cache = set()
     return _processed_cache
 
 def save_processed(processed: set):
+    """Compat wrapper — больше не пишет JSON; состояние хранится в SQLite."""
     global _processed_cache
     _processed_cache = processed
-    with open(PROCESSED_LOG, "w") as f:
-        json.dump(list(processed), f, ensure_ascii=False)
 
 def invalidate_processed_path(old_path: str, new_path: str):
-    """Update processed cache when a file/folder is renamed."""
+    """При переименовании папки — переносим записи в БД."""
     global _processed_cache
-    if _processed_cache is None:
-        return
-    old = str(old_path)
-    new = str(new_path)
-    updated = set()
-    for p in _processed_cache:
-        updated.add(p.replace(old, new) if p.startswith(old) else p)
-    _processed_cache = updated
-    save_processed(_processed_cache)
+    if _processed_cache is not None:
+        old = str(old_path)
+        new_str = str(new_path)
+        updated = set()
+        for p in _processed_cache:
+            updated.add(p.replace(old, new_str) if p.startswith(old) else p)
+        _processed_cache = updated
+    # SQLite: снять старые записи и переписать пути
+    try:
+        from pathlib import Path as _Path
+        for old_file in _Path(old_path).rglob("*"):
+            if old_file.is_file():
+                new_file = str(old_file).replace(str(old_path), str(new_path))
+                _db.unmark_processed(str(old_file))
+                _db.mark_processed(new_file)
+    except Exception:
+        pass
 
 
 def ask_llm(prompt: str, system: str = "") -> str:
-    messages = []
-    if system:
-        messages.append({"role": "system", "content": system})
-    messages.append({"role": "user", "content": prompt})
-    try:
-        r = ollama.chat(model=MODEL, messages=messages,
-                        options={"temperature": 0.2, "num_predict": 2048})
-        return r["message"]["content"].strip()
-    except Exception as e:
-        return f"[LLM error: {e}]"
+    return _ask_llm_ds(prompt, system=system, max_tokens=2048, temperature=0.2)
 
 
-INTEGRATIVE_SYSTEM = """Ты — цифровой специалист по интегративной медицине.
-Ведёшь пациентов доктора Джаба Ткемаладзе (Dr. Jaba Tkemaladze).
-Твоя задача: анализировать анамнез, жалобы, лабораторные анализы и назначения,
-выявлять паттерны, предлагать интегративные подходы (сочетание доказательной медицины
-с нутрициологией, психосоматикой, образом жизни).
+INTEGRATIVE_SYSTEM = """Ты — цифровой ассистент доктора Джаба Ткемаладзе, специалиста \
+по интегративной медицине. Твоя задача: составить структурированное клиническое резюме \
+пациента на основе предоставленных данных (анамнез, жалобы, лаборатория, переписка).
 
-Язык пациентов: русский, грузинский, казахский, английский.
-Отвечай подробно, структурированно, на русском языке.
-Используй заголовки: ЖАЛОБЫ, АНАМНЕЗ, ЛАБОРАТОРНЫЕ ПОКАЗАТЕЛИ, ВЫВОДЫ, РЕКОМЕНДАЦИИ.
+ИНСТРУКЦИЯ ПО АНАЛИЗУ:
+1. Извлеки ключевые жалобы и симптомы
+2. Выдели значимые лабораторные отклонения (↓ низко, ↑ высоко, ⚠ критично)
+3. Предложи 2–3 наиболее вероятных диагноза с обоснованием (байесовский подход)
+4. Дай конкретные рекомендации: питание, добавки с дозами, медикаменты если нужны
+5. Укажи что нужно проконтролировать и через сколько времени
+
+ОБЯЗАТЕЛЬНАЯ СТРУКТУРА ОТВЕТА:
+## ЖАЛОБЫ И СИМПТОМЫ
+## АНАМНЕЗ
+## ЛАБОРАТОРНЫЕ ПОКАЗАТЕЛИ
+(таблица: показатель | значение | норма | статус)
+## ДИФФЕРЕНЦИАЛЬНЫЙ ДИАГНОЗ
+## РЕКОМЕНДАЦИИ
+### Питание и образ жизни
+### Нутрицевтики и добавки
+### Медикаменты
+## КОНТРОЛЬ (что проверить, через сколько недель)
+
+Отвечай на русском языке. Будь конкретен: дозы в мг/мкг, курс в неделях, \
+анализы с конкретными показателями для повторной сдачи.
 """
 
 
@@ -125,6 +137,20 @@ def process_patient_folder(folder_path: str, force: bool = False) -> str:
     if not folder.is_dir():
         return f"ERROR: not a directory: {folder_path}"
 
+    # Зарегистрировать / обновить пациента в БД
+    _patient_id = None
+    try:
+        m = FOLDER_RE.match(folder.name)
+        if m:
+            sur, nam, y, mo, d = m.groups()
+            _patient_id = _db.upsert_patient(
+                surname=sur, name=nam,
+                folder_path=str(folder),
+                dob=f"{y}-{mo}-{d}"
+            )
+    except Exception as _e:
+        log.debug(f"DB upsert_patient skipped: {_e}")
+
     processed = load_processed()
     steps = []
     all_text_parts = []
@@ -148,7 +174,7 @@ def process_patient_folder(folder_path: str, force: bool = False) -> str:
         ocr_out = folder / f"{img_file.stem}_ocr.txt"
         file_key = str(img_file)
 
-        if not force and file_key in processed and ocr_out.exists():
+        if not force and _db.is_processed(file_key) and ocr_out.exists():
             # Already processed — just load
             all_text_parts.append(f"=== СКРИН: {img_file.name} ===\n{ocr_out.read_text(encoding='utf-8', errors='replace')}")
             continue
@@ -156,6 +182,7 @@ def process_patient_folder(folder_path: str, force: bool = False) -> str:
         log.info(f"  OCR: {img_file.name} ...")
         ocr_text = ocr_image_file(str(img_file))
         ocr_out.write_text(ocr_text, encoding="utf-8")
+        _db.mark_processed(file_key)
         processed.add(file_key)
         all_text_parts.append(f"=== СКРИН: {img_file.name} ===\n{ocr_text}")
         steps.append(f"OCR: {img_file.name}")
@@ -168,13 +195,14 @@ def process_patient_folder(folder_path: str, force: bool = False) -> str:
         txt_out = folder / f"{pdf_file.stem}_text.txt"
         file_key = str(pdf_file)
 
-        if not force and file_key in processed and txt_out.exists():
+        if not force and _db.is_processed(file_key) and txt_out.exists():
             all_text_parts.append(f"=== АНАЛИЗ PDF: {pdf_file.name} ===\n{txt_out.read_text(encoding='utf-8', errors='replace')}")
             continue
 
         log.info(f"  PDF: {pdf_file.name} ...")
         pdf_text = extract_pdf_text(str(pdf_file))
         txt_out.write_text(pdf_text, encoding="utf-8")
+        _db.mark_processed(file_key)
         processed.add(file_key)
         all_text_parts.append(f"=== АНАЛИЗ PDF: {pdf_file.name} ===\n{pdf_text}")
         steps.append(f"PDF: {pdf_file.name}")
@@ -198,6 +226,7 @@ def process_patient_folder(folder_path: str, force: bool = False) -> str:
         log.info("  Генерация анализа...")
         combined = "\n\n".join(all_text_parts)[:8000]
         patient_name = _patient_name_from_folder(folder.name)
+        sex, age_group = _patient_demographics(folder, combined)
 
         prompt = f"""Пациент: {patient_name}
 
@@ -216,7 +245,15 @@ def process_patient_folder(folder_path: str, force: bool = False) -> str:
             f.write(analysis)
             f.write("\n\n")
             # Append structured lab analysis if possible
-            _write_lab_section(f, all_text_parts)
+            _write_lab_section(f, all_text_parts, folder=folder,
+                               sex=sex, age_group=age_group)
+
+        # Сохранить диагноз в БД
+        if _patient_id:
+            try:
+                _db.save_diagnosis(_patient_id, analysis, source="intake")
+            except Exception as _e:
+                log.debug(f"DB save_diagnosis skipped: {_e}")
 
         log.info("  ✓")
         steps.append("Анализ обновлён")
@@ -246,6 +283,12 @@ def _record_to_knowledge(patient_name: str, analysis: str, text_parts: list):
                       if l.strip() and l.strip()[0].isdigit() and ". " in l][:5]
         knowledge.record_patient_analysis(patient_name, diagnoses[:5], treatments)
         log.debug(f"Knowledge recorded for {patient_name}: {len(diagnoses)} dx")
+        # Параллельно — в SQLite
+        for dx in diagnoses[:5]:
+            try:
+                _db.upsert_knowledge(dx, {"patient": patient_name, "treatments": treatments})
+            except Exception:
+                pass
     except Exception as e:
         log.debug(f"Knowledge record skipped: {e}")
 
@@ -257,23 +300,128 @@ def _patient_name_from_folder(folder_name: str) -> str:
     return folder_name
 
 
-def _write_lab_section(f, text_parts: list):
-    """Append structured lab results section."""
+def _patient_demographics(folder: Path, text: str = "") -> tuple:
+    """
+    Extract (sex, age_group) from folder name + text.
+    sex:       'M' | 'F' | '*'
+    age_group: 'child' | 'adult' | 'elder' | '*'
+    """
+    from datetime import date
+    import re as _re
+
+    # ── Age from folder DOB ───────────────────────────────────
+    age_group = "adult"
+    m = FOLDER_RE.match(folder.name)
+    if m:
+        try:
+            y, mo, d = int(m.group(3)), int(m.group(4)), int(m.group(5))
+            age = (date.today() - date(y, mo, d)).days // 365
+            if age < 18:
+                age_group = "child"
+            elif age >= 65:
+                age_group = "elder"
+            else:
+                age_group = "adult"
+        except Exception:
+            pass
+
+    # ── Sex from text keywords ────────────────────────────────
+    sex = "*"
+    if text:
+        tl = text.lower()
+        male_kw = [r'\bмужчина\b', r'\bмужской\b', r'\bпол\s*[:]\s*м\b',
+                   r'\bsex\s*[:]\s*m\b', r'\bmale\b', r'\bმამრ']
+        female_kw = [r'\bженщина\b', r'\bженский\b', r'\bпол\s*[:]\s*ж\b',
+                     r'\bsex\s*[:]\s*f\b', r'\bfemale\b', r'\bმდედრ']
+        if any(_re.search(p, tl) for p in male_kw):
+            sex = "M"
+        elif any(_re.search(p, tl) for p in female_kw):
+            sex = "F"
+
+    return sex, age_group
+
+
+def _write_lab_section(f, text_parts: list, folder: Path = None,
+                       sex: str = "*", age_group: str = "adult"):
+    """Append structured lab results section and save JSON snapshot."""
     try:
         from lab_parser import extract_from_text
-        from lab_reference import LabResult
+        from diagnosis_engine import bayesian_differential, run_diagnosis_ai
         combined = "\n".join(text_parts)
-        results = extract_from_text(combined)
-        if results:
-            f.write("\n" + "=" * 60 + "\n")
-            f.write("СТРУКТУРИРОВАННЫЕ ЛАБОРАТОРНЫЕ ПОКАЗАТЕЛИ\n")
-            f.write("=" * 60 + "\n")
-            for r in results:
-                status_icon = {"normal": "✓", "low": "↓", "high": "↑",
-                               "critical_low": "⚠↓", "critical_high": "⚠↑"}.get(r.status, "?")
-                f.write(f"  {status_icon} {r.param_id}: {r.value} {r.unit}  [{r.ref_range}] — {r.interpretation}\n")
-    except Exception:
-        pass
+        results = extract_from_text(combined, sex=sex, age_group=age_group)
+        if not results:
+            return
+
+        # Write human-readable section
+        f.write("\n" + "=" * 60 + "\n")
+        f.write("СТРУКТУРИРОВАННЫЕ ЛАБОРАТОРНЫЕ ПОКАЗАТЕЛИ\n")
+        f.write("=" * 60 + "\n")
+        abnormal = []
+        for r in results:
+            status_icon = {"normal": "✓", "low": "↓", "high": "↑",
+                           "critical_low": "⚠↓", "critical_high": "⚠↑"}.get(r.status, "?")
+            f.write(f"  {status_icon} {r.param_id}: {r.value} {r.unit}  [{r.ref_range}] — {r.interpretation}\n")
+            if r.status not in ("normal", "unknown"):
+                abnormal.append(r)
+
+        # Write diagnosis section with R1
+        if abnormal and folder:
+            patient_name = " ".join(folder.name.split("_")[:2])
+            dx_text = run_diagnosis_ai(results, patient_name=patient_name)
+            f.write("\n" + dx_text + "\n")
+
+        # Save structured JSON snapshot for lab dynamics tracking
+        if folder:
+            _save_lab_snapshot(folder, results)
+
+    except Exception as e:
+        log.warning("Lab section error: %s", e)
+
+
+def _save_lab_snapshot(folder: Path, results: list):
+    """Save lab values as JSON for historical tracking."""
+    import json
+    snapshot_file = folder / "_lab_history.json"
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    # Load existing history
+    history = {}
+    if snapshot_file.exists():
+        try:
+            history = json.loads(snapshot_file.read_text(encoding="utf-8"))
+        except Exception:
+            history = {}
+
+    # Add today's snapshot
+    history[today] = {
+        r.param_id: {
+            "value": r.value,
+            "unit": r.unit,
+            "status": r.status,
+            "ref_range": r.ref_range,
+        }
+        for r in results
+    }
+
+    snapshot_file.write_text(
+        json.dumps(history, ensure_ascii=False, indent=2),
+        encoding="utf-8"
+    )
+    log.debug("Lab snapshot saved: %s (%d params)", today, len(results))
+
+    # Параллельно — в SQLite
+    try:
+        patient_row = _db.get_patient_by_folder(str(folder))
+        if patient_row:
+            params_dict = {
+                r.param_id: {"value": r.value, "unit": r.unit,
+                             "status": r.status, "ref_range": r.ref_range}
+                for r in results
+            }
+            _db.save_labs(patient_row["id"], params_dict,
+                          taken_at=today, source_file=str(folder))
+    except Exception as _e:
+        log.debug(f"DB save_labs skipped: {_e}")
 
 
 def _try_fix_folder_dob(folder: Path, combined_text: str) -> Optional[Path]:

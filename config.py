@@ -15,11 +15,13 @@ INBOX_DIR    = os.path.join(PATIENTS_DIR, "INBOX")
 LOGS_DIR     = os.path.join(AIM_DIR, "logs")
 KNOWLEDGE_FILE = os.path.join(AIM_DIR, "medical_knowledge.json")
 PROCESSED_LOG  = os.path.join(AIM_DIR, "processed_files.json")
+DB_PATH        = os.path.join(AIM_DIR, "aim.db")
 
 # ── LLM ───────────────────────────────────────────────────────
-MODEL         = "llama3.2"          # change here → applies everywhere
-MODEL_FAST    = "llama3.2"          # lightweight tasks
-MODEL_DEEP    = "deepseek-r1:7b"    # deep analysis (slower)
+# DeepSeek API — set key in ~/.aim_env:  DEEPSEEK_API_KEY=sk-...
+MODEL         = "deepseek-chat"     # DeepSeek V3 (fast, cheap)
+MODEL_FAST    = "deepseek-chat"     # lightweight tasks
+MODEL_DEEP    = "deepseek-reasoner" # DeepSeek R1 (deep reasoning)
 
 # ── OCR ───────────────────────────────────────────────────────
 OCR_LANGS     = "rus+kat+eng"       # tesseract language string

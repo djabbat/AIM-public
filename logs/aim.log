@@ -220,3 +220,250 @@
 2026-03-15 02:33:47 [INFO] patient_intake:   PDF: IL_26_03_13_2841277_.pdf ...
 2026-03-15 02:33:48 [INFO] patient_intake:   ✓
 2026-03-15 02:33:48 [INFO] patient_intake:   Генерация анализа...
+2026-03-17 06:36:30 [ERROR] llm: LLM error: No module named 'openai'
+2026-03-17 07:18:52 [ERROR] llm: LLM error: Error code: 402 - {'error': {'message': 'Insufficient Balance', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}}
+2026-03-17 07:23:13 [ERROR] llm: LLM error: Error code: 402 - {'error': {'message': 'Insufficient Balance', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}}
+2026-03-17 07:58:20 [DEBUG] llm: LLM OK: 2 chars, model=deepseek-chat
+2026-03-17 08:00:37 [INFO] inbox_watcher: InboxWatcher started, watching: /home/oem/AIM/Patients/INBOX
+2026-03-17 13:27:25 [INFO] inbox_watcher: InboxWatcher started, watching: /home/oem/AIM/Patients/INBOX
+2026-03-17 13:28:05 [DEBUG] llm: LLM OK: 352 chars, model=deepseek-chat
+2026-03-17 13:28:55 [DEBUG] llm: LLM OK: 2934 chars, model=deepseek-chat
+2026-03-17 13:29:40 [DEBUG] voice_input: Recording started
+2026-03-17 13:29:56 [INFO] voice_input: Loading Whisper model 'base'...
+2026-03-17 13:29:59 [DEBUG] voice_input: Recording started
+2026-03-17 13:30:17 [INFO] voice_input: Whisper model loaded.
+2026-03-17 13:30:17 [ERROR] voice_input: Transcription error: [Errno 2] No such file or directory: 'ffmpeg'
+2026-03-17 13:30:17 [INFO] patient_intake: Найдено папок пациентов: 6
+2026-03-17 13:30:17 [INFO] patient_intake: Пациент: Badriashvili_Vladimeri_
+2026-03-17 13:30:17 [INFO] patient_intake:   Результат: Уже обработано (используй --force для повторного анализа)
+2026-03-17 13:30:17 [INFO] patient_intake: Пациент: Baurjan_Alima_2015_05_27
+2026-03-17 13:30:17 [INFO] patient_intake:   Результат: Уже обработано (используй --force для повторного анализа)
+2026-03-17 13:30:17 [INFO] patient_intake: Пациент: Beridze_Keti_2026_03_12
+2026-03-17 13:30:17 [INFO] patient_intake:   Результат: Уже обработано (используй --force для повторного анализа)
+2026-03-17 13:30:17 [INFO] patient_intake: Пациент: Feradze_Maia_1981_12_20
+2026-03-17 13:30:17 [INFO] patient_intake:   OCR: 7c8d0830-4d40-435b-bdf2-b4961d5b7d00.jpeg ...
+2026-03-17 13:30:17 [DEBUG] ocr_engine: OCR: 7c8d0830-4d40-435b-bdf2-b4961d5b7d00.jpeg
+2026-03-17 13:30:22 [DEBUG] ocr_engine:   tesseract: 2712 chars
+2026-03-17 13:30:22 [INFO] patient_intake:   ✓
+2026-03-17 13:30:22 [INFO] patient_intake:   OCR: b5531a4f-68db-410a-af68-2f0182ffbdfa.jpeg ...
+2026-03-17 13:30:22 [DEBUG] ocr_engine: OCR: b5531a4f-68db-410a-af68-2f0182ffbdfa.jpeg
+2026-03-17 13:30:25 [DEBUG] ocr_engine:   tesseract: 1872 chars
+2026-03-17 13:30:25 [INFO] patient_intake:   ✓
+2026-03-17 13:30:25 [INFO] patient_intake:   OCR: c2066c80-f923-40d4-8445-451dd49116ff.jpeg ...
+2026-03-17 13:30:25 [DEBUG] ocr_engine: OCR: c2066c80-f923-40d4-8445-451dd49116ff.jpeg
+2026-03-17 13:30:27 [DEBUG] ocr_engine:   tesseract: 879 chars
+2026-03-17 13:30:27 [INFO] patient_intake:   ✓
+2026-03-17 13:30:27 [INFO] patient_intake:   Генерация анализа...
+2026-03-17 13:30:41 [DEBUG] llm: LLM OK: 3131 chars, model=deepseek-chat
+2026-03-17 13:31:15 [DEBUG] llm: LLM OK: 5310 chars, model=deepseek-chat
+2026-03-17 13:31:15 [WARNING] patient_intake: Lab section error: 'LabResult' object has no attribute 'ref_range'
+2026-03-17 13:31:15 [INFO] patient_intake:   ✓
+2026-03-17 13:31:15 [DEBUG] patient_intake: Knowledge recorded for Feradze Maia: 4 dx
+2026-03-17 13:31:15 [INFO] patient_intake:   Результат: Обработано: OCR: 7c8d0830-4d40-435b-bdf2-b4961d5b7d00.jpeg, OCR: b5531a4f-68db-410a-af68-2f0182ffbdfa.jpeg, OCR: c2066c80-f923-40d4-8445-451dd49116ff.jpeg, Анализ обновлён
+2026-03-17 13:31:15 [INFO] patient_intake: Пациент: Nishnianidze_Ani_2026_03_11
+2026-03-17 13:31:15 [INFO] patient_intake:   OCR: 1665db5d-b6d5-4c09-bf6d-9a2891efcbda.jpeg ...
+2026-03-17 13:31:15 [DEBUG] ocr_engine: OCR: 1665db5d-b6d5-4c09-bf6d-9a2891efcbda.jpeg
+2026-03-17 13:31:19 [DEBUG] ocr_engine:   tesseract: 2048 chars
+2026-03-17 13:31:19 [INFO] patient_intake:   ✓
+2026-03-17 13:31:19 [INFO] patient_intake:   OCR: 5cb2278f-e873-4d6c-9e05-5ab6c1c60d11.jpeg ...
+2026-03-17 13:31:19 [DEBUG] ocr_engine: OCR: 5cb2278f-e873-4d6c-9e05-5ab6c1c60d11.jpeg
+2026-03-17 13:31:25 [DEBUG] ocr_engine:   tesseract: 2663 chars
+2026-03-17 13:31:25 [INFO] patient_intake:   ✓
+2026-03-17 13:31:25 [INFO] patient_intake:   OCR: 6138be95-9219-4fb8-a34f-3640284fbf19.jpeg ...
+2026-03-17 13:31:25 [DEBUG] ocr_engine: OCR: 6138be95-9219-4fb8-a34f-3640284fbf19.jpeg
+2026-03-17 13:31:28 [DEBUG] ocr_engine:   tesseract: 1502 chars
+2026-03-17 13:31:28 [INFO] patient_intake:   ✓
+2026-03-17 13:31:28 [INFO] patient_intake:   OCR: 62828bd4-3025-4493-889f-fc985c3156dd.jpeg ...
+2026-03-17 13:31:28 [DEBUG] ocr_engine: OCR: 62828bd4-3025-4493-889f-fc985c3156dd.jpeg
+2026-03-17 13:31:32 [DEBUG] ocr_engine:   tesseract: 902 chars
+2026-03-17 13:31:32 [INFO] patient_intake:   ✓
+2026-03-17 13:31:32 [INFO] patient_intake:   OCR: f6a2801b-4d00-4ac3-b192-9f293055354f.jpeg ...
+2026-03-17 13:31:32 [DEBUG] ocr_engine: OCR: f6a2801b-4d00-4ac3-b192-9f293055354f.jpeg
+2026-03-17 13:31:35 [DEBUG] ocr_engine:   tesseract: 1810 chars
+2026-03-17 13:31:35 [INFO] patient_intake:   ✓
+2026-03-17 13:31:35 [INFO] patient_intake:   Генерация анализа...
+2026-03-17 13:31:47 [INFO] patient_intake: Найдено папок пациентов: 6
+2026-03-17 13:31:47 [INFO] patient_intake: Пациент: Badriashvili_Vladimeri_
+2026-03-17 13:31:47 [INFO] patient_intake:   OCR: 38efa3b8-c296-4760-86d9-52c0ace2be96.jpeg ...
+2026-03-17 13:31:47 [DEBUG] ocr_engine: OCR: 38efa3b8-c296-4760-86d9-52c0ace2be96.jpeg
+2026-03-17 13:31:50 [DEBUG] ocr_engine:   tesseract: 953 chars
+2026-03-17 13:31:50 [INFO] patient_intake:   ✓
+2026-03-17 13:31:50 [INFO] patient_intake:   OCR: 8034a858-ac75-4bee-b435-edeabcdd0f95.jpeg ...
+2026-03-17 13:31:50 [DEBUG] ocr_engine: OCR: 8034a858-ac75-4bee-b435-edeabcdd0f95.jpeg
+2026-03-17 13:31:54 [DEBUG] ocr_engine:   tesseract: 1617 chars
+2026-03-17 13:31:54 [INFO] patient_intake:   ✓
+2026-03-17 13:31:54 [INFO] patient_intake:   Генерация анализа...
+2026-03-17 13:32:24 [DEBUG] llm: LLM OK: 5178 chars, model=deepseek-chat
+2026-03-17 13:32:24 [INFO] patient_intake:   ✓
+2026-03-17 13:32:24 [DEBUG] patient_intake: Knowledge recorded for Nishnianidze Ani: 2 dx
+2026-03-17 13:32:24 [INFO] patient_intake:   Результат: Обработано: OCR: 1665db5d-b6d5-4c09-bf6d-9a2891efcbda.jpeg, OCR: 5cb2278f-e873-4d6c-9e05-5ab6c1c60d11.jpeg, OCR: 6138be95-9219-4fb8-a34f-3640284fbf19.jpeg, OCR: 62828bd4-3025-4493-889f-fc985c3156dd.jpeg, OCR: f6a2801b-4d00-4ac3-b192-9f293055354f.jpeg, Анализ обновлён
+2026-03-17 13:32:24 [INFO] patient_intake: Пациент: Robakidze_Nino_2026_03_14
+2026-03-17 13:32:24 [INFO] patient_intake:   PDF: IL_26_03_11_2837613_.pdf ...
+2026-03-17 13:32:24 [INFO] patient_intake:   ✓
+2026-03-17 13:32:24 [INFO] patient_intake:   Генерация анализа...
+2026-03-17 13:32:41 [DEBUG] llm: LLM OK: 4970 chars, model=deepseek-chat
+2026-03-17 13:32:41 [WARNING] patient_intake: Lab section error: 'LabResult' object has no attribute 'ref_range'
+2026-03-17 13:32:41 [INFO] patient_intake:   ✓
+2026-03-17 13:32:41 [DEBUG] patient_intake: Knowledge recorded for Badriashvili Vladimeri: 3 dx
+2026-03-17 13:32:41 [INFO] patient_intake:   Результат: Обработано: OCR: 38efa3b8-c296-4760-86d9-52c0ace2be96.jpeg, OCR: 8034a858-ac75-4bee-b435-edeabcdd0f95.jpeg, Анализ обновлён
+2026-03-17 13:32:41 [INFO] patient_intake: Пациент: Baurjan_Alima_2015_05_27
+2026-03-17 13:32:41 [INFO] patient_intake:   OCR: 18cb6cc6-47f1-47b0-9799-58d007bdae44.jpeg ...
+2026-03-17 13:32:41 [DEBUG] ocr_engine: OCR: 18cb6cc6-47f1-47b0-9799-58d007bdae44.jpeg
+2026-03-17 13:32:49 [DEBUG] ocr_engine:   tesseract: 2379 chars
+2026-03-17 13:32:49 [INFO] patient_intake:   ✓
+2026-03-17 13:32:49 [INFO] patient_intake:   OCR: 1d13e121-73c2-48dd-a9cd-02bb28b0f77e.jpeg ...
+2026-03-17 13:32:49 [DEBUG] ocr_engine: OCR: 1d13e121-73c2-48dd-a9cd-02bb28b0f77e.jpeg
+2026-03-17 13:32:54 [DEBUG] ocr_engine:   tesseract: 1921 chars
+2026-03-17 13:32:54 [INFO] patient_intake:   ✓
+2026-03-17 13:32:54 [INFO] patient_intake:   OCR: 1fa583c1-0d6d-4c30-bfa9-5d741c70e1de.jpeg ...
+2026-03-17 13:32:54 [DEBUG] ocr_engine: OCR: 1fa583c1-0d6d-4c30-bfa9-5d741c70e1de.jpeg
+2026-03-17 13:33:03 [DEBUG] ocr_engine:   tesseract: 2973 chars
+2026-03-17 13:33:03 [INFO] patient_intake:   ✓
+2026-03-17 13:33:03 [INFO] patient_intake:   OCR: 2cc78324-7465-4ab3-800f-da577c8f57e7.jpeg ...
+2026-03-17 13:33:03 [DEBUG] ocr_engine: OCR: 2cc78324-7465-4ab3-800f-da577c8f57e7.jpeg
+2026-03-17 13:33:09 [DEBUG] ocr_engine:   tesseract: 1806 chars
+2026-03-17 13:33:09 [INFO] patient_intake:   ✓
+2026-03-17 13:33:09 [INFO] patient_intake:   OCR: d42b9b29-2875-496b-a7c5-9d08e09a1259.jpeg ...
+2026-03-17 13:33:09 [DEBUG] ocr_engine: OCR: d42b9b29-2875-496b-a7c5-9d08e09a1259.jpeg
+2026-03-17 13:33:13 [DEBUG] llm: LLM OK: 4555 chars, model=deepseek-chat
+2026-03-17 13:33:13 [WARNING] patient_intake: Lab section error: 'LabResult' object has no attribute 'ref_range'
+2026-03-17 13:33:13 [INFO] patient_intake:   ✓
+2026-03-17 13:33:13 [DEBUG] patient_intake: Knowledge recorded for Robakidze Nino: 2 dx
+2026-03-17 13:33:13 [INFO] patient_intake:   Результат: Обработано: PDF: IL_26_03_11_2837613_.pdf, Анализ обновлён
+2026-03-17 13:33:15 [DEBUG] ocr_engine:   tesseract: 1901 chars
+2026-03-17 13:33:15 [INFO] patient_intake:   ✓
+2026-03-17 13:33:15 [INFO] patient_intake:   OCR: dec7f847-6884-46ba-bdc2-6b01b233df43.jpeg ...
+2026-03-17 13:33:15 [DEBUG] ocr_engine: OCR: dec7f847-6884-46ba-bdc2-6b01b233df43.jpeg
+2026-03-17 13:33:23 [DEBUG] ocr_engine:   tesseract: 2382 chars
+2026-03-17 13:33:23 [INFO] patient_intake:   ✓
+2026-03-17 13:33:23 [INFO] patient_intake:   Генерация анализа...
+2026-03-17 13:34:18 [DEBUG] llm: LLM OK: 5516 chars, model=deepseek-chat
+2026-03-17 13:34:18 [INFO] patient_intake:   ✓
+2026-03-17 13:34:18 [DEBUG] patient_intake: Knowledge recorded for Baurjan Alima: 4 dx
+2026-03-17 13:34:18 [INFO] patient_intake:   Результат: Обработано: OCR: 18cb6cc6-47f1-47b0-9799-58d007bdae44.jpeg, OCR: 1d13e121-73c2-48dd-a9cd-02bb28b0f77e.jpeg, OCR: 1fa583c1-0d6d-4c30-bfa9-5d741c70e1de.jpeg, OCR: 2cc78324-7465-4ab3-800f-da577c8f57e7.jpeg, OCR: d42b9b29-2875-496b-a7c5-9d08e09a1259.jpeg, OCR: dec7f847-6884-46ba-bdc2-6b01b233df43.jpeg, Анализ обновлён
+2026-03-17 13:34:18 [INFO] patient_intake: Пациент: Beridze_Keti_2026_03_12
+2026-03-17 13:34:18 [INFO] patient_intake:   PDF: IL_26_03_13_2841275_.pdf ...
+2026-03-17 13:34:18 [INFO] patient_intake:   ✓
+2026-03-17 13:34:18 [INFO] patient_intake:   PDF: IL_26_03_13_2841276_.pdf ...
+2026-03-17 13:34:18 [INFO] patient_intake:   ✓
+2026-03-17 13:34:18 [INFO] patient_intake:   PDF: IL_26_03_13_2841277_.pdf ...
+2026-03-17 13:34:19 [INFO] patient_intake:   ✓
+2026-03-17 13:34:19 [INFO] patient_intake:   Генерация анализа...
+2026-03-17 13:35:00 [DEBUG] llm: LLM OK: 4962 chars, model=deepseek-chat
+2026-03-17 13:35:00 [WARNING] patient_intake: Lab section error: 'LabResult' object has no attribute 'ref_range'
+2026-03-17 13:35:00 [INFO] patient_intake:   ✓
+2026-03-17 13:35:00 [DEBUG] patient_intake: Knowledge recorded for Beridze Keti: 0 dx
+2026-03-17 13:35:00 [INFO] patient_intake:   Результат: Обработано: PDF: IL_26_03_13_2841275_.pdf, PDF: IL_26_03_13_2841276_.pdf, PDF: IL_26_03_13_2841277_.pdf, Анализ обновлён
+2026-03-17 13:35:00 [INFO] patient_intake: Пациент: Feradze_Maia_1981_12_20
+2026-03-17 13:35:00 [INFO] patient_intake:   OCR: 7c8d0830-4d40-435b-bdf2-b4961d5b7d00.jpeg ...
+2026-03-17 13:35:00 [DEBUG] ocr_engine: OCR: 7c8d0830-4d40-435b-bdf2-b4961d5b7d00.jpeg
+2026-03-17 13:35:04 [DEBUG] ocr_engine:   tesseract: 2712 chars
+2026-03-17 13:35:04 [INFO] patient_intake:   ✓
+2026-03-17 13:35:04 [INFO] patient_intake:   OCR: b5531a4f-68db-410a-af68-2f0182ffbdfa.jpeg ...
+2026-03-17 13:35:04 [DEBUG] ocr_engine: OCR: b5531a4f-68db-410a-af68-2f0182ffbdfa.jpeg
+2026-03-17 13:35:08 [DEBUG] ocr_engine:   tesseract: 1872 chars
+2026-03-17 13:35:08 [INFO] patient_intake:   ✓
+2026-03-17 13:35:08 [INFO] patient_intake:   OCR: c2066c80-f923-40d4-8445-451dd49116ff.jpeg ...
+2026-03-17 13:35:08 [DEBUG] ocr_engine: OCR: c2066c80-f923-40d4-8445-451dd49116ff.jpeg
+2026-03-17 13:35:10 [DEBUG] ocr_engine:   tesseract: 879 chars
+2026-03-17 13:35:10 [INFO] patient_intake:   ✓
+2026-03-17 13:35:10 [INFO] patient_intake:   Генерация анализа...
+2026-03-17 13:35:55 [DEBUG] llm: LLM OK: 5182 chars, model=deepseek-chat
+2026-03-17 13:35:55 [WARNING] patient_intake: Lab section error: 'LabResult' object has no attribute 'ref_range'
+2026-03-17 13:35:55 [INFO] patient_intake:   ✓
+2026-03-17 13:35:55 [DEBUG] patient_intake: Knowledge recorded for Feradze Maia: 1 dx
+2026-03-17 13:35:55 [INFO] patient_intake:   Результат: Обработано: OCR: 7c8d0830-4d40-435b-bdf2-b4961d5b7d00.jpeg, OCR: b5531a4f-68db-410a-af68-2f0182ffbdfa.jpeg, OCR: c2066c80-f923-40d4-8445-451dd49116ff.jpeg, Анализ обновлён
+2026-03-17 13:35:55 [INFO] patient_intake: Пациент: Nishnianidze_Ani_2026_03_11
+2026-03-17 13:35:55 [INFO] patient_intake:   OCR: 1665db5d-b6d5-4c09-bf6d-9a2891efcbda.jpeg ...
+2026-03-17 13:35:55 [DEBUG] ocr_engine: OCR: 1665db5d-b6d5-4c09-bf6d-9a2891efcbda.jpeg
+2026-03-17 13:36:00 [DEBUG] ocr_engine:   tesseract: 2048 chars
+2026-03-17 13:36:00 [INFO] patient_intake:   ✓
+2026-03-17 13:36:00 [INFO] patient_intake:   OCR: 5cb2278f-e873-4d6c-9e05-5ab6c1c60d11.jpeg ...
+2026-03-17 13:36:00 [DEBUG] ocr_engine: OCR: 5cb2278f-e873-4d6c-9e05-5ab6c1c60d11.jpeg
+2026-03-17 13:36:05 [DEBUG] ocr_engine:   tesseract: 2663 chars
+2026-03-17 13:36:05 [INFO] patient_intake:   ✓
+2026-03-17 13:36:05 [INFO] patient_intake:   OCR: 6138be95-9219-4fb8-a34f-3640284fbf19.jpeg ...
+2026-03-17 13:36:05 [DEBUG] ocr_engine: OCR: 6138be95-9219-4fb8-a34f-3640284fbf19.jpeg
+2026-03-17 13:36:08 [DEBUG] ocr_engine:   tesseract: 1502 chars
+2026-03-17 13:36:08 [INFO] patient_intake:   ✓
+2026-03-17 13:36:08 [INFO] patient_intake:   OCR: 62828bd4-3025-4493-889f-fc985c3156dd.jpeg ...
+2026-03-17 13:36:08 [DEBUG] ocr_engine: OCR: 62828bd4-3025-4493-889f-fc985c3156dd.jpeg
+2026-03-17 13:36:12 [DEBUG] ocr_engine:   tesseract: 902 chars
+2026-03-17 13:36:12 [INFO] patient_intake:   ✓
+2026-03-17 13:36:12 [INFO] patient_intake:   OCR: f6a2801b-4d00-4ac3-b192-9f293055354f.jpeg ...
+2026-03-17 13:36:12 [DEBUG] ocr_engine: OCR: f6a2801b-4d00-4ac3-b192-9f293055354f.jpeg
+2026-03-17 13:36:15 [DEBUG] ocr_engine:   tesseract: 1810 chars
+2026-03-17 13:36:15 [INFO] patient_intake:   ✓
+2026-03-17 13:36:15 [INFO] patient_intake:   Генерация анализа...
+2026-03-17 13:37:02 [DEBUG] llm: LLM OK: 5317 chars, model=deepseek-chat
+2026-03-17 13:37:02 [INFO] patient_intake:   ✓
+2026-03-17 13:37:02 [DEBUG] patient_intake: Knowledge recorded for Nishnianidze Ani: 5 dx
+2026-03-17 13:37:02 [INFO] patient_intake:   Результат: Обработано: OCR: 1665db5d-b6d5-4c09-bf6d-9a2891efcbda.jpeg, OCR: 5cb2278f-e873-4d6c-9e05-5ab6c1c60d11.jpeg, OCR: 6138be95-9219-4fb8-a34f-3640284fbf19.jpeg, OCR: 62828bd4-3025-4493-889f-fc985c3156dd.jpeg, OCR: f6a2801b-4d00-4ac3-b192-9f293055354f.jpeg, Анализ обновлён
+2026-03-17 13:37:02 [INFO] patient_intake: Пациент: Robakidze_Nino_2026_03_14
+2026-03-17 13:37:02 [INFO] patient_intake:   PDF: IL_26_03_11_2837613_.pdf ...
+2026-03-17 13:37:02 [INFO] patient_intake:   ✓
+2026-03-17 13:37:02 [INFO] patient_intake:   Генерация анализа...
+2026-03-17 13:37:45 [DEBUG] llm: LLM OK: 4775 chars, model=deepseek-chat
+2026-03-17 13:37:45 [WARNING] patient_intake: Lab section error: 'LabResult' object has no attribute 'ref_range'
+2026-03-17 13:37:45 [INFO] patient_intake:   ✓
+2026-03-17 13:37:45 [DEBUG] patient_intake: Knowledge recorded for Robakidze Nino: 1 dx
+2026-03-17 13:37:45 [INFO] patient_intake:   Результат: Обработано: PDF: IL_26_03_11_2837613_.pdf, Анализ обновлён
+2026-03-17 20:45:30 [INFO] db: DB ready: /home/oem/AIM/aim.db
+2026-03-17 20:45:30 [INFO] db: Migration DRY RUN
+2026-03-17 20:45:30 [INFO] db: Migration complete: {'patients': 5, 'labs': 0, 'diagnoses': 5, 'knowledge': 4, 'processed': 40, 'errors': 0}
+2026-03-17 20:45:30 [INFO] db: DB ready: /home/oem/AIM/aim.db
+2026-03-17 20:45:30 [INFO] db: Migration START
+2026-03-17 20:45:30 [INFO] db: Migration complete: {'patients': 5, 'labs': 0, 'diagnoses': 5, 'knowledge': 4, 'processed': 40, 'errors': 0}
+2026-03-17 20:45:30 [INFO] db: DB ready: /home/oem/AIM/aim.db
+2026-03-17 20:48:43 [INFO] db: DB ready: /home/oem/AIM/aim.db
+2026-03-17 20:48:43 [INFO] db: DB ready: /home/oem/AIM/aim.db
+2026-03-17 20:50:46 [INFO] inbox_watcher: InboxWatcher started, watching: /home/oem/AIM/Patients/INBOX
+2026-03-17 20:51:00 [INFO] db: DB ready: /home/oem/AIM/aim.db
+2026-03-17 20:51:23 [INFO] db: DB ready: /home/oem/AIM/aim.db
+2026-03-17 20:51:35 [DEBUG] llm: LLM OK: 979 chars, model=deepseek-chat
+2026-03-17 20:52:11 [INFO] db: DB ready: /home/oem/AIM/aim.db
+2026-03-17 20:58:50 [INFO] db: DB ready: /home/oem/AIM/aim.db
+2026-03-17 20:59:02 [DEBUG] llm: LLM OK: 944 chars, model=deepseek-chat
+2026-03-17 22:16:29 [WARNING] tg_desktop_importer: Cannot load /home/oem/Downloads/Telegram Desktop/DataExport_2026-03-17/result.json: Expecting value: line 18741 column 18 (char 477600)
+2026-03-17 22:23:21 [INFO] tg_desktop_importer: Repaired truncated JSON in result.json
+2026-03-17 22:23:31 [INFO] tg_desktop_importer: Repaired truncated JSON in result.json
+2026-03-17 22:23:31 [INFO] tg_desktop_importer: Patient: ანნა პ → ᲐᲜᲜᲐ ᲐᲜᲜᲐ (1 messages)
+2026-03-17 22:23:31 [INFO] tg_desktop_importer: Created patient folder: ᲐᲜᲜᲐ_ᲐᲜᲜᲐ_2026_03_17
+2026-03-17 22:23:31 [INFO] db: DB ready: /home/oem/AIM/aim.db
+2026-03-17 22:23:31 [INFO] patient_intake: Найдено папок пациентов: 7
+2026-03-17 22:23:31 [INFO] patient_intake: Пациент: Badriashvili_Vladimeri_
+2026-03-17 22:23:31 [INFO] patient_intake:   Результат: Уже обработано (используй --force для повторного анализа)
+2026-03-17 22:23:31 [INFO] patient_intake: Пациент: Baurjan_Alima_2015_05_27
+2026-03-17 22:23:31 [INFO] patient_intake:   Результат: Уже обработано (используй --force для повторного анализа)
+2026-03-17 22:23:31 [INFO] patient_intake: Пациент: Beridze_Keti_2026_03_12
+2026-03-17 22:23:31 [INFO] patient_intake:   Результат: Уже обработано (используй --force для повторного анализа)
+2026-03-17 22:23:31 [INFO] patient_intake: Пациент: Feradze_Maia_1981_12_20
+2026-03-17 22:23:31 [INFO] patient_intake:   Результат: Уже обработано (используй --force для повторного анализа)
+2026-03-17 22:23:31 [INFO] patient_intake: Пациент: Nishnianidze_Ani_2026_03_11
+2026-03-17 22:23:31 [INFO] patient_intake:   Результат: Уже обработано (используй --force для повторного анализа)
+2026-03-17 22:23:31 [INFO] patient_intake: Пациент: Robakidze_Nino_2026_03_14
+2026-03-17 22:23:31 [INFO] patient_intake:   Результат: Уже обработано (используй --force для повторного анализа)
+2026-03-17 22:23:31 [INFO] patient_intake: Пациент: ᲐᲜᲜᲐ_ᲐᲜᲜᲐ_2026_03_17
+2026-03-17 22:23:31 [INFO] patient_intake:   Генерация анализа...
+2026-03-17 22:24:09 [DEBUG] llm: LLM OK: 3407 chars, model=deepseek-chat
+2026-03-17 22:24:09 [INFO] patient_intake:   ✓
+2026-03-17 22:24:09 [INFO] db: DB ready: /home/oem/AIM/aim.db
+2026-03-17 22:24:09 [DEBUG] patient_intake: Knowledge recorded for ᲐᲜᲜᲐ ᲐᲜᲜᲐ: 1 dx
+2026-03-17 22:24:09 [INFO] patient_intake:   Результат: Обработано: Анализ обновлён
+2026-03-17 22:32:17 [INFO] db: DB ready: /home/oem/AIM/aim.db
+2026-03-17 22:38:16 [INFO] db: DB ready: /home/oem/AIM/aim.db
+2026-03-17 22:38:24 [INFO] db: DB ready: /home/oem/AIM/aim.db
+2026-03-17 22:45:59 [INFO] db: DB ready: /home/oem/AIM/aim.db
+2026-03-17 22:53:08 [INFO] pdf_export: PDF exported: /home/oem/AIM/Patients/Badriashvili_Vladimeri_/_report_20260317.pdf
+2026-03-17 22:53:08 [INFO] pdf_export: PDF exported: /home/oem/AIM/Patients/Baurjan_Alima_2015_05_27/_report_20260317.pdf
+2026-03-17 22:53:09 [INFO] pdf_export: PDF exported: /home/oem/AIM/Patients/Beridze_Keti_2026_03_12/_report_20260317.pdf
+2026-03-17 22:53:09 [INFO] pdf_export: PDF exported: /home/oem/AIM/Patients/Feradze_Maia_1981_12_20/_report_20260317.pdf
+2026-03-17 22:53:09 [INFO] pdf_export: PDF exported: /home/oem/AIM/Patients/Nishnianidze_Ani_2026_03_11/_report_20260317.pdf
+2026-03-17 22:53:09 [INFO] pdf_export: PDF exported: /home/oem/AIM/Patients/Robakidze_Nino_2026_03_14/_report_20260317.pdf
+2026-03-17 22:53:09 [INFO] pdf_export: PDF exported: /home/oem/AIM/Patients/ᲐᲜᲜᲐ_ᲐᲜᲜᲐ_2026_03_17/_report_20260317.pdf
+2026-03-17 23:08:10 [INFO] db: DB ready: /home/oem/AIM/aim.db
+2026-03-17 23:18:30 [INFO] db: DB ready: /home/oem/AIM/aim.db
+2026-03-17 23:18:30 [INFO] db: DB ready: /home/oem/AIM/aim.db
+2026-03-17 23:20:08 [INFO] inbox_watcher: InboxWatcher started, watching: /home/oem/AIM/Patients/INBOX
+2026-03-17 23:41:54 [INFO] db: DB ready: /home/oem/AIM/aim.db
+2026-03-17 23:44:00 [INFO] inbox_watcher: InboxWatcher started, watching: /home/oem/AIM/Patients/INBOX

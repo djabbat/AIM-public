@@ -199,6 +199,26 @@ class AIMApp(tk.Tk):
         self.statusbar.pack(side="left", padx=10)
 
         self._check_ollama()
+        self._start_inbox_watcher()
+
+    def _start_inbox_watcher(self):
+        """Запустить INBOX watcher — авто-обработка новых файлов."""
+        def _on_new(paths):
+            names = ", ".join(p.name for p in paths[:3])
+            suffix = f" и ещё {len(paths)-3}" if len(paths) > 3 else ""
+            self.after(0, lambda: self._set_status(
+                f"INBOX: новые файлы ({names}{suffix}) — обрабатываю..."))
+            # После обработки обновить список пациентов
+            self.after(8000, self.refresh_patients)
+
+        def _launch():
+            try:
+                from inbox_watcher import get_watcher
+                get_watcher(on_new_files=_on_new)
+            except Exception as e:
+                log.warning("InboxWatcher init error: %s", e) if False else None
+
+        threading.Thread(target=_launch, daemon=True).start()
 
     def _build_sidebar(self, parent):
         # Title
@@ -289,6 +309,11 @@ class AIMApp(tk.Tk):
         self._tab_system = tk.Frame(self.notebook, bg=BG)
         self.notebook.add(self._tab_system, text="  Система  ")
         self._build_tab_system(self._tab_system)
+
+        # Tab 6: Nutrition
+        self._tab_nutrition = tk.Frame(self.notebook, bg=BG)
+        self.notebook.add(self._tab_nutrition, text="  🥗 Питание  ")
+        self._build_tab_nutrition(self._tab_nutrition)
 
     # ── Tab: Overview ─────────────────────────────────────────
 
@@ -474,7 +499,11 @@ print(analyze_labs_only('{p["folder"]}'))
         self.chat_input.bind("<Return>", self._chat_enter)
         self.chat_input.bind("<Shift-Return>", lambda e: None)
 
-        self._btn(inp_frame, "Отправить\n(Enter)", self._chat_send, ACCENT).pack(side="right")
+        self._btn(inp_frame, "Отправить\n(Enter)", self._chat_send, ACCENT).pack(side="right", padx=(4, 0))
+
+        self._voice_btn = self._btn(inp_frame, "🎙 Голос", self._voice_start, BG3)
+        self._voice_btn.pack(side="right", padx=(4, 0))
+        self._voice_recording = False
 
         self._chat_history = []
         self._chat_file = os.path.join(AIM_DIR, "chat_history.json")
@@ -566,17 +595,19 @@ print(analyze_labs_only('{p["folder"]}'))
         def run_in_thread():
             """Runs in background thread — never touches GUI directly."""
             try:
-                import ollama
-                from config import MODEL
-                system = (
-                    "Ты — цифровой специалист по интегративной медицине. "
-                    "Пациенты Dr. Jaba Tkemaladze. Отвечай на русском языке, "
-                    "структурированно и подробно." + patient_ctx
+                from llm import ask_llm
+                from medical_system import SYSTEM_PROMPT
+                system = SYSTEM_PROMPT + (
+                    f"\n\nКОНТЕКСТ ТЕКУЩЕГО ПАЦИЕНТА:\n{patient_ctx}" if patient_ctx else ""
                 )
-                messages = [{"role": "system", "content": system}] + history_copy
-                r = ollama.chat(model=MODEL, messages=messages,
-                                options={"temperature": 0.4, "num_predict": 1024})
-                reply = r["message"]["content"].strip()
+                # Build prompt from history
+                hist_text = "\n".join(
+                    f"{'Врач' if m['role']=='user' else 'AI'}: {m['content']}"
+                    for m in history_copy[:-1]
+                )
+                last = history_copy[-1]["content"] if history_copy else ""
+                prompt = (f"История:\n{hist_text}\n\n{last}" if hist_text else last)
+                reply = ask_llm(prompt, system=system, max_tokens=1024, temperature=0.4)
             except Exception as e:
                 reply = f"[Ошибка: {e}]"
             # Schedule GUI update in main thread
@@ -584,7 +615,356 @@ print(analyze_labs_only('{p["folder"]}'))
 
         threading.Thread(target=run_in_thread, daemon=True).start()
 
+    # ── Voice input ───────────────────────────────────────────
+
+    def _voice_start(self):
+        """Toggle: начать / остановить запись голоса."""
+        if self._voice_recording:
+            self._voice_stop()
+        else:
+            self._voice_begin()
+
+    def _voice_begin(self):
+        try:
+            from voice_input import VoiceRecorder
+        except ImportError:
+            messagebox.showerror("Голос", "Установите: pip install sounddevice")
+            return
+        try:
+            self._recorder = VoiceRecorder()
+            self._recorder.start()
+        except RuntimeError as e:
+            messagebox.showerror("Голос", str(e))
+            return
+        self._voice_recording = True
+        self._voice_btn.configure(text="⏹ Стоп", bg=RED)
+        self._set_status("🎙 Запись... нажмите ещё раз чтобы остановить")
+
+    def _voice_stop(self):
+        self._voice_recording = False
+        self._voice_btn.configure(text="🎙 Голос", bg=BG3)
+        self._set_status("⏳ Транскрипция...")
+
+        def transcribe():
+            try:
+                text = self._recorder.stop_and_transcribe()
+            except Exception as e:
+                text = ""
+                self.after(0, lambda: self._set_status(f"Ошибка голоса: {e}"))
+            if text:
+                self.after(0, lambda: self._voice_insert(text))
+            else:
+                self.after(0, lambda: self._set_status("Голос: ничего не распознано"))
+
+        threading.Thread(target=transcribe, daemon=True).start()
+
+    def _voice_insert(self, text: str):
+        """Вставить распознанный текст в поле чата и сразу отправить."""
+        self.chat_input.delete("1.0", "end")
+        self.chat_input.insert("1.0", text)
+        self._set_status("Готово")
+        self._chat_send()
+
     # ── Tab: System ───────────────────────────────────────────
+
+    # ── Tab: Nutrition ────────────────────────────────────────
+
+    def _build_tab_nutrition(self, parent):
+        """Editable forbidden/allowed foods list. Changes rebuild AIM core."""
+        try:
+            from space_nutrition import FORBIDDEN_FOODS, ALLOWED_FOODS, save_rules
+            self._nutr_forbidden = [dict(f) for f in FORBIDDEN_FOODS]
+            self._nutr_allowed   = [dict(a) for a in ALLOWED_FOODS]
+        except Exception as e:
+            tk.Label(parent, text=f"Ошибка загрузки питания: {e}",
+                     bg=BG, fg=RED).pack(padx=20, pady=20)
+            return
+
+        # ── Header ────────────────────────────────────────────
+        hdr = tk.Frame(parent, bg=BG)
+        hdr.pack(fill="x", padx=20, pady=(14, 4))
+        tk.Label(hdr, text="🥗 Протокол питания доктора Джабы Ткемаладзе",
+                 font=FONT_H1, bg=BG, fg=TEXT).pack(side="left")
+        self._btn(hdr, "💾 СОХРАНИТЬ В ЯДРО AIM",
+                  self._nutrition_save, ACCENT).pack(side="right", padx=4)
+
+        # ── Split pane ────────────────────────────────────────
+        pane = tk.Frame(parent, bg=BG)
+        pane.pack(fill="both", expand=True, padx=12, pady=4)
+        pane.columnconfigure(0, weight=1)
+        pane.columnconfigure(1, weight=1)
+        pane.rowconfigure(0, weight=1)
+
+        # Left: Forbidden
+        left = tk.Frame(pane, bg=BG2, bd=0)
+        left.grid(row=0, column=0, sticky="nsew", padx=(0, 4))
+        tk.Label(left, text="❌ ЗАПРЕЩЕНО", font=FONT_H2,
+                 bg=BG2, fg=RED).pack(padx=10, pady=(8, 2), anchor="w")
+
+        f_scroll = tk.Frame(left, bg=BG2)
+        f_scroll.pack(fill="both", expand=True, padx=6, pady=2)
+        self._nutr_f_lb = tk.Listbox(
+            f_scroll, bg=BG3, fg="#ef9a9a", font=FONT_BODY,
+            selectbackground=RED, selectforeground=WHITE,
+            relief="flat", bd=0, activestyle="none",
+        )
+        f_sb = tk.Scrollbar(f_scroll, orient="vertical",
+                            command=self._nutr_f_lb.yview)
+        self._nutr_f_lb.config(yscrollcommand=f_sb.set)
+        f_sb.pack(side="right", fill="y")
+        self._nutr_f_lb.pack(fill="both", expand=True)
+        self._nutr_f_lb.bind("<<ListboxSelect>>", self._nutr_select_forbidden)
+
+        f_btns = tk.Frame(left, bg=BG2)
+        f_btns.pack(fill="x", padx=6, pady=4)
+        self._btn(f_btns, "+ Добавить",
+                  self._nutr_add_forbidden, BG3).pack(side="left", padx=2)
+        self._btn(f_btns, "✏ Изменить",
+                  self._nutr_edit_forbidden, BG3).pack(side="left", padx=2)
+        self._btn(f_btns, "✕ Удалить",
+                  self._nutr_del_forbidden, RED).pack(side="right", padx=2)
+
+        # Right: Allowed
+        right = tk.Frame(pane, bg=BG2, bd=0)
+        right.grid(row=0, column=1, sticky="nsew", padx=(4, 0))
+        tk.Label(right, text="✅ РАЗРЕШЕНО", font=FONT_H2,
+                 bg=BG2, fg=GREEN).pack(padx=10, pady=(8, 2), anchor="w")
+
+        a_scroll = tk.Frame(right, bg=BG2)
+        a_scroll.pack(fill="both", expand=True, padx=6, pady=2)
+        self._nutr_a_lb = tk.Listbox(
+            a_scroll, bg=BG3, fg="#a5d6a7", font=FONT_BODY,
+            selectbackground=GREEN, selectforeground=WHITE,
+            relief="flat", bd=0, activestyle="none",
+        )
+        a_sb = tk.Scrollbar(a_scroll, orient="vertical",
+                            command=self._nutr_a_lb.yview)
+        self._nutr_a_lb.config(yscrollcommand=a_sb.set)
+        a_sb.pack(side="right", fill="y")
+        self._nutr_a_lb.pack(fill="both", expand=True)
+        self._nutr_a_lb.bind("<<ListboxSelect>>", self._nutr_select_allowed)
+
+        a_btns = tk.Frame(right, bg=BG2)
+        a_btns.pack(fill="x", padx=6, pady=4)
+        self._btn(a_btns, "+ Добавить",
+                  self._nutr_add_allowed, BG3).pack(side="left", padx=2)
+        self._btn(a_btns, "✏ Изменить",
+                  self._nutr_edit_allowed, BG3).pack(side="left", padx=2)
+        self._btn(a_btns, "✕ Удалить",
+                  self._nutr_del_allowed, RED).pack(side="right", padx=2)
+
+        # ── Detail panel ──────────────────────────────────────
+        detail_frame = tk.Frame(parent, bg=BG3)
+        detail_frame.pack(fill="x", padx=12, pady=(0, 8))
+        tk.Label(detail_frame, text="Подробности:", font=FONT_SMALL,
+                 bg=BG3, fg=MUTED).pack(padx=8, pady=(4, 0), anchor="w")
+        self._nutr_detail = tk.Text(
+            detail_frame, bg=BG3, fg=TEXT2, font=FONT_BODY,
+            height=5, relief="flat", wrap="word", state="disabled",
+        )
+        self._nutr_detail.pack(fill="x", padx=8, pady=(2, 6))
+
+        self._nutr_refresh_lists()
+
+    def _nutr_refresh_lists(self):
+        self._nutr_f_lb.delete(0, "end")
+        self._nutr_f_idx = []   # maps listbox index → item index (or None for headers)
+        cur_cat = None
+        for i, f in enumerate(self._nutr_forbidden):
+            cat = f.get("category", "")
+            if cat != cur_cat:
+                cur_cat = cat
+                self._nutr_f_lb.insert("end", f"── {cat} ──")
+                self._nutr_f_idx.append(None)
+            self._nutr_f_lb.insert("end", f"  ❌  {f['name']}")
+            self._nutr_f_idx.append(i)
+
+        self._nutr_a_lb.delete(0, "end")
+        self._nutr_a_idx = []
+        cur_cat = None
+        for i, a in enumerate(self._nutr_allowed):
+            cat = a.get("category", "")
+            if cat != cur_cat:
+                cur_cat = cat
+                self._nutr_a_lb.insert("end", f"── {cat} ──")
+                self._nutr_a_idx.append(None)
+            self._nutr_a_lb.insert("end", f"  ✅  {a['name']}")
+            self._nutr_a_idx.append(i)
+
+    def _nutr_show_detail(self, text: str):
+        self._nutr_detail.configure(state="normal")
+        self._nutr_detail.delete("1.0", "end")
+        self._nutr_detail.insert("end", text)
+        self._nutr_detail.configure(state="disabled")
+
+    def _nutr_select_forbidden(self, _event=None):
+        sel = self._nutr_f_lb.curselection()
+        if not sel:
+            return
+        real_idx = self._nutr_f_idx[sel[0]] if hasattr(self, "_nutr_f_idx") else sel[0]
+        if real_idx is None:
+            return
+        f = self._nutr_forbidden[real_idx]
+        txt = (f"❌ {f['name']}\n\n"
+               f"ПОЧЕМУ (из «Места Силы» Том 3):\n{f.get('reason', '—')}\n\n"
+               f"ЧТО ПРОИСХОДИТ В ТЕЛЕ:\n{f.get('effect', '—')}\n\n"
+               f"ЧЕМ ЗАМЕНИТЬ:\n{f.get('substitute', '—')}")
+        self._nutr_show_detail(txt)
+
+    def _nutr_select_allowed(self, _event=None):
+        sel = self._nutr_a_lb.curselection()
+        if not sel:
+            return
+        real_idx = self._nutr_a_idx[sel[0]] if hasattr(self, "_nutr_a_idx") else sel[0]
+        if real_idx is None:
+            return
+        a = self._nutr_allowed[real_idx]
+        self._nutr_show_detail(f"✅ {a['name']}\n\n{a.get('note', '—')}")
+
+    def _nutr_edit_dialog(self, title: str, data: dict, is_forbidden: bool) -> dict | None:
+        """Generic edit dialog. Returns updated dict or None if cancelled."""
+        dlg = tk.Toplevel(self)
+        dlg.title(title)
+        dlg.configure(bg=BG)
+        dlg.geometry("600x520")
+        dlg.grab_set()
+        result = {}
+
+        fields = [
+            ("name",      "Название продукта:"),
+            ("aliases_str", "Ключевые слова (через запятую):"),
+        ]
+        if is_forbidden:
+            fields += [
+                ("reason",     "ПОЧЕМУ запрещён (из «Места Силы»):"),
+                ("effect",     "ЧТО ПРОИСХОДИТ В ТЕЛЕ:"),
+                ("substitute", "ЧЕМ ЗАМЕНИТЬ:"),
+            ]
+        else:
+            fields += [("note", "Описание / примечание:")]
+
+        widgets = {}
+        for key, label in fields:
+            tk.Label(dlg, text=label, font=FONT_SMALL, bg=BG, fg=TEXT2).pack(
+                padx=16, pady=(8, 0), anchor="w")
+            if key in ("reason", "effect", "substitute", "note"):
+                w = tk.Text(dlg, bg=BG2, fg=TEXT, font=FONT_BODY,
+                            height=3, relief="flat", wrap="word")
+                val = data.get(key, "")
+                w.insert("1.0", val)
+            else:
+                w = tk.Entry(dlg, bg=BG2, fg=TEXT, font=FONT_BODY,
+                             relief="flat", insertbackground=TEXT)
+                if key == "aliases_str":
+                    val = ", ".join(data.get("aliases", []))
+                else:
+                    val = data.get(key, "")
+                w.insert(0, val)
+            w.pack(fill="x", padx=16, pady=(2, 0))
+            widgets[key] = w
+
+        def _save():
+            for key, _ in fields:
+                w = widgets[key]
+                val = w.get("1.0", "end").strip() if isinstance(w, tk.Text) else w.get().strip()
+                result[key] = val
+            # Convert aliases_str back to list
+            if "aliases_str" in result:
+                result["aliases"] = [x.strip() for x in result.pop("aliases_str").split(",") if x.strip()]
+            dlg.destroy()
+
+        def _cancel():
+            result.clear()
+            dlg.destroy()
+
+        btn_row = tk.Frame(dlg, bg=BG)
+        btn_row.pack(pady=12)
+        self._btn(btn_row, "💾 Сохранить", _save, ACCENT).pack(side="left", padx=6)
+        self._btn(btn_row, "Отмена", _cancel, BG3).pack(side="left", padx=6)
+        dlg.wait_window()
+        return result if result else None
+
+    def _nutr_add_forbidden(self):
+        data = self._nutr_edit_dialog("Добавить запрещённый продукт",
+                                      {}, is_forbidden=True)
+        if data and data.get("name"):
+            self._nutr_forbidden.append(data)
+            self._nutr_refresh_lists()
+
+    def _nutr_edit_forbidden(self):
+        sel = self._nutr_f_lb.curselection()
+        if not sel:
+            return
+        real_idx = self._nutr_f_idx[sel[0]] if hasattr(self, "_nutr_f_idx") else sel[0]
+        if real_idx is None:
+            return
+        data = self._nutr_edit_dialog("Изменить запрещённый продукт",
+                                      dict(self._nutr_forbidden[real_idx]), is_forbidden=True)
+        if data and data.get("name"):
+            self._nutr_forbidden[real_idx] = data
+            self._nutr_refresh_lists()
+
+    def _nutr_del_forbidden(self):
+        sel = self._nutr_f_lb.curselection()
+        if not sel:
+            return
+        real_idx = self._nutr_f_idx[sel[0]] if hasattr(self, "_nutr_f_idx") else sel[0]
+        if real_idx is None:
+            return
+        name = self._nutr_forbidden[real_idx]["name"]
+        if messagebox.askyesno("Удалить", f"Удалить «{name}» из запрещённых?"):
+            self._nutr_forbidden.pop(real_idx)
+            self._nutr_refresh_lists()
+            self._nutr_show_detail("")
+
+    def _nutr_add_allowed(self):
+        data = self._nutr_edit_dialog("Добавить разрешённый продукт",
+                                      {}, is_forbidden=False)
+        if data and data.get("name"):
+            self._nutr_allowed.append(data)
+            self._nutr_refresh_lists()
+
+    def _nutr_edit_allowed(self):
+        sel = self._nutr_a_lb.curselection()
+        if not sel:
+            return
+        real_idx = self._nutr_a_idx[sel[0]] if hasattr(self, "_nutr_a_idx") else sel[0]
+        if real_idx is None:
+            return
+        data = self._nutr_edit_dialog("Изменить разрешённый продукт",
+                                      dict(self._nutr_allowed[real_idx]), is_forbidden=False)
+        if data and data.get("name"):
+            self._nutr_allowed[real_idx] = data
+            self._nutr_refresh_lists()
+
+    def _nutr_del_allowed(self):
+        sel = self._nutr_a_lb.curselection()
+        if not sel:
+            return
+        real_idx = self._nutr_a_idx[sel[0]] if hasattr(self, "_nutr_a_idx") else sel[0]
+        if real_idx is None:
+            return
+        name = self._nutr_allowed[real_idx]["name"]
+        if messagebox.askyesno("Удалить", f"Удалить «{name}» из разрешённых?"):
+            self._nutr_allowed.pop(real_idx)
+            self._nutr_refresh_lists()
+            self._nutr_show_detail("")
+
+    def _nutrition_save(self):
+        """Save changes → rebuild AIM core knowledge."""
+        try:
+            from space_nutrition import save_rules
+            save_rules(self._nutr_forbidden, self._nutr_allowed)
+            self._nutr_show_detail(
+                "✅ Сохранено в nutrition_rules.json\n"
+                "✅ Ядро знаний AIM перестроено\n"
+                "✅ SYSTEM_PROMPT обновлён\n\n"
+                f"Запрещено: {len(self._nutr_forbidden)} продуктов\n"
+                f"Разрешено:  {len(self._nutr_allowed)} продуктов"
+            )
+            self._set_status("✅ Правила питания сохранены в ядро AIM")
+        except Exception as e:
+            messagebox.showerror("Ошибка", str(e))
 
     def _build_tab_system(self, parent):
         tk.Label(parent, text="Управление системой AIM",
@@ -617,6 +997,16 @@ print(analyze_labs_only('{p["folder"]}'))
         grid.columnconfigure(0, weight=1)
         grid.columnconfigure(1, weight=1)
 
+        # ── GitHub backup ──────────────────────────────────────
+        backup_frame = tk.Frame(parent, bg=BG2)
+        backup_frame.pack(fill="x", padx=20, pady=(0, 8))
+        tk.Label(backup_frame, text="GitHub Backup", font=FONT_H2,
+                 bg=BG2, fg=TEXT2).pack(side="left", padx=10, pady=6)
+        self._btn(backup_frame, "☁ Бэкап на GitHub сейчас",
+                  self._github_backup, "#1565C0").pack(side="right", padx=8, pady=4)
+        self._btn(backup_frame, "👁 Git status",
+                  self._github_status, BG3).pack(side="right", padx=4, pady=4)
+
         tk.Label(parent, text="Вывод команды:", font=FONT_H2,
                  bg=BG, fg=TEXT2).pack(padx=20, pady=(8, 4), anchor="w")
 
@@ -643,6 +1033,49 @@ print(analyze_labs_only('{p["folder"]}'))
 
         run_python([os.path.join(AIM_DIR, args[0])] + args[1:], callback=done)
 
+    def _github_backup(self):
+        """Manual GitHub backup from GUI."""
+        self.sys_output.delete("1.0", "end")
+        self.sys_output.insert("end", "☁ Запуск бэкапа на GitHub...\n" + "─" * 40 + "\n")
+        self._set_status("Бэкап на GitHub...")
+
+        def run():
+            import sys as _sys
+            _sys.path.insert(0, AIM_DIR)
+            from backup_github import backup
+            lines = []
+            import io, contextlib
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                success = backup(dry_run=False, verbose=True)
+            return buf.getvalue(), success
+
+        def done():
+            try:
+                out, success = run()
+            except Exception as e:
+                out, success = str(e), False
+            icon = "✅" if success else "❌"
+            self.after(0, lambda: (
+                self.sys_output.insert("end", out + "\n"),
+                self.sys_output.see("end"),
+                self._set_status(f"{icon} {'Бэкап загружен на GitHub' if success else 'Ошибка бэкапа'}"),
+            ))
+
+        import threading
+        threading.Thread(target=done, daemon=True).start()
+
+    def _github_status(self):
+        """Show git status in output panel."""
+        self.sys_output.delete("1.0", "end")
+        import subprocess
+        result = subprocess.run(
+            ["git", "status"], cwd=AIM_DIR, capture_output=True, text=True
+        )
+        out = result.stdout + result.stderr
+        self.sys_output.insert("end", out)
+        self.sys_output.see("end")
+
     # ── Patient actions ────────────────────────────────────────
 
     def _process_patient(self, p: dict, force: bool = False):
@@ -654,14 +1087,6 @@ print(analyze_labs_only('{p["folder"]}'))
         self.analysis_text.insert("end", f"Обработка {p['name']}...\n")
         self.analysis_text.configure(state="disabled")
 
-        script = f"""
-import sys; sys.path.insert(0, '{AIM_DIR}')
-from patient_intake import process_patient_folder
-result = process_patient_folder('{p["folder"]}', force={force})
-print(result)
-import time; time.sleep(0.5)
-from medical_system import read_analysis  # not available
-"""
         args = [os.path.join(AIM_DIR, "patient_intake.py"),
                 "--folder", p["folder"]]
         if force:
@@ -802,22 +1227,47 @@ from medical_system import read_analysis  # not available
     def _check_ollama(self):
         def check():
             try:
-                import ollama
-                ollama.list()
-                status = "● Ollama: работает"
-                color = GREEN
-            except Exception:
-                status = "● Ollama: не запущен"
-                color = RED
+                from llm import _get_api_key
+                key = _get_api_key()
+                if key:
+                    status = "● DeepSeek: API ключ найден"
+                else:
+                    status = "● DeepSeek: ключ не задан (~/.aim_env)"
+            except Exception as e:
+                status = f"● DeepSeek: ошибка ({e})"
             self.after(0, lambda: self.status_var.set(status))
-            self.after(0, lambda: [
-                w for w in self.winfo_children()
-                if isinstance(w, tk.Frame)
-            ])
         threading.Thread(target=check, daemon=True).start()
 
 
 # ══════════════════════════════════════════════════════════════
+
+def _start_telegram_bot():
+    """Launch telegram_bot.py as background subprocess."""
+    python = os.path.join(AIM_DIR, "venv/bin/python3")
+    if not os.path.exists(python):
+        python = sys.executable
+    bot_script = os.path.join(AIM_DIR, "telegram_bot.py")
+    if not os.path.exists(bot_script):
+        return
+    # Check token present
+    env_file = os.path.expanduser("~/.aim_env")
+    has_token = False
+    if os.path.exists(env_file):
+        for line in open(env_file):
+            if line.strip().startswith("TELEGRAM_BOT_TOKEN=") and "=" in line:
+                val = line.strip().split("=", 1)[1]
+                if val and val != "...":
+                    has_token = True
+    if not has_token:
+        return
+    def _run():
+        try:
+            subprocess.run([python, bot_script], cwd=AIM_DIR)
+        except Exception:
+            pass
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+
 
 def main():
     # Try to install Pillow if missing
@@ -825,6 +1275,9 @@ def main():
         from PIL import Image
     except ImportError:
         pass
+
+    # Auto-start Telegram bot in background
+    threading.Thread(target=_start_telegram_bot, daemon=True).start()
 
     app = AIMApp()
     app.mainloop()

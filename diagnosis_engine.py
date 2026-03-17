@@ -496,3 +496,77 @@ def format_differential(diagnoses: List[DiagnosisResult]) -> str:
         lines.append(f"   ℹ {d.disease.description}")
         lines.append("")
     return "\n".join(lines)
+
+
+def run_diagnosis_ai(lab_results: List[LabResult],
+                     symptom_text: str = "",
+                     patient_name: str = "") -> str:
+    """
+    Two-stage diagnosis:
+    1. Bayesian differential (fast, local)
+    2. DeepSeek-R1 validation + clinical reasoning (deep)
+
+    Returns formatted string with combined results.
+    """
+    # Stage 1 — Bayesian
+    bayes = bayesian_differential(lab_results, symptom_text)
+    bayes_text = format_differential(bayes)
+
+    if not bayes:
+        return "Недостаточно данных для дифференциальной диагностики."
+
+    # Stage 2 — R1 reasoning (expensive: only when Bayesian result is uncertain)
+    # Skip R1 if top diagnosis has high posterior AND clear gap from #2
+    top_posterior = bayes[0].posterior if bayes else 0.0
+    second_posterior = bayes[1].posterior if len(bayes) > 1 else 0.0
+    confidence_gap = top_posterior - second_posterior
+    skip_r1 = (top_posterior >= 0.60 and confidence_gap >= 0.20)
+
+    if skip_r1:
+        return bayes_text + "\n\n_(DeepSeek R1 пропущен — байесовская уверенность достаточна)_"
+
+    try:
+        from llm import ask_deep
+
+        lab_summary = "\n".join(
+            f"  {r.param_id}: {r.value} {r.unit} [{r.status}]"
+            for r in lab_results if r.status != "normal"
+        ) or "  Все показатели в норме"
+
+        top_bayes = "\n".join(
+            f"  {i+1}. {d.disease.name_ru} [{d.disease.icd10}] "
+            f"— вероятность {d.posterior:.0%} ({d.confidence})"
+            for i, d in enumerate(bayes[:5])
+        )
+
+        prompt = f"""Пациент: {patient_name or 'не указан'}
+
+ОТКЛОНЕНИЯ В АНАЛИЗАХ:
+{lab_summary}
+
+ЖАЛОБЫ/СИМПТОМЫ:
+{symptom_text[:500] or 'не указаны'}
+
+БАЙЕСОВСКИЙ РАСЧЁТ (предварительно):
+{top_bayes}
+
+Задача: проверь байесовский расчёт, скорректируй если нужно, и дай клиническое заключение.
+Ответь строго в формате:
+
+## ДИФФЕРЕНЦИАЛЬНЫЙ ДИАГНОЗ
+1. [Диагноз] — [вероятность%] — [ключевое обоснование]
+2. ...
+
+## КЛИНИЧЕСКОЕ ЗАКЛЮЧЕНИЕ
+[2-3 предложения — что наиболее вероятно и почему]
+
+## СЛЕДУЮЩИЕ ШАГИ
+- [что проверить дополнительно]
+- [к какому специалисту направить]"""
+
+        ai_reasoning = ask_deep(prompt, max_tokens=1500)
+        return bayes_text + "\n\n" + "=" * 60 + "\nDEEPSEEK R1 — КЛИНИЧЕСКОЕ ЗАКЛЮЧЕНИЕ\n" + "=" * 60 + "\n" + ai_reasoning
+
+    except Exception as e:
+        # Fallback: just return Bayesian results
+        return bayes_text

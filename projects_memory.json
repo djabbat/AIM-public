@@ -138,7 +138,7 @@
     },
     "Ze": {
       "first_seen": "2026-03-09T02:55:25.026608",
-      "path": "/home/oem/Documents/Ze",
+      "path": "/home/oem/Desktop/ZeAnastasis",
       "analyses": [
         {
           "date": "2026-03-09T04:30:44.725474",
@@ -150,8 +150,12 @@
         }
       ],
       "changes": [],
-      "last_seen": "2026-03-11T20:57:41.161462",
-      "file_count": 1
+      "last_seen": "2026-03-17T18:24:13.392588",
+      "file_count": 1,
+      "goal_monitoring": "Ze как система мониторинга: RR/ЭЭГ/температура → Ze-поток → ze_v биомаркер здоровья. Интеграция с HealthWearable и AIM.",
+      "goal_intervention": "Ze как система воздействия: замкнутый биофидбэк-контур (BLE → RR → ze_v → стимул). Направить организм к v* через звук/вибрацию/дыхание.",
+      "aim_module": "~/AIM/ze_ecg.py (создать)",
+      "todo": "/home/oem/Desktop/ZeAnastasis/TODO.md"
     },
     "Regenesis": {
       "first_seen": "2026-03-09T02:55:25.037565",
@@ -171,21 +175,18 @@
       "file_count": 13
     },
     "HealthWearable": {
-      "first_seen": "2026-03-09T02:55:25.037965",
-      "path": "/home/oem/Documents/HealthWearable",
-      "analyses": [
-        {
-          "date": "2026-03-10T03:48:44.976458",
-          "content": "Проект \"HealthWearable\" - это проект, который направлен на разработку индивидуальной системы мониторинга здоровья, которая будет включать в себя wearable-device, который сможет収集 и анализировать биоло"
-        }
-      ],
-      "changes": [],
-      "last_seen": "2026-03-11T20:57:41.172539",
-      "file_count": 1
+      "path": "/home/oem/Desktop/HealthWearable",
+      "goal": "24/7 мониторинг пациентов: пульс, HRV (RR-интервалы, RMSSD, SDNN, LF/HF, амплитуда), температура → автозапись в историю болезни AIM. Устройства: NexRing, Linktop HC.",
+      "todo": "/home/oem/Desktop/HealthWearable/TODO.md",
+      "aim_module": "~/AIM/wearable_importer.py (создать)",
+      "data_path": "~/AIM/Patients/{id}/wearable/",
+      "ze_link": "RR-поток → ze_ecg.py → ze_v биомаркер",
+      "first_seen": "2026-03-17T18:24:13.392588",
+      "last_seen": "2026-03-17T18:24:13.392588"
     },
     "ClinicA": {
       "first_seen": "2026-03-09T02:55:25.044979",
-      "path": "/home/oem/Documents/ClinicA",
+      "path": "/home/oem/Desktop/ClinicA",
       "analyses": [
         {
           "date": "2026-03-10T03:49:27.842320",
@@ -193,8 +194,10 @@
         }
       ],
       "changes": [],
-      "last_seen": "2026-03-11T20:57:41.179249",
-      "file_count": 12
+      "last_seen": "2026-03-17T18:19:14.187864",
+      "file_count": 12,
+      "goal": "Найти инвестора для элитной клиники интегративной медицины в курорте Абастумани (Грузия). Партнёр: д-р Джаба Ткемаладзе, протокол REGENESIS®.",
+      "todo": "/home/oem/Desktop/ClinicA/TODO.md"
     },
     "Robakidze_Nino_2001_03_14": {
       "first_seen": "2026-03-13T04:49:50.365588",

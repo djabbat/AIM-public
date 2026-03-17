@@ -41,13 +41,26 @@ ATTACHED_RE = re.compile(r'<attached:\s*(.+?)>')
 
 # DOB patterns in text: formats DD.MM.YYYY or YYYY-MM-DD or DD/MM/YYYY
 DOB_RE = re.compile(
-    r'(?:дата\s+рождения|д\.?\s*р\.?|birthday|birth|DOB|дату\s+рождения)[:\s]*'
-    r'(\d{1,2}[./\-]\d{1,2}[./\-]\d{2,4})',
-    re.IGNORECASE
+    r'(?:'
+    # Russian / Cyrillic keywords
+    r'дата\s+рождения|д\.?\s*р\.?|дату\s+рождения|год\s+рождения|дата\s+рожд|р\.\s*\d|'
+    r'родил(?:ся|ась)|рождён(?:а)?|пациент(?:ка)?\s+\d|'
+    # English
+    r'birthday|date\s+of\s+birth|DOB|birth\s+date|born|'
+    # Georgian
+    r'დაბადების\s+თარიღი|დ[./]შ|დაბ\.|დაბადება'
+    r')[:\s]*'
+    r'(\d{1,2}[./\-]\d{1,2}[./\-]\d{2,4}|\d{4}[./\-]\d{1,2}[./\-]\d{1,2})',
+    re.IGNORECASE | re.UNICODE
 )
 # Also bare date after "рождения"
 DOB_RE2 = re.compile(
     r'\b(\d{1,2}[./]\d{1,2}[./]\d{4})\b'
+)
+# Year-only DOB: "год рождения: 1985" or "р. 1985"
+DOB_YEAR_RE = re.compile(
+    r'(?:год\s+рождения|г\.?\s*р\.?|birth\s*year)[:\s]*(\d{4})',
+    re.IGNORECASE
 )
 
 
@@ -81,15 +94,24 @@ def parse_contact_name(name: str) -> Optional[Tuple[str, str]]:
 
 
 def parse_dob(text: str) -> Optional[date]:
-    """Try to extract date of birth from text."""
+    """
+    Try to extract date of birth from text.
+    Only matches dates preceded by explicit DOB keywords — avoids
+    mistaking analysis dates / appointment dates for DOB.
+    Returns full date if found, or Jan 1 of birth year if only year found.
+    """
     m = DOB_RE.search(text)
     if m:
-        return _parse_date_str(m.group(1))
-    # Search for bare dates — take the first one as potential DOB
-    for m in DOB_RE2.finditer(text):
         d = _parse_date_str(m.group(1))
-        if d and d.year >= 1900 and d.year <= 2020:
+        if d:
             return d
+    # Try year-only fallback
+    m2 = DOB_YEAR_RE.search(text)
+    if m2:
+        try:
+            return date(int(m2.group(1)), 1, 1)
+        except ValueError:
+            pass
     return None
 
 
@@ -169,10 +191,41 @@ def parse_wa_export(txt_path: str) -> Optional[WaPatientChat]:
     return chat
 
 
+_ZIP_MAX_MEMBER_MB  = 50    # max single file inside zip (MB)
+_ZIP_MAX_TOTAL_MB   = 200   # max total uncompressed size (MB)
+_ZIP_MAX_FILES      = 500   # max number of files in archive
+
 def extract_zip_to_temp(zip_path: str) -> str:
-    """Extract WhatsApp .zip export to a temp folder, return its path."""
+    """
+    Extract WhatsApp .zip export to a temp folder, return its path.
+    Guards against zip bombs: checks per-member and total uncompressed size.
+    """
     tmp = tempfile.mkdtemp(prefix="wa_import_")
+    os.chmod(tmp, 0o700)  # private temp dir
+
     with zipfile.ZipFile(zip_path, "r") as z:
+        members = z.infolist()
+        if len(members) > _ZIP_MAX_FILES:
+            raise ValueError(
+                f"ZIP contains {len(members)} files (limit {_ZIP_MAX_FILES}) — possible zip bomb"
+            )
+        total_bytes = 0
+        for info in members:
+            # Path traversal guard
+            member_path = os.path.normpath(info.filename)
+            if member_path.startswith("..") or os.path.isabs(member_path):
+                raise ValueError(f"ZIP path traversal attempt: {info.filename!r}")
+            # Single-member size guard
+            if info.file_size > _ZIP_MAX_MEMBER_MB * 1024 * 1024:
+                raise ValueError(
+                    f"ZIP member {info.filename!r} is {info.file_size//1048576}MB "
+                    f"(limit {_ZIP_MAX_MEMBER_MB}MB)"
+                )
+            total_bytes += info.file_size
+            if total_bytes > _ZIP_MAX_TOTAL_MB * 1024 * 1024:
+                raise ValueError(
+                    f"ZIP total uncompressed size exceeds {_ZIP_MAX_TOTAL_MB}MB — possible zip bomb"
+                )
         z.extractall(tmp)
     return tmp
 

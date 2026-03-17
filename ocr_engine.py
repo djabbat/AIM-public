@@ -7,9 +7,12 @@ Preprocessing: upscale, deskew, adaptive threshold, sharpen.
 """
 
 import os
+import threading
 from functools import lru_cache
 from pathlib import Path
 from typing import Optional
+
+_ocr_lock = threading.Lock()
 
 from config import OCR_LANGS, OCR_MIN_DPI, get_logger
 
@@ -101,16 +104,26 @@ def _try_rapidocr(image_path: str) -> Optional[str]:
 
 # ── Main entry point ──────────────────────────────────────────
 
-@lru_cache(maxsize=256)
-def ocr_image(image_path: str) -> str:
+# Thread-safe LRU cache (lru_cache is not thread-safe for concurrent async callers)
+_ocr_cache: dict = {}
+
+def ocr_image(image_path: str) -> Optional[str]:
     """
     Extract text from image. Cached by path for the session.
-    Pipeline: preprocess → tesseract → rapidocr → fallback.
+    Returns None on failure (never returns error strings — callers must check).
+    Pipeline: preprocess → tesseract → rapidocr → None.
+    Thread-safe via _ocr_lock.
     """
+    with _ocr_lock:
+        if image_path in _ocr_cache:
+            return _ocr_cache[image_path]
+
     if not os.path.exists(image_path):
-        return f"[OCR ERROR: not found: {image_path}]"
+        log.warning(f"OCR: file not found: {image_path}")
+        return None
 
     log.debug(f"OCR: {Path(image_path).name}")
+    result: Optional[str] = None
 
     if HAS_PIL:
         try:
@@ -118,19 +131,23 @@ def ocr_image(image_path: str) -> str:
             text = _try_tesseract(img_proc)
             if text:
                 log.debug(f"  tesseract: {len(text)} chars")
-                return text
+                result = text
         except Exception as e:
             log.debug(f"  preprocess failed: {e}")
 
-    text = _try_rapidocr(image_path)
-    if text:
-        log.debug(f"  rapidocr: {len(text)} chars")
-        return text
+    if result is None:
+        text = _try_rapidocr(image_path)
+        if text:
+            log.debug(f"  rapidocr: {len(text)} chars")
+            result = text
 
-    return (
-        "[OCR: не удалось извлечь текст. "
-        "Проверьте: sudo apt-get install tesseract-ocr tesseract-ocr-rus tesseract-ocr-kat]"
-    )
+    if result is None:
+        log.warning(f"OCR failed for {Path(image_path).name}. "
+                    "Check: sudo apt-get install tesseract-ocr tesseract-ocr-rus tesseract-ocr-kat")
+
+    with _ocr_lock:
+        _ocr_cache[image_path] = result
+    return result
 
 
 def ocr_folder(folder_path: str,

@@ -35,43 +35,56 @@ if _sp:
 
 from config import (PATIENTS_DIR as DOCUMENTS_DIR, INBOX_DIR,
                     KNOWLEDGE_FILE, MODEL, get_logger)
+from llm import ask_llm as _ask_llm_deepseek
+import db as _db
+_db.init_db()
+try:
+    from filelock import FileLock as _FileLock
+    _KNOWLEDGE_LOCK = _FileLock(str(KNOWLEDGE_FILE) + ".lock")
+except ImportError:
+    import threading
+    _KNOWLEDGE_LOCK = threading.Lock()  # type: ignore[assignment]
 log = get_logger("medical_system")
 
 # ── LLM ───────────────────────────────────────────────────────
-try:
-    import ollama
-    HAS_OLLAMA = True
-except ImportError:
-    HAS_OLLAMA = False
+from space_nutrition import NUTRITION_RULES_PROMPT
 
-SYSTEM_PROMPT = """Ты — цифровой специалист по интегративной медицине.
-Пациенты доктора Джаба Ткемаладзе (Dr. Jaba Tkemaladze).
+SYSTEM_PROMPT = """Ты — цифровой ассистент доктора Джаба Ткемаладзе (Dr. Jaba Tkemaladze), \
+специалиста по интегративной медицине, Тбилиси.
 
-Принципы интегративной медицины которыми ты руководствуешься:
-- Болезнь как адаптивный ответ организма — не только патология, но и сигнал
-- Комплексный подход: доказательная медицина + нутрициология + психосоматика + образ жизни
-- Работа с причиной, а не только симптомом
-- Персонализация лечения под конкретного пациента
+РОЛЬ И ФИЛОСОФИЯ:
+Ты сочетаешь доказательную медицину с интегративным подходом. Болезнь — это адаптивный \
+ответ организма, а не только патология. Работай с причиной, не только с симптомом. \
+Каждый пациент уникален: учитывай возраст, пол, образ жизни, психоэмоциональный фон, \
+питание, культурный контекст (Грузия, Казахстан, Россия).
 
-Языки пациентов: русский, грузинский, казахский, английский.
-Отвечай на русском языке, структурированно, с заголовками.
-"""
+КЛИНИЧЕСКИЕ ПРИНЦИПЫ:
+1. Дифференциальный диагноз — всегда перечисляй 2–4 наиболее вероятных варианта с обоснованием
+2. Лабораторные отклонения — интерпретируй в контексте клиники, не изолированно
+3. Нутрициология — добавки, дефициты, питание как первая линия при функциональных нарушениях
+4. Психосоматика — стресс, сон, эмоциональный фон влияют на физиологию; спрашивай о них
+5. Медикаменты — назначай с дозой, длительностью, контролем; предупреждай о побочных эффектах
+6. Follow-up — каждая рекомендация должна иметь срок контроля и критерий эффективности
+
+ФОРМАТ ОТВЕТА (всегда использовать эти разделы если применимо):
+## Оценка ситуации
+## Дифференциальный диагноз
+## Лабораторные показатели
+## Рекомендации
+  ### Питание и образ жизни
+  ### Нутрицевтики / добавки
+  ### Медикаменты (если необходимо)
+## Контроль и follow-up
+
+ЯЗЫК: Отвечай на русском. Если пациент пишет на грузинском или казахском — понимай, \
+но отвечай на русском (или на языке пациента если доктор попросит).
+СТИЛЬ: Конкретно, без воды. Дозы — цифрами. Сроки — чёткими датами или неделями.
+""" + NUTRITION_RULES_PROMPT
 
 
 def ask_llm(prompt: str, system: str = SYSTEM_PROMPT,
             max_tokens: int = 2048) -> str:
-    if not HAS_OLLAMA:
-        return "[Ollama не установлен]"
-    try:
-        messages = [
-            {"role": "system", "content": system},
-            {"role": "user", "content": prompt},
-        ]
-        r = ollama.chat(model=MODEL, messages=messages,
-                        options={"temperature": 0.3, "num_predict": max_tokens})
-        return r["message"]["content"].strip()
-    except Exception as e:
-        return f"[LLM error: {e}]"
+    return _ask_llm_deepseek(prompt, system=system, max_tokens=max_tokens)
 
 
 # ── Knowledge base (self-learning) ────────────────────────────
@@ -92,11 +105,12 @@ class MedicalKnowledge:
                     return json.load(f)
             except Exception:
                 pass
-        return {"patterns": {}, "treatments": {}, "notes": [], "patient_count": 0}
+        return {"patterns": {}, "treatments": {}, "notes": [], "patient_count": 0, "lab_dynamics": {}}
 
     def save(self):
-        with open(KNOWLEDGE_FILE, "w", encoding="utf-8") as f:
-            json.dump(self.data, f, ensure_ascii=False, indent=2)
+        with _KNOWLEDGE_LOCK:
+            with open(KNOWLEDGE_FILE, "w", encoding="utf-8") as f:
+                json.dump(self.data, f, ensure_ascii=False, indent=2)
 
     def record_patient_analysis(self, patient_name: str,
                                  diagnoses: List[str],
@@ -126,6 +140,31 @@ class MedicalKnowledge:
 
         self.save()
 
+    def record_lab_snapshot(self, patient_name: str, lab_results: list):
+        """Store lab values over time for trend analysis."""
+        today = date.today().isoformat()
+        if "lab_dynamics" not in self.data:
+            self.data["lab_dynamics"] = {}
+        if patient_name not in self.data["lab_dynamics"]:
+            self.data["lab_dynamics"][patient_name] = {}
+        self.data["lab_dynamics"][patient_name][today] = {
+            r.param_id: {"value": r.value, "unit": r.unit, "status": r.status}
+            for r in lab_results
+        }
+        self.save()
+
+    def get_lab_trend(self, patient_name: str, param_id: str) -> str:
+        """Return trend string for a lab parameter: ↑↓→ over time."""
+        history = self.data.get("lab_dynamics", {}).get(patient_name, {})
+        if not history:
+            return ""
+        points = []
+        for date_str in sorted(history.keys()):
+            entry = history[date_str].get(param_id)
+            if entry:
+                points.append(f"{date_str}: {entry['value']} {entry['unit']} ({entry['status']})")
+        return "\n".join(points) if points else ""
+
     def get_context(self) -> str:
         """Build a context summary from accumulated knowledge."""
         n = self.data.get("patient_count", 0)
@@ -145,7 +184,33 @@ knowledge = MedicalKnowledge()
 # ── Patient management ─────────────────────────────────────────
 
 def list_patients() -> List[Dict]:
-    """Return list of patient folders with basic info."""
+    """Return list of patients. Reads from SQLite DB (fast), fallback to filesystem."""
+    try:
+        rows = _db.list_patients()
+        if rows:
+            patients = []
+            for r in rows:
+                info = {
+                    "folder": r["folder_path"],
+                    "name": f"{r['surname']} {r['name']}",
+                    "folder_name": Path(r["folder_path"]).name,
+                    "id": r["id"],
+                }
+                if r["dob"]:
+                    parts = r["dob"].split("-")
+                    if len(parts) == 3:
+                        info["dob"] = f"{parts[2]}.{parts[1]}.{parts[0]}"
+                # Ze-статус из БД
+                ze = _db.get_latest_ze(r["id"])
+                if ze:
+                    info["ze_v"]    = ze["ze_v"]
+                    info["ze_state"] = ze["ze_state"]
+                return patients
+            return patients
+    except Exception:
+        pass
+
+    # Fallback — файловая система
     docs = Path(DOCUMENTS_DIR)
     patients = []
     for d in sorted(docs.iterdir()):
@@ -165,6 +230,61 @@ def list_patients() -> List[Dict]:
                     pass
             patients.append(info)
     return patients
+
+
+def search_patients_by_symptom(query: str) -> str:
+    """
+    Полнотекстовый поиск по диагнозам и анализам всех пациентов.
+    Использует SQLite FTS5 по таблице diagnoses.
+    Возвращает форматированный текст с результатами.
+    """
+    query = query.strip()
+    if not query:
+        return "Введите поисковый запрос."
+    try:
+        results = _db.search_diagnoses(query, limit=20)
+        if not results:
+            # Попробовать LIKE-поиск если FTS не нашёл
+            results = _db.search_diagnoses(f'"{query}"', limit=20)
+        if not results:
+            return f"По запросу «{query}» ничего не найдено."
+
+        lines = [f"Найдено совпадений: {len(results)} по запросу «{query}»\n"]
+        seen_patients = set()
+        for r in results:
+            pid = r["patient_id"]
+            patient_label = f"{r['surname']} {r['name']}"
+            if patient_label not in seen_patients:
+                seen_patients.add(patient_label)
+                lines.append(f"─── {patient_label} ───")
+            # Выдержка из диагноза (первые 300 символов)
+            text = r["llm_text"] or ""
+            # Найти фрагмент вокруг запроса
+            idx = text.lower().find(query.lower())
+            if idx >= 0:
+                start = max(0, idx - 80)
+                end   = min(len(text), idx + 200)
+                snippet = ("..." if start > 0 else "") + text[start:end] + ("..." if end < len(text) else "")
+            else:
+                snippet = text[:280]
+            lines.append(f"  [{r['created_at'][:10]}] {snippet.strip()}\n")
+
+        return "\n".join(lines)
+    except Exception as e:
+        return f"Ошибка поиска: {e}"
+
+
+def db_stats() -> str:
+    """Статистика базы данных AIM."""
+    try:
+        conn = _db._connect()
+        lines = ["База данных AIM:"]
+        for table in ["patients", "lab_snapshots", "diagnoses", "ze_hrv", "knowledge", "processed_files"]:
+            n = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+            lines.append(f"  {table}: {n}")
+        return "\n".join(lines)
+    except Exception as e:
+        return f"Ошибка: {e}"
 
 
 def analyze_patient(folder_path: str, force: bool = False) -> str:
@@ -198,8 +318,8 @@ def analyze_labs_only(folder_path: str) -> str:
 
     try:
         from lab_parser import extract_from_text
-        from diagnosis_engine import run_diagnosis
-        from treatment_recommender import get_treatments
+        from diagnosis_engine import bayesian_differential, format_differential, run_diagnosis_ai
+        from treatment_recommender import get_protocols, format_treatment
 
         results = extract_from_text(all_text)
         if not results:
@@ -220,21 +340,21 @@ def analyze_labs_only(folder_path: str) -> str:
         if abnormal:
             lines.append(f"\nОТКЛОНЕНИЙ: {len(abnormal)}")
 
-        # Diagnosis
+        # Diagnosis: Bayesian + DeepSeek R1
         try:
-            dx_list = run_diagnosis(results, symptoms=[])
-            if dx_list:
-                lines.append("\nДИФФЕРЕНЦИАЛЬНЫЙ ДИАГНОЗ (Байес):")
-                for dx in dx_list[:3]:
-                    lines.append(f"  • {dx.disease_name} [{dx.icd10}] "
-                                  f"вероятность: {dx.probability:.0%}")
-                    # Get treatment for top diagnosis
-                    txs = get_treatments(dx.icd10)
-                    if txs:
-                        lines.append(f"    Лечение ({txs[0].line}): "
-                                      + ", ".join(d.name for d in txs[0].drugs[:3]))
-        except Exception:
-            pass
+            folder_name = Path(folder_path).name
+            patient_name = " ".join(folder_name.split("_")[:2])
+            lines.append(run_diagnosis_ai(results, symptom_text="", patient_name=patient_name))
+
+            # Treatment protocols for top-3 diagnoses
+            bayes = bayesian_differential(results)
+            if bayes:
+                top_icd = [d.disease.icd10 for d in bayes[:3]]
+                protocols = get_protocols(top_icd)
+                if protocols:
+                    lines.append(format_treatment(protocols))
+        except Exception as e:
+            log.warning("Diagnosis error: %s", e)
 
         return "\n".join(lines)
 
@@ -265,6 +385,8 @@ def print_menu():
     print("  6. Импорт из WhatsApp (INBOX)")
     print("  7. Новый чат с AI-специалистом")
     print("  8. Список отклонений у всех пациентов")
+    print("  9. 🔍 Поиск по симптому / диагнозу")
+    print("  0. 📊 Статистика базы данных")
     print("  q. Выход")
 
 
@@ -286,7 +408,13 @@ def run_interactive():
             print(f"\nПациентов: {len(patients)}")
             for i, p in enumerate(patients, 1):
                 dob = p.get("dob", "?")
-                print(f"  {i:2}. {p['name']}  (р. {dob})")
+                ze_info = ""
+                if p.get("ze_v") is not None:
+                    state_icon = {"healthy": "💚", "stress": "🟡",
+                                  "arrhythmia": "🔴", "tachyarrhythmia": "🔴",
+                                  "bradyarrhythmia": "🟠"}.get(p.get("ze_state", ""), "⚪")
+                    ze_info = f"  Ze:{p['ze_v']:.3f}{state_icon}"
+                print(f"  {i:2}. {p['name']}  (р. {dob}){ze_info}")
 
         elif choice == "2":
             patients = list_patients()
@@ -364,14 +492,19 @@ def run_interactive():
                 history.append({"role": "user", "content": user_input})
                 messages = [{"role": "system", "content": sys_msg}] + history[-10:]
 
-                try:
-                    r = ollama.chat(model=MODEL, messages=messages,
-                                    options={"temperature": 0.4, "num_predict": 1024})
-                    reply = r["message"]["content"].strip()
-                    history.append({"role": "assistant", "content": reply})
-                    print(f"\nAI: {reply}")
-                except Exception as e:
-                    print(f"\n[Ошибка: {e}]")
+                # для чата передаём историю через системный+user контекст
+                full_prompt = "\n".join(
+                    f"{'Врач' if m['role']=='user' else 'AI'}: {m['content']}"
+                    for m in history[:-1]
+                )
+                if full_prompt:
+                    full_prompt = "История диалога:\n" + full_prompt + "\n\n" + user_input
+                else:
+                    full_prompt = user_input
+                reply = _ask_llm_deepseek(full_prompt, system=sys_msg,
+                                          max_tokens=1024, temperature=0.4)
+                history.append({"role": "assistant", "content": reply})
+                print(f"\nAI: {reply}")
 
         elif choice == "8":
             print("\nАнализ отклонений у всех пациентов...")
@@ -387,6 +520,16 @@ def run_interactive():
             else:
                 print("Нет данных или отклонений не найдено.")
                 print("Сначала обработайте пациентов (пункт 3).")
+
+        elif choice == "9":
+            query = input("\nПоиск (симптом, диагноз, препарат): ").strip()
+            if query:
+                result = search_patients_by_symptom(query)
+                print("\n" + "─" * 60)
+                print(result)
+
+        elif choice == "0":
+            print("\n" + db_stats())
 
         else:
             print("Неверный выбор.")

@@ -1,26 +1,62 @@
-# Исключить всё в Patients
-Patients/
-# Но сохранить .gitkeep (разкомментировать если нужно)
-# !Patients/.gitkeep
+# ════════════════════════════════════
+# AIM — .gitignore
+# ПАЦИЕНТСКИЕ ДАННЫЕ НИКОГДА НЕ КОММИТЯТСЯ
+# ════════════════════════════════════
 
-# Python
+# ── Данные пациентов (СТРОГО) ─────
+Patients/
+!Patients/.gitkeep
+
+# ── База данных SQLite (содержит пациентские данные) ──
+*.db
+*.db-shm
+*.db-wal
+
+# ── Логи ──────────────────────────
+logs/
+*.log
+
+# ── Сессионные и кэш-файлы ────────
+chat_history.json
+projects_memory.json
+processed_files.json
+medical_knowledge.json
+chroma_db/
+
+# ── Бэкапы ────────────────────────
+backups/
+
+# ── Python ────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
 venv/
 env/
-.env
 .venv
 *.so
 .Python
+*.egg-info/
+dist/
+build/
 
-# IDE
+# ── Секреты ───────────────────────
+.env
+.aim_env
+
+# ── IDE ───────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
+*.sublime-*
 
-# Прочее
+# ── OS ────────────────────────────
 .DS_Store
 Thumbs.db
-Patients/
+
+# ── Временные файлы ───────────────
+*.tmp
+*.temp
+search_results/
+trend_reports/
+reports/
