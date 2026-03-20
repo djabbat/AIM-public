@@ -402,6 +402,133 @@ async def main():
             await message.answer(f"❌ Ошибка: {e}")
 
     # ── /labs ─────────────────────────────────────────────────
+    @dp.message(Command("trend"))
+    async def cmd_trend(message: Message):
+        if not await is_allowed(message):
+            return
+        args = message.text.split(maxsplit=2)
+        if len(args) < 3:
+            await message.answer("Использование: `/trend Фамилия ПАРАМЕТР`\nПример: `/trend Иванов HGB`")
+            return
+        name_q, param = args[1].strip(), args[2].strip().upper()
+        import db as _db_mod
+        _db_mod.init_db()
+        from trend_chart import find_patient_id, make_chart_tempfile, list_patient_params
+        pid = find_patient_id(name_q)
+        if not pid:
+            await message.answer(f"Пациент '{name_q}' не найден.")
+            return
+        await message.answer(f"📊 Строю график {param}...")
+        import asyncio
+        png_path = await asyncio.get_event_loop().run_in_executor(
+            None, make_chart_tempfile, pid, param
+        )
+        if not png_path:
+            params = list_patient_params(pid)
+            tip = f"\nДоступные параметры: {', '.join(params[:15])}" if params else ""
+            await message.answer(f"Недостаточно данных для {param}.{tip}")
+            return
+        audit("trend_chart", user_id=_uid(message), patient=name_q, details=param)
+        from aiogram.types import FSInputFile
+        photo = FSInputFile(png_path)
+        await message.answer_photo(photo, caption=f"📊 {name_q} — {param}")
+        import os
+        try:
+            os.unlink(png_path)
+        except OSError:
+            pass
+
+    @dp.message(Command("meds"))
+    async def cmd_meds(message: Message):
+        """
+        /meds Фамилия [add|stop|list] [препарат] [доза] [частота]
+        /meds Иванов list
+        /meds Иванов add аспирин 100мг 1р/сут
+        /meds Иванов stop 3          (id препарата)
+        /meds Иванов interactions    (проверить взаимодействия)
+        """
+        if not await is_allowed(message):
+            return
+        args = message.text.split(maxsplit=4)
+        if len(args) < 3:
+            await message.answer(
+                "Использование:\n"
+                "`/meds Фамилия list` — список активных препаратов\n"
+                "`/meds Фамилия add Препарат [доза] [частота]` — добавить\n"
+                "`/meds Фамилия stop ID` — отменить препарат (ID из list)\n"
+                "`/meds Фамилия interactions` — проверить взаимодействия"
+            )
+            return
+        import db as _db_mod
+        _db_mod.init_db()
+        from db import search_patients, get_medications, add_medication, stop_medication
+
+        name_q = args[1].strip().lower()
+        action = args[2].strip().lower()
+
+        patients = _db_mod.search_patients(name_q)
+        if not patients:
+            await message.answer(f"Пациент '{args[1]}' не найден.")
+            return
+        p = patients[0]
+        pid = p["id"]
+        pname = f"{p['surname']} {p['name']}"
+
+        if action == "list":
+            rows = get_medications(pid, status="active")
+            if not rows:
+                await message.answer(f"{pname}: нет активных препаратов.")
+                return
+            lines = [f"💊 Препараты {pname}:"]
+            for r in rows:
+                line = f"[{r['id']}] {r['drug_name']}"
+                if r["dose"]:
+                    line += f" {r['dose']}"
+                if r["frequency"]:
+                    line += f" {r['frequency']}"
+                lines.append(line)
+            await message.answer("\n".join(lines))
+
+        elif action == "add":
+            if len(args) < 4:
+                await message.answer("Укажите название препарата: `/meds Фамилия add Препарат`")
+                return
+            rest = args[3] if len(args) > 3 else ""
+            parts = rest.split(maxsplit=2)
+            drug = parts[0] if parts else rest
+            dose = parts[1] if len(parts) > 1 else ""
+            freq = parts[2] if len(parts) > 2 else ""
+            mid = add_medication(pid, drug, dose=dose, frequency=freq)
+            audit("add_medication", user_id=_uid(message), patient=pname, details=f"{drug} #{mid}")
+            await message.answer(f"✅ Добавлен: {drug} {dose} {freq} (ID={mid})")
+
+        elif action == "stop":
+            if len(args) < 4:
+                await message.answer("Укажите ID препарата: `/meds Фамилия stop 3`")
+                return
+            try:
+                mid = int(args[3].strip())
+            except ValueError:
+                await message.answer("ID должен быть числом.")
+                return
+            stop_medication(mid)
+            audit("stop_medication", user_id=_uid(message), patient=pname, details=f"#{mid}")
+            await message.answer(f"✅ Препарат #{mid} отмечен как отменённый.")
+
+        elif action == "interactions":
+            from drug_interaction_checker import check_patient_medications, format_report
+            result = check_patient_medications(pid)
+            if result is None:
+                await message.answer(f"{pname}: нет активных препаратов для проверки.")
+                return
+            report = format_report(result, pname)
+            audit("drug_interactions", user_id=_uid(message), patient=pname,
+                  details=f"{result.critical_count}crit/{result.high_count}high")
+            for chunk in _split_text(report, 4000):
+                await message.answer(chunk)
+        else:
+            await message.answer(f"Неизвестное действие: {action}. Используйте list / add / stop / interactions")
+
     @dp.message(Command("labs"))
     async def cmd_labs(message: Message):
         if not await is_allowed(message):

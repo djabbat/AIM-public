@@ -23,8 +23,8 @@ DrJaba               ←  AIM диетология                       →  с
 | `ze_ecg.py` | Ze + HealthWearable | ✅ Готов (2026-03-17) |
 | `wearable_importer.py` | HealthWearable (BLE) | ✅ Готов (2026-03-17) |
 | `cdata_bridge.py` | CDATA Rust симуляция | 🟡 Скелет готов |
-| `dietebi_importer.py` | 46 клин. случаев .docx | 🔴 Не написан |
-| `regenesis_protocol.py` | Regenesis протокол | 🔴 Не написан |
+| `dietebi_importer.py` | 9 статей .docx | ✅ Готов (2026-03-18) |
+| `regenesis_protocol.py` | Regenesis протокол | ✅ Готов (2026-03-18) |
 
 ---
 
@@ -131,17 +131,10 @@ DrJaba               ←  AIM диетология                       →  с
 - [x] **Алиасы lab_reference.py — 291 алиас** (2026-03-17)
   - Народные (ГГЦ→GGT, Холес→CHOL, Сах→GLU), английские, грузинские
 
-- [ ] **Аудит-лог** — кто что запрашивал в боте, какие пациенты открывались
-  - `logs/audit.jsonl` — append-only, JSON Lines формат
-
-- [ ] **Поиск пациентов по симптомам и диагнозу**
-  - Индекс по `_ai_analysis.txt` → grep или SQLite FTS
-
+- [x] **Аудит-лог** — `logs/audit.jsonl` + `audit_log.py`, используется в telegram_bot.py
+- [x] **Поиск пациентов по симптомам и диагнозу** — `search_patients_by_symptom()` + меню пункт 9
 - [x] **Экспорт отчётов** — PDF пациента из GUI / бота
-  - `reportlab` или `weasyprint` → красивый A4 с лаб. данными и диагнозом
-
-- [ ] **Файловая блокировка для processed_files.json**
-  - Аналогично knowledge base — `filelock`
+- [x] **Файловая блокировка для processed_files.json** — мигрировано в SQLite (db.py WAL)
 
 ---
 

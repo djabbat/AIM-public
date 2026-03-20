@@ -112,6 +112,21 @@ CREATE TABLE IF NOT EXISTS knowledge (
     updated_at   TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS medications (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id   INTEGER NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+    drug_name    TEXT    NOT NULL,
+    dose         TEXT    DEFAULT '',
+    frequency    TEXT    DEFAULT '',
+    since        TEXT    DEFAULT '',      -- YYYY-MM-DD когда начал принимать
+    status       TEXT    DEFAULT 'active' CHECK(status IN ('active','stopped','prn')),
+    notes        TEXT    DEFAULT '',
+    added_at     TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_medications_patient ON medications(patient_id);
+CREATE INDEX IF NOT EXISTS idx_medications_status  ON medications(patient_id, status);
+
 CREATE TABLE IF NOT EXISTS processed_files (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     path         TEXT    NOT NULL UNIQUE,
@@ -120,6 +135,58 @@ CREATE TABLE IF NOT EXISTS processed_files (
     status       TEXT    DEFAULT 'ok',       -- "ok" | "error" | "skipped"
     error_msg    TEXT    DEFAULT ''
 );
+
+-- ─── Knowledge Graph ────────────────────────────────────────────────────────
+-- Единый граф знаний: AIM как центральное хранилище для всех проектов.
+
+CREATE TABLE IF NOT EXISTS kg_projects (
+    id          TEXT    PRIMARY KEY,  -- "aim", "drjaba", "georgians", "dietebi", "cdata", "ksystem", "scheckerge"
+    name        TEXT    NOT NULL,
+    path        TEXT    NOT NULL DEFAULT '',
+    description TEXT    DEFAULT '',
+    active      INTEGER DEFAULT 1,
+    updated_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS kg_nodes (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    uid            TEXT    NOT NULL UNIQUE,   -- "nutrition:cauliflower", "myth:amiran", "aging:centriole"
+    domain         TEXT    NOT NULL,          -- "nutrition" | "mythology" | "aging" | "medicine" | "language" | "protocol"
+    type           TEXT    NOT NULL,          -- "concept" | "fact" | "rule" | "entity" | "protocol" | "source"
+    title          TEXT    NOT NULL,
+    body           TEXT    DEFAULT '',        -- JSON или plain text
+    lang           TEXT    DEFAULT 'ru',      -- "ru" | "en" | "ka" | "multi"
+    source_project TEXT    REFERENCES kg_projects(id),
+    tags           TEXT    DEFAULT '[]',      -- JSON array
+    confidence     REAL    DEFAULT 1.0,
+    created_at     TEXT    NOT NULL DEFAULT (datetime('now')),
+    updated_at     TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_kg_nodes_domain   ON kg_nodes(domain);
+CREATE INDEX IF NOT EXISTS idx_kg_nodes_type     ON kg_nodes(type);
+CREATE INDEX IF NOT EXISTS idx_kg_nodes_project  ON kg_nodes(source_project);
+
+CREATE VIRTUAL TABLE IF NOT EXISTS kg_nodes_fts USING fts5(
+    title, body, tags,
+    content=kg_nodes,
+    content_rowid=id
+);
+
+CREATE TABLE IF NOT EXISTS kg_edges (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    from_uid       TEXT    NOT NULL REFERENCES kg_nodes(uid),
+    to_uid         TEXT    NOT NULL REFERENCES kg_nodes(uid),
+    rel            TEXT    NOT NULL,  -- "treats" | "forbids" | "parallel_to" | "source_of" | "proves" | "contradicts" | "part_of" | "related_to"
+    weight         REAL    DEFAULT 1.0,
+    notes          TEXT    DEFAULT '',
+    source_project TEXT    REFERENCES kg_projects(id),
+    created_at     TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_kg_edges_from ON kg_edges(from_uid);
+CREATE INDEX IF NOT EXISTS idx_kg_edges_to   ON kg_edges(to_uid);
+CREATE INDEX IF NOT EXISTS idx_kg_edges_rel  ON kg_edges(rel);
 """
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -298,6 +365,51 @@ def search_diagnoses(query: str, limit: int = 20) -> list[sqlite3.Row]:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Medications
+# ─────────────────────────────────────────────────────────────────────────────
+
+def add_medication(patient_id: int, drug_name: str, dose: str = "",
+                   frequency: str = "", since: str = "",
+                   status: str = "active", notes: str = "") -> int:
+    """Добавляет препарат в список пациента. Возвращает id записи."""
+    with _tx() as conn:
+        cur = conn.execute(
+            "INSERT INTO medications (patient_id, drug_name, dose, frequency, since, status, notes) "
+            "VALUES (?,?,?,?,?,?,?)",
+            (patient_id, drug_name.strip(), dose, frequency, since, status, notes)
+        )
+        return cur.lastrowid
+
+
+def get_medications(patient_id: int, status: str = "active") -> list[sqlite3.Row]:
+    """Список препаратов пациента (по умолчанию только активные)."""
+    return _connect().execute(
+        "SELECT * FROM medications WHERE patient_id=? AND status=? ORDER BY added_at",
+        (patient_id, status)
+    ).fetchall()
+
+
+def get_all_medications(patient_id: int) -> list[sqlite3.Row]:
+    """Все препараты пациента независимо от статуса."""
+    return _connect().execute(
+        "SELECT * FROM medications WHERE patient_id=? ORDER BY status, drug_name",
+        (patient_id,)
+    ).fetchall()
+
+
+def stop_medication(medication_id: int) -> None:
+    """Помечает препарат как отменённый."""
+    with _tx() as conn:
+        conn.execute("UPDATE medications SET status='stopped' WHERE id=?", (medication_id,))
+
+
+def delete_medication(medication_id: int) -> None:
+    """Удаляет запись о препарате."""
+    with _tx() as conn:
+        conn.execute("DELETE FROM medications WHERE id=?", (medication_id,))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Ze HRV
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -424,6 +536,156 @@ def mark_processed(path: str, status: str = "ok", error_msg: str = "") -> None:
 def unmark_processed(path: str) -> None:
     with _tx() as conn:
         conn.execute("DELETE FROM processed_files WHERE path=?", (path,))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Knowledge Graph
+# ─────────────────────────────────────────────────────────────────────────────
+
+def kg_register_project(project_id: str, name: str, path: str = "", description: str = "") -> None:
+    """Регистрирует проект в реестре графа знаний."""
+    with _tx() as conn:
+        conn.execute(
+            """INSERT INTO kg_projects (id, name, path, description, updated_at)
+               VALUES (?,?,?,?,datetime('now'))
+               ON CONFLICT(id) DO UPDATE SET
+                 name=excluded.name, path=excluded.path,
+                 description=excluded.description, updated_at=excluded.updated_at""",
+            (project_id, name, path, description)
+        )
+
+
+def kg_add_node(uid: str, domain: str, type_: str, title: str,
+                body: Any = "", lang: str = "ru",
+                project: str = "aim", tags: list = None,
+                confidence: float = 1.0) -> int:
+    """
+    Добавляет или обновляет узел графа знаний.
+    uid — уникальный идентификатор: "domain:slug", напр. "nutrition:cauliflower".
+    Возвращает rowid.
+    """
+    tags_json = json.dumps(tags or [], ensure_ascii=False)
+    body_str  = json.dumps(body, ensure_ascii=False) if not isinstance(body, str) else body
+    with _tx() as conn:
+        conn.execute(
+            """INSERT INTO kg_nodes (uid, domain, type, title, body, lang, source_project, tags, confidence, updated_at)
+               VALUES (?,?,?,?,?,?,?,?,?,datetime('now'))
+               ON CONFLICT(uid) DO UPDATE SET
+                 title=excluded.title, body=excluded.body, lang=excluded.lang,
+                 tags=excluded.tags, confidence=excluded.confidence, updated_at=excluded.updated_at""",
+            (uid, domain, type_, title, body_str, lang, project, tags_json, confidence)
+        )
+        row = conn.execute("SELECT id FROM kg_nodes WHERE uid=?", (uid,)).fetchone()
+        return row["id"] if row else -1
+
+
+def kg_add_edge(from_uid: str, to_uid: str, rel: str,
+                project: str = "aim", weight: float = 1.0, notes: str = "") -> None:
+    """Добавляет ребро между узлами (идемпотентно по from+to+rel).
+    Если узел не существует — создаёт заглушку."""
+    with _tx() as conn:
+        for uid in (from_uid, to_uid):
+            domain = uid.split(":")[0] if ":" in uid else "misc"
+            conn.execute(
+                """INSERT OR IGNORE INTO kg_nodes (uid, domain, type, title, source_project)
+                   VALUES (?,?,?,?,?)""",
+                (uid, domain, "stub", uid, project)
+            )
+        conn.execute(
+            """INSERT OR IGNORE INTO kg_edges (from_uid, to_uid, rel, weight, notes, source_project)
+               VALUES (?,?,?,?,?,?)""",
+            (from_uid, to_uid, rel, weight, notes, project)
+        )
+
+
+def kg_query(domain: str = None, type_: str = None,
+             project: str = None, text: str = None,
+             limit: int = 100) -> list:
+    """Запрос узлов по фильтрам. Возвращает список sqlite3.Row."""
+    conn = _connect()
+    if text:
+        rows = conn.execute(
+            "SELECT kg_nodes.* FROM kg_nodes_fts JOIN kg_nodes ON kg_nodes.id=kg_nodes_fts.rowid "
+            "WHERE kg_nodes_fts MATCH ? LIMIT ?",
+            (text, limit)
+        ).fetchall()
+    else:
+        clauses, params = [], []
+        if domain:  clauses.append("domain=?");  params.append(domain)
+        if type_:   clauses.append("type=?");    params.append(type_)
+        if project: clauses.append("source_project=?"); params.append(project)
+        where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+        rows = conn.execute(
+            f"SELECT * FROM kg_nodes {where} ORDER BY updated_at DESC LIMIT ?",
+            params + [limit]
+        ).fetchall()
+    return rows
+
+
+def kg_subgraph(uid: str, depth: int = 1) -> dict:
+    """
+    Возвращает подграф вокруг узла: {nodes: [...], edges: [...]}.
+    depth=1 — только прямые связи.
+    """
+    conn = _connect()
+    visited, frontier = set(), {uid}
+    all_edges = []
+    for _ in range(depth):
+        if not frontier: break
+        placeholders = ",".join("?" * len(frontier))
+        edges = conn.execute(
+            f"SELECT * FROM kg_edges WHERE from_uid IN ({placeholders}) OR to_uid IN ({placeholders})",
+            list(frontier) * 2
+        ).fetchall()
+        all_edges.extend(edges)
+        new_uids = set()
+        for e in edges:
+            new_uids.add(e["from_uid"])
+            new_uids.add(e["to_uid"])
+        visited |= frontier
+        frontier = new_uids - visited
+
+    all_uids = visited | frontier
+    if all_uids:
+        placeholders = ",".join("?" * len(all_uids))
+        nodes = conn.execute(
+            f"SELECT * FROM kg_nodes WHERE uid IN ({placeholders})", list(all_uids)
+        ).fetchall()
+    else:
+        nodes = []
+    return {"nodes": nodes, "edges": all_edges}
+
+
+def kg_export_domain(domain: str) -> list[dict]:
+    """Экспорт всех узлов домена как список словарей (для других проектов)."""
+    rows = kg_query(domain=domain, limit=10000)
+    result = []
+    for r in rows:
+        result.append({
+            "uid":     r["uid"],
+            "type":    r["type"],
+            "title":   r["title"],
+            "body":    r["body"],
+            "lang":    r["lang"],
+            "tags":    json.loads(r["tags"]),
+            "project": r["source_project"],
+        })
+    return result
+
+
+def kg_stats() -> dict:
+    """Статистика графа знаний."""
+    conn = _connect()
+    return {
+        "nodes":    conn.execute("SELECT COUNT(*) FROM kg_nodes").fetchone()[0],
+        "edges":    conn.execute("SELECT COUNT(*) FROM kg_edges").fetchone()[0],
+        "projects": conn.execute("SELECT COUNT(*) FROM kg_projects WHERE active=1").fetchone()[0],
+        "by_domain": {
+            r[0]: r[1] for r in conn.execute(
+                "SELECT domain, COUNT(*) FROM kg_nodes GROUP BY domain"
+            ).fetchall()
+        },
+    }
 
 
 # ─────────────────────────────────────────────────────────────────────────────

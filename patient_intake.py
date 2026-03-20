@@ -21,7 +21,7 @@ from datetime import date, datetime
 from typing import Optional, Dict, List
 
 from config import (PATIENTS_DIR as DOCUMENTS_DIR, INBOX_DIR,
-                    PROCESSED_LOG, MODEL, get_logger)
+                    MODEL, get_logger)
 from llm import ask_llm as _ask_llm_ds
 import db as _db
 _db.init_db()

@@ -997,12 +997,22 @@ print(analyze_labs_only('{p["folder"]}'))
         grid.columnconfigure(0, weight=1)
         grid.columnconfigure(1, weight=1)
 
+        # ── Data backup ────────────────────────────────────────
+        data_frame = tk.Frame(parent, bg=BG2)
+        data_frame.pack(fill="x", padx=20, pady=(0, 4))
+        tk.Label(data_frame, text="💾 Бэкап данных пациентов",
+                 font=FONT_H2, bg=BG2, fg=TEXT2).pack(side="left", padx=10, pady=6)
+        self._btn(data_frame, "💾 Создать бэкап сейчас",
+                  self._data_backup, "#2E7D32").pack(side="right", padx=8, pady=4)
+        self._btn(data_frame, "📋 Список бэкапов",
+                  self._data_backup_list, BG3).pack(side="right", padx=4, pady=4)
+
         # ── GitHub backup ──────────────────────────────────────
         backup_frame = tk.Frame(parent, bg=BG2)
         backup_frame.pack(fill="x", padx=20, pady=(0, 8))
-        tk.Label(backup_frame, text="GitHub Backup", font=FONT_H2,
-                 bg=BG2, fg=TEXT2).pack(side="left", padx=10, pady=6)
-        self._btn(backup_frame, "☁ Бэкап на GitHub сейчас",
+        tk.Label(backup_frame, text="☁ GitHub (код)",
+                 font=FONT_H2, bg=BG2, fg=TEXT2).pack(side="left", padx=10, pady=6)
+        self._btn(backup_frame, "☁ Бэкап кода на GitHub",
                   self._github_backup, "#1565C0").pack(side="right", padx=8, pady=4)
         self._btn(backup_frame, "👁 Git status",
                   self._github_status, BG3).pack(side="right", padx=4, pady=4)
@@ -1032,6 +1042,44 @@ print(analyze_labs_only('{p["folder"]}'))
             ))
 
         run_python([os.path.join(AIM_DIR, args[0])] + args[1:], callback=done)
+
+    def _data_backup(self):
+        """Create encrypted data backup from GUI."""
+        self.sys_output.delete("1.0", "end")
+        self.sys_output.insert("end", "💾 Создаю зашифрованный бэкап данных...\n" + "─" * 40 + "\n")
+        self._set_status("Бэкап данных...")
+
+        def run():
+            import io, contextlib
+            sys.path.insert(0, AIM_DIR)
+            from backup_data import create_backup
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                result = create_backup(verbose=True)
+            return buf.getvalue(), result is not None
+
+        def done():
+            try:
+                out, success = run()
+            except Exception as e:
+                out, success = str(e), False
+            icon = "✅" if success else "❌"
+            self.after(0, lambda: (
+                self.sys_output.insert("end", out + "\n"),
+                self.sys_output.see("end"),
+                self._set_status(f"{icon} {'Бэкап создан' if success else 'Ошибка бэкапа'}"),
+            ))
+
+        import threading
+        threading.Thread(target=done, daemon=True).start()
+
+    def _data_backup_list(self):
+        """Show list of backups in output panel."""
+        self.sys_output.delete("1.0", "end")
+        sys.path.insert(0, AIM_DIR)
+        from backup_data import backup_info
+        self.sys_output.insert("end", backup_info())
+        self.sys_output.see("end")
 
     def _github_backup(self):
         """Manual GitHub backup from GUI."""

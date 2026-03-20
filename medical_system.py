@@ -302,6 +302,157 @@ def show_patient_analysis(folder_path: str) -> str:
     return "Анализ не найден. Запустите: analyze_patient()"
 
 
+def show_aging_prediction(folder_path: str) -> str:
+    """CDATA bridge: predict biological aging for patient."""
+    try:
+        from cdata_bridge import analyze_patient_aging
+        import db as _db2
+
+        folder = Path(folder_path)
+        patient = _db2._connect().execute(
+            "SELECT * FROM patients WHERE folder_path=?", (str(folder),)
+        ).fetchone()
+
+        if not patient:
+            return "Пациент не найден в базе. Сначала обработайте папку (пункт 2)."
+
+        # Age from dob
+        age = 50.0
+        if patient["dob"]:
+            try:
+                from datetime import date
+                birth = date.fromisoformat(patient["dob"][:10])
+                age = (date.today() - birth).days / 365.25
+            except Exception:
+                pass
+
+        # Diagnoses from DB
+        diag_row = _db2.get_latest_diagnosis(patient["id"])
+        diagnoses = []
+        risk_factors = []
+        if diag_row and diag_row["llm_text"]:
+            text = diag_row["llm_text"].lower()
+            for kw in ["анемия", "диабет", "гипертония", "ишемия", "онко", "хобл",
+                       "почечная", "печеночная", "сердечная", "рак"]:
+                if kw in text:
+                    diagnoses.append(kw)
+            for rf in ["курение", "алкоголь", "ожирение", "гиподинамия", "стресс"]:
+                if rf in text:
+                    risk_factors.append(rf)
+
+        lines = [
+            f"🧬 ПРОГНОЗ СТАРЕНИЯ — {patient['surname']} {patient['name']}",
+            f"   Возраст: {age:.1f} лет | Ткань: Blood",
+            f"   Диагнозы: {', '.join(diagnoses) or 'нет данных'}",
+            f"   Факторы риска: {', '.join(risk_factors) or 'нет данных'}",
+            "─" * 50,
+        ]
+        result = analyze_patient_aging(age, diagnoses, risk_factors, lang="ru")
+        lines.append(result)
+        return "\n".join(lines)
+
+    except Exception as e:
+        return f"Ошибка CDATA bridge: {e}\nПроверьте: cd ~/Desktop/CDATA && cargo build"
+
+
+def show_ze_history(folder_path: str) -> str:
+    """Show Ze-HRV history from DB for patient."""
+    try:
+        import db as _db2
+
+        folder = Path(folder_path)
+        patient = _db2._connect().execute(
+            "SELECT * FROM patients WHERE folder_path=?", (str(folder),)
+        ).fetchone()
+        if not patient:
+            return "Пациент не найден в базе."
+
+        rows = _db2.get_ze_history(patient["id"], limit=10)
+        if not rows:
+            return (
+                "Ze-HRV данных нет.\n"
+                "Записать: пункт 'w' → Wearable BLE\n"
+                "Или:      python3 ze_ecg.py <rr_file.csv>"
+            )
+
+        state_icon = {"healthy": "💚", "stress": "🟡",
+                      "arrhythmia": "🔴", "tachyarrhythmia": "🔴",
+                      "bradyarrhythmia": "🟠"}
+
+        lines = [f"💗 Ze-HRV — {patient['surname']} {patient['name']} (последние {len(rows)} сессий)"]
+        lines.append(f"{'Дата':<20} {'Ze_v':>6} {'RMSSD':>7} {'HR':>5} {'Качество':<10} Статус")
+        lines.append("─" * 70)
+        for r in rows:
+            icon = state_icon.get(r["ze_state"] or "", "⚪")
+            date_s = (r["recorded_at"] or "")[:16]
+            ze_v   = f"{r['ze_v']:.3f}" if r["ze_v"] is not None else "—"
+            rmssd  = f"{r['rmssd']:.1f}" if r["rmssd"] is not None else "—"
+            hr     = f"{r['mean_hr']:.0f}" if r["mean_hr"] is not None else "—"
+            qual   = r["quality"] or "—"
+            state  = r["ze_state"] or "—"
+            lines.append(f"{date_s:<20} {ze_v:>6} {rmssd:>7} {hr:>5} {qual:<10} {icon}{state}")
+        return "\n".join(lines)
+
+    except Exception as e:
+        return f"Ошибка Ze-HRV: {e}"
+
+
+def search_protocols(query: str) -> str:
+    """Search Regenesis Recepturae .md files."""
+    recepturae = Path.home() / "Desktop" / "Regenesis" / "Recepturae"
+    if not recepturae.exists():
+        return "Папка Recepturae не найдена."
+
+    query_lower = query.lower()
+    found = []
+    for md_file in sorted(recepturae.glob("*.md")):
+        text = md_file.read_text(encoding="utf-8", errors="replace")
+        if query_lower in text.lower():
+            # Extract title line
+            title = md_file.stem
+            for line in text.splitlines():
+                if line.startswith("# "):
+                    title = line[2:].strip()
+                    break
+            found.append((title, md_file, text))
+
+    if not found:
+        return f"По запросу «{query}» ничего не найдено в Recepturae."
+
+    if len(found) == 1:
+        title, path, text = found[0]
+        # Show full content (truncated)
+        return f"🌿 {title}\n{'─'*50}\n{text[:3000]}"
+
+    lines = [f"🌿 Протоколы по запросу «{query}» — найдено {len(found)}:"]
+    for i, (title, path, text) in enumerate(found, 1):
+        lines.append(f"  {i}. {title}  [{path.name}]")
+    lines.append("\nВведите номер для просмотра:")
+    print("\n".join(lines))
+    try:
+        idx = int(input("Номер: ").strip()) - 1
+        title, path, text = found[idx]
+        return f"🌿 {title}\n{'─'*50}\n{text[:4000]}"
+    except Exception:
+        return "Отмена."
+
+
+def start_wearable(folder_path: str) -> str:
+    """Launch wearable_importer for BLE HRV recording."""
+    try:
+        import subprocess, sys
+        aim_dir = Path(__file__).parent
+        cmd = [sys.executable, str(aim_dir / "wearable_importer.py"),
+               "--patient", folder_path, "--duration", "300"]
+        print(f"\n📡 Запуск: {' '.join(cmd)}")
+        print("Убедитесь что BLE-устройство включено.")
+        print("Сканирование (8 сек)...\n")
+        proc = subprocess.run(cmd, cwd=str(aim_dir))
+        return f"Wearable сессия завершена (код {proc.returncode})."
+    except Exception as e:
+        return f"Ошибка wearable: {e}"
+
+
 def analyze_labs_only(folder_path: str) -> str:
     """Quick lab analysis using lab_parser + diagnosis_engine."""
     folder = Path(folder_path)
@@ -387,6 +538,11 @@ def print_menu():
     print("  8. Список отклонений у всех пациентов")
     print("  9. 🔍 Поиск по симптому / диагнозу")
     print("  0. 📊 Статистика базы данных")
+    print("  ── Интеграции ──────────────────────────")
+    print("  a. 🧬 Прогноз старения (CDATA Digital Twin)")
+    print("  b. 💗 Ze-HRV история пациента")
+    print("  c. 🌿 Протоколы питания (Regenesis)")
+    print("  w. 📡 Wearable BLE — записать HRV (5 мин)")
     print("  q. Выход")
 
 
@@ -530,6 +686,67 @@ def run_interactive():
 
         elif choice == "0":
             print("\n" + db_stats())
+
+        elif choice == "a":
+            patients = list_patients()
+            if not patients:
+                print("Нет пациентов.")
+                continue
+            for i, p in enumerate(patients, 1):
+                print(f"  {i}. {p['name']}")
+            try:
+                idx = int(input("Номер пациента: ")) - 1
+                selected_folder = patients[idx]["folder"]
+                print("\nЗапуск CDATA симуляции...")
+                print(show_aging_prediction(selected_folder))
+            except (ValueError, IndexError):
+                print("Неверный выбор.")
+
+        elif choice == "b":
+            patients = list_patients()
+            if not patients:
+                print("Нет пациентов.")
+                continue
+            for i, p in enumerate(patients, 1):
+                ze_s = f"  Ze:{p['ze_v']:.3f}" if p.get("ze_v") is not None else ""
+                print(f"  {i}. {p['name']}{ze_s}")
+            try:
+                idx = int(input("Номер пациента: ")) - 1
+                selected_folder = patients[idx]["folder"]
+                print("\n" + show_ze_history(selected_folder))
+            except (ValueError, IndexError):
+                print("Неверный выбор.")
+
+        elif choice == "c":
+            query = input("\n🌿 Поиск протокола (питание, сироп, отвар...): ").strip()
+            if query:
+                print("\n" + search_protocols(query))
+            else:
+                # Show index
+                from pathlib import Path as _P
+                rec = _P.home() / "Desktop" / "Regenesis" / "Recepturae"
+                if rec.exists():
+                    files = sorted(rec.glob("*.md"))
+                    print(f"\n🌿 Recepturae — {len(files)} протоколов:")
+                    for f in files:
+                        print(f"  • {f.stem}")
+                    query = input("\nПоиск: ").strip()
+                    if query:
+                        print("\n" + search_protocols(query))
+
+        elif choice == "w":
+            patients = list_patients()
+            if not patients:
+                print("Нет пациентов.")
+                continue
+            for i, p in enumerate(patients, 1):
+                print(f"  {i}. {p['name']}")
+            try:
+                idx = int(input("Номер пациента: ")) - 1
+                selected_folder = patients[idx]["folder"]
+                print(f"\n{start_wearable(selected_folder)}")
+            except (ValueError, IndexError):
+                print("Неверный выбор.")
 
         else:
             print("Неверный выбор.")
