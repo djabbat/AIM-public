@@ -5,10 +5,11 @@ Calls the cdata_patient_sim binary (CDATA Digital Twin) via subprocess,
 returns structured aging predictions for use in AIM patient analysis.
 
 Usage:
-    from cdata_bridge import run_cdata_sim, aging_summary_text
+    from cdata_bridge import run_cdata_sim, aging_summary_text, full_cdata_report
 
     result = run_cdata_sim(age=45, tissue="Blood", damage_scale=1.0)
     print(aging_summary_text(result))
+    print(full_cdata_report(patient_age=45, diagnoses=[], risk_factors=[], lang="ru"))
 """
 
 import subprocess
@@ -17,11 +18,14 @@ import os
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-# Path to compiled binary
-_BINARY_PATH = os.path.join(
+# Path to compiled binary — prefers release build (1.2 MB), falls back to debug
+_CDATA_ROOT = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
-    "..", "Desktop", "CDATA", "target", "debug", "cdata_patient_sim"
+    "..", "Desktop", "CDATA"
 )
+_BINARY_RELEASE = os.path.join(_CDATA_ROOT, "target", "release", "cdata_patient_sim")
+_BINARY_DEBUG   = os.path.join(_CDATA_ROOT, "target", "debug",   "cdata_patient_sim")
+_BINARY_PATH = _BINARY_RELEASE if os.path.isfile(_BINARY_RELEASE) else _BINARY_DEBUG
 
 # Map damage_scale descriptors to float multipliers
 DAMAGE_PRESETS = {
@@ -32,25 +36,40 @@ DAMAGE_PRESETS = {
 }
 
 # Map common diagnoses / risk factors to tissue and damage_scale hints
+# Includes English, Russian, and Georgian keywords
 _TISSUE_HINTS = {
-    "leukemia":           "Blood",
-    "anemia":             "Blood",
-    "myeloma":            "Blood",
-    "alzheimer":          "Neural",
-    "parkinson":          "Neural",
-    "dementia":           "Neural",
-    "myopathy":           "Muscle",
-    "muscular dystrophy": "Muscle",
-    "cirrhosis":          "Liver",
-    "hepatitis":          "Liver",
-    "melanoma":           "Skin",
-    "psoriasis":          "Skin",
-    "renal":              "Kidney",
-    "kidney":             "Kidney",
-    "pulmonary":          "Lung",
-    "copd":               "Lung",
-    "cardiac":            "Heart",
-    "heart failure":      "Heart",
+    # Blood
+    "leukemia": "Blood", "лейкем": "Blood", "лейкоз": "Blood",
+    "anemia":   "Blood", "анеми":  "Blood",
+    "myeloma":  "Blood", "миелом": "Blood",
+    "lymphoma": "Blood", "лимфом": "Blood",
+    # Neural
+    "alzheimer":      "Neural", "альцгейм":    "Neural",
+    "parkinson":      "Neural", "паркинсон":   "Neural",
+    "dementia":       "Neural", "деменц":      "Neural",
+    "stroke":         "Neural", "инсульт":     "Neural",
+    "нейродеген":     "Neural",
+    # Muscle
+    "myopathy":           "Muscle", "миопат":    "Muscle",
+    "muscular dystrophy": "Muscle", "дистрофи":  "Muscle",
+    # Liver
+    "cirrhosis": "Liver", "цирроз":   "Liver",
+    "hepatitis": "Liver", "гепатит":  "Liver",
+    "печеночн":  "Liver",
+    # Skin
+    "melanoma": "Skin", "меланом": "Skin",
+    "psoriasis": "Skin", "псориаз": "Skin",
+    # Kidney
+    "renal":   "Kidney", "почечн": "Kidney",
+    "kidney":  "Kidney", "нефрит": "Kidney",
+    # Lung
+    "pulmonary": "Lung", "легочн": "Lung",
+    "copd":      "Lung", "хобл":   "Lung",
+    "пневмон":   "Lung",
+    # Heart
+    "cardiac":      "Heart", "кардио":    "Heart",
+    "heart failure": "Heart", "сердечн":  "Heart",
+    "ишеми":        "Heart", "инфаркт":  "Heart",
 }
 
 
@@ -257,6 +276,50 @@ def analyze_patient_aging(
     scale   = damage_scale_from_risk(risk_factors)
     result  = run_cdata_sim(age=patient_age, tissue=tissue, damage_scale=scale)
     return aging_summary_text(result, lang=lang)
+
+
+def full_cdata_report(
+    patient_age:    float,
+    diagnoses:      List[str],
+    risk_factors:   List[str],
+    diet_notes:     str = "",
+    lang:           str = "ru",
+) -> str:
+    """
+    Full CDATA patient report: aging simulation + nutrition recommendations.
+
+    Combines aging_summary_text() with cdata_nutrition_text() into a single
+    report for inclusion in AIM patient analysis output.
+
+    Args:
+        patient_age:  Patient age in years.
+        diagnoses:    List of diagnosis strings.
+        risk_factors: List of risk factor strings.
+        diet_notes:   Free-text description of patient's dietary habits.
+        lang:         "ru" | "en" | "ka"
+
+    Returns:
+        Multi-line formatted report string.
+    """
+    try:
+        from cdata_nutrition import cdata_nutrition_text, damage_scale_from_diet
+        diet_delta = damage_scale_from_diet(diet_notes)
+    except ImportError:
+        cdata_nutrition_text = None
+        diet_delta = 0.0
+
+    tissue = tissue_from_diagnoses(diagnoses)
+    scale  = damage_scale_from_risk(risk_factors) + diet_delta
+    scale  = max(0.3, min(scale, 5.0))
+
+    sim_text = aging_summary_text(run_cdata_sim(
+        age=patient_age, tissue=tissue, damage_scale=scale
+    ), lang=lang)
+
+    if cdata_nutrition_text is not None:
+        nutr_text = cdata_nutrition_text(age=patient_age, damage_scale=scale, lang=lang)
+        return sim_text + "\n\n" + nutr_text
+    return sim_text
 
 
 # ── CLI self-test ─────────────────────────────────────────────────────────────
