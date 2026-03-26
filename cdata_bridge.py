@@ -21,7 +21,7 @@ from typing import List, Optional
 # Path to compiled binary — prefers release build (1.2 MB), falls back to debug
 _CDATA_ROOT = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
-    "..", "Desktop", "CDATA"
+    "..", "CDATA"
 )
 _BINARY_RELEASE = os.path.join(_CDATA_ROOT, "target", "release", "cdata_patient_sim")
 _BINARY_DEBUG   = os.path.join(_CDATA_ROOT, "target", "debug",   "cdata_patient_sim")
@@ -161,6 +161,38 @@ def tissue_from_diagnoses(diagnoses: List[str]) -> str:
     return "Blood"
 
 
+ZE_OPTIMAL_V = 0.456  # v* — оптимальная Ze-скорость (молодой, здоровый организм)
+
+
+def damage_scale_from_ze(ze_v: float, ze_state: str = "healthy") -> float:
+    """
+    Вычисляет CDATA damage_scale из Ze-HRV метрик.
+
+    Формула: отклонение ze_v от v*=0.456 → накопление повреждений.
+    Чем дальше Ze-скорость от оптимума — тем выше damage_scale.
+
+    Args:
+        ze_v:    Ze-скорость (v* = 0.456 = молодой/здоровый).
+        ze_state: "healthy" | "stress" | "arrhythmia" | "bradyarrhythmia" | "tachyarrhythmia"
+
+    Returns:
+        damage_scale float: 1.0 = норма, >1.0 = ускоренное старение.
+    """
+    deviation = abs(ze_v - ZE_OPTIMAL_V) / ZE_OPTIMAL_V
+    scale = 1.0 + deviation * 1.5
+
+    state_penalty = {
+        "healthy":          0.0,
+        "stress":           0.2,
+        "bradyarrhythmia":  0.3,
+        "tachyarrhythmia":  0.4,
+        "arrhythmia":       0.5,
+    }.get(ze_state, 0.1)
+
+    scale += state_penalty
+    return max(0.4, min(scale, 5.0))
+
+
 def damage_scale_from_risk(risk_factors: List[str]) -> float:
     """Estimate damage_scale from risk factor keywords."""
     scale = 1.0
@@ -263,18 +295,26 @@ def analyze_patient_aging(
     diagnoses:      List[str],
     risk_factors:   List[str],
     lang:           str = "ru",
+    ze_v:           Optional[float] = None,
+    ze_state:       str = "healthy",
 ) -> str:
     """
     High-level AIM integration call.
 
-    Infers tissue and damage_scale from diagnoses/risk factors,
-    runs simulation, returns formatted summary.
+    Infers tissue and damage_scale from diagnoses/risk factors.
+    If ze_v is provided, Ze-HRV data blends into damage_scale (weight 0.6).
 
     Called from patient_analysis.py or medical_system.py.
     """
-    tissue  = tissue_from_diagnoses(diagnoses)
-    scale   = damage_scale_from_risk(risk_factors)
-    result  = run_cdata_sim(age=patient_age, tissue=tissue, damage_scale=scale)
+    tissue = tissue_from_diagnoses(diagnoses)
+    scale  = damage_scale_from_risk(risk_factors)
+
+    if ze_v is not None:
+        ze_scale = damage_scale_from_ze(ze_v, ze_state)
+        # Blend: 40% clinical keywords + 60% Ze biometric
+        scale = 0.4 * scale + 0.6 * ze_scale
+
+    result = run_cdata_sim(age=patient_age, tissue=tissue, damage_scale=scale)
     return aging_summary_text(result, lang=lang)
 
 

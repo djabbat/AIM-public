@@ -5,7 +5,7 @@ db.py — AIM SQLite database layer.
 Заменяет: processed_files.json, medical_knowledge.json,
           разрозненные _lab_results.json и _ai_analysis.txt в папках пациентов.
 
-База данных: ~/AIM/aim.db
+База данных: ~/Desktop/AIM/aim.db
 Чистый sqlite3 — без внешних зависимостей.
 
 Схема:
@@ -136,6 +136,36 @@ CREATE TABLE IF NOT EXISTS processed_files (
     error_msg    TEXT    DEFAULT ''
 );
 
+-- ─── Patient Clusters & Relationships ──────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS clusters (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    name        TEXT    NOT NULL UNIQUE,
+    description TEXT    DEFAULT '',
+    created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS cluster_members (
+    cluster_id  INTEGER NOT NULL REFERENCES clusters(id) ON DELETE CASCADE,
+    patient_id  INTEGER NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+    role        TEXT    DEFAULT 'member' CHECK(role IN ('primary','member')),
+    added_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (cluster_id, patient_id)
+);
+
+CREATE TABLE IF NOT EXISTS patient_relationships (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id_1  INTEGER NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+    patient_id_2  INTEGER NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+    relation_type TEXT    NOT NULL,
+    notes         TEXT    DEFAULT '',
+    created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_cluster_members_patient ON cluster_members(patient_id);
+CREATE INDEX IF NOT EXISTS idx_rel_p1 ON patient_relationships(patient_id_1);
+CREATE INDEX IF NOT EXISTS idx_rel_p2 ON patient_relationships(patient_id_2);
+
 -- ─── Knowledge Graph ────────────────────────────────────────────────────────
 -- Единый граф знаний: AIM как центральное хранилище для всех проектов.
 
@@ -220,7 +250,12 @@ def _tx():
 
 
 def init_db(path: Optional[Path] = None) -> None:
-    """Создаёт БД и применяет схему (идемпотентно)."""
+    """Создаёт БД и применяет схему (идемпотентно).
+
+    Правило новых таблиц:
+      Перед созданием новой таблицы в aim.db — ОБЯЗАТЕЛЬНО обсудить с пользователем.
+      Причина: медицинская БД, структура влияет на клиническую работу и миграции.
+    """
     global DB_PATH
     if path:
         DB_PATH = path
@@ -229,6 +264,10 @@ def init_db(path: Optional[Path] = None) -> None:
     conn.executescript(SCHEMA)
     conn.commit()
     log.info(f"DB ready: {DB_PATH}")
+
+    # Инициализируем таблицы аутентификации (users + sessions)
+    import auth as _auth
+    _auth.init_auth_tables()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -703,7 +742,7 @@ def migrate_from_json(
 
     knowledge_file : путь к medical_knowledge.json
     processed_file : путь к processed_files.json
-    patients_dir   : путь к ~/AIM/Patients/
+    patients_dir   : путь к ~/Desktop/AIM/Patients/
     dry_run        : только подсчёт, без записи
 
     Возвращает статистику миграции.

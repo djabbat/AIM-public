@@ -493,3 +493,168 @@
 2026-03-24 03:20:10 [INFO] inbox_watcher: InboxWatcher started, watching: /home/oem/AIM/Patients/INBOX
 2026-03-24 03:20:36 [INFO] db: DB ready: /home/oem/AIM/aim.db
 2026-03-24 03:21:01 [DEBUG] llm: LLM OK: 2847 chars, model=deepseek-chat
+2026-03-24 03:23:13 [DEBUG] llm: LLM OK: 1016 chars, model=deepseek-chat
+2026-03-24 03:24:15 [DEBUG] llm: LLM OK: 3232 chars, model=deepseek-chat
+2026-03-24 09:00:01 [INFO] db: DB ready: /home/oem/AIM/aim.db
+2026-03-24 21:00:01 [INFO] db: DB ready: /home/oem/AIM/aim.db
+2026-03-25 01:15:36 [INFO] inbox_watcher: InboxWatcher started, watching: /home/oem/Desktop/AIM/Patients/INBOX
+2026-03-25 01:16:49 [INFO] inbox_watcher: InboxWatcher started, watching: /home/oem/Desktop/AIM/Patients/INBOX
+2026-03-25 01:44:40 [DEBUG] llm: LLM OK: 24077 chars, model=deepseek-reasoner
+2026-03-25 02:08:25 [DEBUG] llm: LLM OK: 29896 chars, model=deepseek-reasoner
+2026-03-25 02:08:46 [DEBUG] llm: LLM OK: 697 chars, model=deepseek-chat
+2026-03-25 02:09:02 [DEBUG] llm: LLM OK: 1523 chars, model=deepseek-chat
+2026-03-25 02:09:13 [DEBUG] llm: LLM OK: 851 chars, model=deepseek-chat
+2026-03-25 02:09:23 [DEBUG] llm: LLM OK: 639 chars, model=deepseek-chat
+2026-03-25 02:09:33 [DEBUG] llm: LLM OK: 698 chars, model=deepseek-chat
+2026-03-25 02:09:51 [DEBUG] llm: LLM OK: 1560 chars, model=deepseek-chat
+2026-03-25 02:10:02 [DEBUG] llm: LLM OK: 763 chars, model=deepseek-chat
+2026-03-25 02:10:12 [DEBUG] llm: LLM OK: 682 chars, model=deepseek-chat
+2026-03-25 02:10:21 [DEBUG] llm: LLM OK: 497 chars, model=deepseek-chat
+2026-03-25 02:26:01 [DEBUG] llm: LLM OK: 33621 chars, model=deepseek-reasoner
+2026-03-25 02:41:54 [DEBUG] llm: LLM OK: 34950 chars, model=deepseek-reasoner
+2026-03-25 02:43:40 [DEBUG] llm: LLM OK: 7418 chars, model=deepseek-reasoner
+2026-03-25 02:52:09 [DEBUG] llm: LLM OK: 39303 chars, model=deepseek-reasoner
+2026-03-25 03:03:58 [ERROR] llm: LLM error: Error code: 400 - {'error': {'message': 'Invalid max_tokens value, the valid range of max_tokens is [1, 8192]', 'type': 'invalid_request_error', 'param': None, 'code': 'invalid_request_error'}}
+2026-03-25 05:16:38 [INFO] db: DB ready: /home/oem/Desktop/AIM/aim.db
+2026-03-25 05:18:44 [INFO] inbox_watcher: InboxWatcher started, watching: /home/oem/Desktop/AIM/Patients/INBOX
+2026-03-25 05:21:54 [INFO] db: DB ready: /home/oem/Desktop/AIM/aim.db
+2026-03-25 05:22:19 [INFO] db: DB ready: /home/oem/Desktop/AIM/aim.db
+2026-03-25 05:23:28 [INFO] inbox_watcher: InboxWatcher started, watching: /home/oem/Desktop/AIM/Patients/INBOX
+2026-03-25 05:29:25 [INFO] db: DB ready: /home/oem/Desktop/AIM/aim.db
+2026-03-25 05:29:49 [INFO] db: DB ready: /home/oem/Desktop/AIM/aim.db
+2026-03-25 05:40:33 [INFO] db: DB ready: /home/oem/Desktop/AIM/aim.db
+2026-03-25 06:16:42 [INFO] db: DB ready: /home/oem/Desktop/AIM/aim.db
+2026-03-25 06:18:35 [INFO] db: DB ready: /home/oem/Desktop/AIM/aim.db
+2026-03-25 06:23:42 [DEBUG] llm: LLM OK: 9226 chars, model=deepseek-chat
+2026-03-25 06:23:57 [INFO] db: DB ready: /home/oem/Desktop/AIM/aim.db
+2026-03-25 06:23:57 [INFO] db: DB ready: /home/oem/Desktop/AIM/aim.db
+2026-03-25 06:24:20 [INFO] db: DB ready: /home/oem/Desktop/AIM/aim.db
+2026-03-25 06:25:29 [INFO] db: DB ready: /home/oem/Desktop/AIM/aim.db
+2026-03-25 06:25:29 [INFO] db: DB ready: /home/oem/Desktop/AIM/aim.db
+2026-03-25 06:26:34 [DEBUG] llm: LLM OK: 8187 chars, model=deepseek-chat
+2026-03-25 06:29:22 [DEBUG] llm: LLM OK: 7780 chars, model=deepseek-chat
+2026-03-25 06:44:07 [DEBUG] llm: LLM OK: 7591 chars, model=deepseek-chat
+2026-03-25 06:45:25 [DEBUG] llm: LLM OK: 6041 chars, model=deepseek-chat
+2026-03-25 06:46:31 [DEBUG] llm: LLM OK: 5927 chars, model=deepseek-chat
+2026-03-25 06:47:46 [DEBUG] llm: LLM OK: 5884 chars, model=deepseek-chat
+2026-03-25 06:48:42 [DEBUG] llm: LLM OK: 9735 chars, model=deepseek-chat
+2026-03-25 06:49:00 [DEBUG] llm: LLM OK: 5935 chars, model=deepseek-chat
+2026-03-25 06:50:57 [DEBUG] llm: LLM OK: 7802 chars, model=deepseek-chat
+2026-03-25 06:52:16 [DEBUG] llm: LLM OK: 5439 chars, model=deepseek-chat
+2026-03-25 06:54:39 [DEBUG] llm: LLM OK: 9257 chars, model=deepseek-chat
+2026-03-25 06:56:56 [DEBUG] llm: LLM OK: 8138 chars, model=deepseek-chat
+2026-03-25 06:56:57 [INFO] db: DB ready: /home/oem/Desktop/AIM/aim.db
+2026-03-25 06:56:57 [INFO] db: DB ready: /home/oem/Desktop/AIM/aim.db
+2026-03-25 06:58:32 [DEBUG] llm: LLM OK: 9386 chars, model=deepseek-chat
+2026-03-25 07:00:44 [DEBUG] llm: LLM OK: 11516 chars, model=deepseek-chat
+2026-03-25 07:03:32 [DEBUG] llm: LLM OK: 11761 chars, model=deepseek-chat
+2026-03-25 07:03:51 [DEBUG] llm: LLM OK: 8730 chars, model=deepseek-chat
+2026-03-25 07:06:19 [DEBUG] llm: LLM OK: 11155 chars, model=deepseek-chat
+2026-03-25 07:07:00 [DEBUG] llm: LLM OK: 10649 chars, model=deepseek-chat
+2026-03-25 07:08:37 [DEBUG] llm: LLM OK: 10268 chars, model=deepseek-chat
+2026-03-25 07:09:21 [DEBUG] llm: LLM OK: 2282 chars, model=deepseek-chat
+2026-03-25 07:12:59 [DEBUG] llm: LLM OK: 7547 chars, model=deepseek-chat
+2026-03-25 07:20:38 [DEBUG] llm: LLM OK: 6032 chars, model=deepseek-chat
+2026-03-25 07:21:55 [DEBUG] llm: LLM OK: 6436 chars, model=deepseek-chat
+2026-03-25 07:23:32 [DEBUG] llm: LLM OK: 5671 chars, model=deepseek-chat
+2026-03-25 07:24:18 [DEBUG] llm: LLM OK: 4737 chars, model=deepseek-chat
+2026-03-25 07:24:58 [DEBUG] llm: LLM OK: 4049 chars, model=deepseek-chat
+2026-03-25 07:25:48 [DEBUG] llm: LLM OK: 5554 chars, model=deepseek-chat
+2026-03-25 07:36:52 [DEBUG] llm: LLM OK: 7792 chars, model=deepseek-chat
+2026-03-25 09:00:17 [DEBUG] llm: LLM OK: 657 chars, model=deepseek-chat
+2026-03-25 09:00:48 [DEBUG] llm: LLM OK: 2235 chars, model=deepseek-chat
+2026-03-25 09:01:02 [DEBUG] llm: LLM OK: 772 chars, model=deepseek-chat
+2026-03-25 09:01:16 [DEBUG] llm: LLM OK: 748 chars, model=deepseek-chat
+2026-03-25 09:01:31 [DEBUG] llm: LLM OK: 724 chars, model=deepseek-chat
+2026-03-25 09:01:55 [DEBUG] llm: LLM OK: 2175 chars, model=deepseek-chat
+2026-03-25 09:02:09 [DEBUG] llm: LLM OK: 720 chars, model=deepseek-chat
+2026-03-25 09:02:25 [DEBUG] llm: LLM OK: 864 chars, model=deepseek-chat
+2026-03-25 09:02:38 [DEBUG] llm: LLM OK: 455 chars, model=deepseek-chat
+2026-03-25 12:00:16 [DEBUG] llm: LLM OK: 642 chars, model=deepseek-chat
+2026-03-25 12:00:32 [DEBUG] llm: LLM OK: 1098 chars, model=deepseek-chat
+2026-03-25 12:00:46 [DEBUG] llm: LLM OK: 746 chars, model=deepseek-chat
+2026-03-25 12:00:58 [DEBUG] llm: LLM OK: 612 chars, model=deepseek-chat
+2026-03-25 12:01:12 [DEBUG] llm: LLM OK: 795 chars, model=deepseek-chat
+2026-03-25 12:01:33 [DEBUG] llm: LLM OK: 1594 chars, model=deepseek-chat
+2026-03-25 12:01:48 [DEBUG] llm: LLM OK: 739 chars, model=deepseek-chat
+2026-03-25 12:02:03 [DEBUG] llm: LLM OK: 740 chars, model=deepseek-chat
+2026-03-25 12:02:16 [DEBUG] llm: LLM OK: 507 chars, model=deepseek-chat
+2026-03-25 15:00:16 [DEBUG] llm: LLM OK: 654 chars, model=deepseek-chat
+2026-03-25 15:00:32 [DEBUG] llm: LLM OK: 1108 chars, model=deepseek-chat
+2026-03-25 15:00:45 [DEBUG] llm: LLM OK: 773 chars, model=deepseek-chat
+2026-03-25 15:00:59 [DEBUG] llm: LLM OK: 721 chars, model=deepseek-chat
+2026-03-25 15:01:16 [DEBUG] llm: LLM OK: 723 chars, model=deepseek-chat
+2026-03-25 15:01:48 [DEBUG] llm: LLM OK: 2800 chars, model=deepseek-chat
+2026-03-25 15:02:02 [DEBUG] llm: LLM OK: 765 chars, model=deepseek-chat
+2026-03-25 15:02:18 [DEBUG] llm: LLM OK: 803 chars, model=deepseek-chat
+2026-03-25 15:02:31 [DEBUG] llm: LLM OK: 531 chars, model=deepseek-chat
+2026-03-25 18:00:16 [DEBUG] llm: LLM OK: 656 chars, model=deepseek-chat
+2026-03-25 18:00:32 [DEBUG] llm: LLM OK: 687 chars, model=deepseek-chat
+2026-03-25 18:00:42 [DEBUG] llm: LLM OK: 463 chars, model=deepseek-chat
+2026-03-25 18:00:59 [DEBUG] llm: LLM OK: 931 chars, model=deepseek-chat
+2026-03-25 18:01:32 [DEBUG] llm: LLM OK: 2802 chars, model=deepseek-chat
+2026-03-25 18:01:48 [DEBUG] llm: LLM OK: 630 chars, model=deepseek-chat
+2026-03-25 18:02:01 [DEBUG] llm: LLM OK: 444 chars, model=deepseek-chat
+2026-03-25 18:02:11 [DEBUG] llm: LLM OK: 372 chars, model=deepseek-chat
+2026-03-25 21:34:48 [INFO] db: DB ready: /home/oem/Desktop/AIM/aim.db
+2026-03-25 21:47:30 [DEBUG] llm: LLM OK: 15191 chars, model=deepseek-chat
+2026-03-25 21:48:24 [DEBUG] llm: LLM OK: 8057 chars, model=deepseek-chat
+2026-03-25 21:49:14 [DEBUG] llm: LLM OK: 6611 chars, model=deepseek-chat
+2026-03-25 21:50:10 [DEBUG] llm: LLM OK: 8759 chars, model=deepseek-chat
+2026-03-25 21:51:20 [DEBUG] llm: LLM OK: 11319 chars, model=deepseek-chat
+2026-03-25 21:52:48 [DEBUG] llm: LLM OK: 14722 chars, model=deepseek-chat
+2026-03-25 21:56:33 [DEBUG] llm: LLM OK: 15155 chars, model=deepseek-chat
+2026-03-25 21:57:26 [DEBUG] llm: LLM OK: 8121 chars, model=deepseek-chat
+2026-03-25 21:58:14 [DEBUG] llm: LLM OK: 6617 chars, model=deepseek-chat
+2026-03-25 21:59:08 [DEBUG] llm: LLM OK: 8726 chars, model=deepseek-chat
+2026-03-25 22:00:16 [DEBUG] llm: LLM OK: 11316 chars, model=deepseek-chat
+2026-03-25 22:01:49 [DEBUG] llm: LLM OK: 14712 chars, model=deepseek-chat
+2026-03-25 22:03:37 [DEBUG] llm: LLM OK: 18509 chars, model=deepseek-chat
+2026-03-25 22:05:03 [DEBUG] llm: LLM OK: 13991 chars, model=deepseek-chat
+2026-03-25 22:06:39 [DEBUG] llm: LLM OK: 14289 chars, model=deepseek-chat
+2026-03-25 22:08:00 [DEBUG] llm: LLM OK: 13605 chars, model=deepseek-chat
+2026-03-25 22:09:04 [DEBUG] llm: LLM OK: 9573 chars, model=deepseek-chat
+2026-03-25 22:10:09 [DEBUG] llm: LLM OK: 11204 chars, model=deepseek-chat
+2026-03-25 22:11:08 [DEBUG] llm: LLM OK: 11311 chars, model=deepseek-chat
+2026-03-25 22:12:36 [DEBUG] llm: LLM OK: 14983 chars, model=deepseek-chat
+2026-03-25 22:12:44 [DEBUG] llm: LLM OK: 979 chars, model=deepseek-chat
+2026-03-25 22:14:29 [DEBUG] llm: LLM OK: 5529 chars, model=deepseek-chat
+2026-03-25 22:16:03 [DEBUG] llm: LLM OK: 5756 chars, model=deepseek-chat
+2026-03-25 22:17:39 [DEBUG] llm: LLM OK: 5762 chars, model=deepseek-chat
+2026-03-25 22:19:10 [DEBUG] llm: LLM OK: 5735 chars, model=deepseek-chat
+2026-03-25 22:20:40 [DEBUG] llm: LLM OK: 5694 chars, model=deepseek-chat
+2026-03-25 22:22:18 [DEBUG] llm: LLM OK: 5697 chars, model=deepseek-chat
+2026-03-25 22:23:58 [DEBUG] llm: LLM OK: 5621 chars, model=deepseek-chat
+2026-03-25 22:25:44 [DEBUG] llm: LLM OK: 5533 chars, model=deepseek-chat
+2026-03-25 22:27:31 [DEBUG] llm: LLM OK: 5780 chars, model=deepseek-chat
+2026-03-25 22:29:21 [DEBUG] llm: LLM OK: 5678 chars, model=deepseek-chat
+2026-03-25 22:31:22 [DEBUG] llm: LLM OK: 5616 chars, model=deepseek-chat
+2026-03-25 22:33:21 [DEBUG] llm: LLM OK: 5677 chars, model=deepseek-chat
+2026-03-25 22:35:14 [DEBUG] llm: LLM OK: 5660 chars, model=deepseek-chat
+2026-03-25 22:37:02 [DEBUG] llm: LLM OK: 5688 chars, model=deepseek-chat
+2026-03-25 22:37:12 [DEBUG] llm: LLM OK: 852 chars, model=deepseek-chat
+2026-03-25 23:00:20 [DEBUG] llm: LLM OK: 6278 chars, model=deepseek-chat
+2026-03-25 23:01:30 [DEBUG] llm: LLM OK: 6348 chars, model=deepseek-chat
+2026-03-25 23:02:32 [DEBUG] llm: LLM OK: 5994 chars, model=deepseek-chat
+2026-03-25 23:03:33 [DEBUG] llm: LLM OK: 6149 chars, model=deepseek-chat
+2026-03-25 23:04:08 [DEBUG] llm: LLM OK: 3634 chars, model=deepseek-chat
+2026-03-25 23:36:22 [DEBUG] llm: LLM OK: 1204 chars, model=deepseek-chat
+2026-03-25 23:43:04 [DEBUG] llm: LLM OK: 5421 chars, model=deepseek-chat
+2026-03-25 23:44:01 [DEBUG] llm: LLM OK: 5344 chars, model=deepseek-chat
+2026-03-26 00:45:25 [DEBUG] llm: LLM OK: 1275 chars, model=deepseek-chat
+2026-03-26 00:45:28 [DEBUG] llm: LLM OK: 305 chars, model=deepseek-chat
+2026-03-26 00:45:31 [DEBUG] llm: LLM OK: 245 chars, model=deepseek-chat
+2026-03-26 00:45:35 [DEBUG] llm: LLM OK: 370 chars, model=deepseek-chat
+2026-03-26 01:01:13 [DEBUG] llm: LLM OK: 1078 chars, model=deepseek-chat
+2026-03-26 01:01:59 [DEBUG] llm: LLM OK: 6700 chars, model=deepseek-chat
+2026-03-26 01:02:44 [DEBUG] llm: LLM OK: 7029 chars, model=deepseek-chat
+2026-03-26 01:04:01 [DEBUG] llm: LLM OK: 1127 chars, model=deepseek-chat
+2026-03-26 01:04:45 [DEBUG] llm: LLM OK: 6616 chars, model=deepseek-chat
+2026-03-26 01:05:22 [DEBUG] llm: LLM OK: 5757 chars, model=deepseek-chat
+2026-03-26 01:07:11 [DEBUG] llm: LLM OK: 261 chars, model=deepseek-chat
+2026-03-26 01:07:15 [DEBUG] llm: LLM OK: 265 chars, model=deepseek-chat
+2026-03-26 01:07:18 [DEBUG] llm: LLM OK: 350 chars, model=deepseek-chat
+2026-03-26 01:07:23 [DEBUG] llm: LLM OK: 374 chars, model=deepseek-chat
+2026-03-26 01:07:26 [DEBUG] llm: LLM OK: 300 chars, model=deepseek-chat
+2026-03-26 01:07:29 [DEBUG] llm: LLM OK: 255 chars, model=deepseek-chat
+2026-03-26 01:07:34 [DEBUG] llm: LLM OK: 442 chars, model=deepseek-chat

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Interactive patient case history analysis system.
-Dr. Jaba Tkemaladze — patient records from ~/AIM/Patients/
+Dr. Jaba Tkemaladze — patient records from ~/Desktop/AIM/Patients/
 """
 
 import os
@@ -37,7 +37,7 @@ def ask_llm(prompt: str, system: str = "") -> str:
 
 def show_patients(patients: list):
     if not patients:
-        print("  Нет пациентов в ~/AIM/Patients/")
+        print("  Нет пациентов в ~/Desktop/AIM/Patients/")
         return
     print(f"\nПациентов: {len(patients)}")
     for i, p in enumerate(patients, 1):
@@ -142,7 +142,7 @@ def bayesian_menu(patient_nets: list, global_net: GlobalBayesNet):
                 "patients": [p.to_dict() for p in patient_nets],
                 "global": global_net.to_dict(),
             }
-            out_path = os.path.expanduser("~/AIM/medical_bayes.json")
+            out_path = os.path.expanduser("~/Desktop/AIM/medical_bayes.json")
             with open(out_path, "w", encoding="utf-8") as f:
                 json.dump(output, f, ensure_ascii=False, indent=2)
             print(f"  ✅ Сохранено: {out_path}")

@@ -4,8 +4,8 @@ tg_desktop_importer.py — Парсер экспорта Telegram Desktop
 ==========================================================
 Использование:
   1. Telegram Desktop → Settings → Advanced → Export Telegram data
-     → Personal chats, Photos, Voice, Documents → JSON → ~/AIM/tg_export/
-  2. python3 tg_desktop_importer.py --export ~/AIM/tg_export/
+     → Personal chats, Photos, Voice, Documents → JSON → ~/Desktop/AIM/tg_export/
+  2. python3 tg_desktop_importer.py --export ~/Desktop/AIM/tg_export/
      Найдёт пациентов (P/П/პ в имени), скопирует в Patients/, запустит intake.
 
 Опции:
@@ -360,7 +360,7 @@ def run(export_path: str, list_only: bool, dry_run: bool,
 
 def main():
     parser = argparse.ArgumentParser(description="Telegram Desktop export → AIM patients")
-    parser.add_argument("--export", default="~/AIM/tg_export/", help="Path to Telegram export folder")
+    parser.add_argument("--export", default="~/Desktop/AIM/tg_export/", help="Path to Telegram export folder")
     parser.add_argument("--list", action="store_true", help="List patients only, don't import")
     parser.add_argument("--dry-run", action="store_true", help="Show what would be done")
     parser.add_argument("--from", dest="date_from", default=None, help="Start date YYYY-MM-DD")

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Patient intake pipeline.
-Processes patient folders in ~/AIM/Patients/:
+Processes patient folders in ~/Desktop/AIM/Patients/:
   - OCR screenshots (JPEG/PNG)
   - Extract PDF lab results
   - Identify patient DOB from analyses
@@ -457,7 +457,7 @@ def _try_fix_folder_dob(folder: Path, combined_text: str) -> Optional[Path]:
 # ── Process all patients ───────────────────────────────────────
 
 def process_all_patients(force: bool = False) -> int:
-    """Process all patient folders in ~/AIM/Patients/. Returns count processed."""
+    """Process all patient folders in ~/Desktop/AIM/Patients/. Returns count processed."""
     docs = Path(DOCUMENTS_DIR)
     count = 0
     folders = [d for d in docs.iterdir() if d.is_dir() and not d.name.startswith(".")]

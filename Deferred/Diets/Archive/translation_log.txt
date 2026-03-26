@@ -1,0 +1,15 @@
+QC EN chunk 0: **Errors:**
+
+1.  **Missing Content:** The translation cuts off mid-sentence. The original's final sentence is incomplete but continues with "...искусство выбирать лучшее из щедрых даров природы и готовить это с любовью и знани[ем]." The translation ends abruptly with "but the a..."
+2.  **Mistranslation:** "диетолог" is translated as "dietitian." While acceptable, in a medical context, the more precise term for a physician specializing in nutrition is **"nutritionist"** or "nutritional doctor." "Dietitian" is often a separate, non-physician qualification.
+3.  **Transliteration Inconsistency:** "Джонджоли" is transliterated as *jinjoli*. The more common and precise transliteration from Georgian is **"jonjoli."** The parenthetical explanation is correct.
+4.  **Minor Omission:** The poetic phrase "«тяжело на сердце»" is translated literally as "the heart feels heavy." While correct, the original's quotation marks emphasize it as a common saying, which is slightly lost.
+QC KA chunk 0: **Errors:**
+
+1.  **Missing Content:** The translation cuts off mid-sentence. The original ends with "...искусство выбирать лучшее из щедрых даров природы и готовить это с любовью и знани[ем]". The translation ends abruptly at "ხელოვნება" ("art").
+
+2.  **Mistranslation:** "და როგორ სწორად **დაეყვანა** **ჯონჯოლი**" – The verb "დაყვანა" is incorrect here. It means "to lead/bring to a place". The correct term for fermenting/pickling is **"დამწნილება"** or **"დაყვანა"** in the context of fermentation, but "დაეყვანა" is the wrong form. A more accurate translation would be **"დაემწნია"**.
+
+3.  **Minor Terminology:** "უსასრულო მოთმინება" is a correct translation for "бесконечное терпение", but in this context, "უსასრული მოთმინება" sounds slightly more natural.
+
+4.  **Formatting:** The markdown formatting (headings `#`, `##`) is correctly preserved.

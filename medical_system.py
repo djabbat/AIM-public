@@ -5,7 +5,7 @@ Integrative Medicine AI System
 Self-developing digital specialist for Dr. Jaba Tkemaladze.
 
 Features:
-  • Patient record management (~/AIM/Patients/)
+  • Patient record management (~/Desktop/AIM/Patients/)
   • Lab analysis with deviations + diagnosis suggestions
   • WhatsApp chat import (patients marked with P/П/პ)
   • OCR of medical screenshots
@@ -27,16 +27,17 @@ from typing import Optional, List, Dict
 AI_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, AI_DIR)
 
-VENV_SITE = os.path.expanduser("~/AIM/venv/lib/python3.*/site-packages")
+VENV_SITE = os.path.expanduser("~/Desktop/AIM/venv/lib/python3.*/site-packages")
 import glob as _glob
 _sp = _glob.glob(VENV_SITE)
 if _sp:
     sys.path.insert(0, _sp[0])
 
-from config import (PATIENTS_DIR as DOCUMENTS_DIR, INBOX_DIR,
+from config import (PATIENTS_DIR as DOCUMENTS_DIR,
                     KNOWLEDGE_FILE, MODEL, get_logger)
 from llm import ask_llm as _ask_llm_deepseek
 import db as _db
+import i18n as _i18n
 _db.init_db()
 try:
     from filelock import FileLock as _FileLock
@@ -340,14 +341,36 @@ def show_aging_prediction(folder_path: str) -> str:
                 if rf in text:
                     risk_factors.append(rf)
 
+        # Ze-HRV from DB (if available)
+        ze_v = None
+        ze_state = "healthy"
+        ze_info = ""
+        try:
+            ze_rows = _db2._connect().execute(
+                "SELECT ze_v, ze_state FROM ze_hrv WHERE patient_id=? ORDER BY recorded_at DESC LIMIT 1",
+                (patient["id"],)
+            ).fetchone()
+            if ze_rows and ze_rows["ze_v"] is not None:
+                ze_v = float(ze_rows["ze_v"])
+                ze_state = ze_rows["ze_state"] or "healthy"
+                ze_info = f"Ze: v={ze_v:.3f}, состояние={ze_state}"
+        except Exception:
+            pass
+
         lines = [
             f"🧬 ПРОГНОЗ СТАРЕНИЯ — {patient['surname']} {patient['name']}",
             f"   Возраст: {age:.1f} лет | Ткань: Blood",
             f"   Диагнозы: {', '.join(diagnoses) or 'нет данных'}",
             f"   Факторы риска: {', '.join(risk_factors) or 'нет данных'}",
-            "─" * 50,
         ]
-        result = analyze_patient_aging(age, diagnoses, risk_factors, lang="ru")
+        if ze_info:
+            lines.append(f"   {ze_info}  ← Ze-HRV биомаркер использован")
+        lines.append("─" * 50)
+
+        result = analyze_patient_aging(
+            age, diagnoses, risk_factors, lang="ru",
+            ze_v=ze_v, ze_state=ze_state,
+        )
         lines.append(result)
         return "\n".join(lines)
 
@@ -516,9 +539,10 @@ def analyze_labs_only(folder_path: str) -> str:
 # ── Interactive CLI ────────────────────────────────────────────
 
 def print_banner():
+    t = _i18n.t
     print("\n" + "═" * 60)
-    print("   ИНТЕГРАТИВНАЯ МЕДИЦИНА — AI СИСТЕМА")
-    print("   Dr. Jaba Tkemaladze")
+    print(f"   {t('banner_title')}")
+    print(f"   {t('banner_doctor')}")
     print("═" * 60)
     kb = knowledge.get_context()
     if kb:
@@ -526,40 +550,69 @@ def print_banner():
     print()
 
 
-def print_menu():
-    print("МЕНЮ:")
-    print("  1. Список пациентов")
-    print("  2. Обработать пациента (OCR + PDF + AI анализ)")
-    print("  3. Обработать всех пациентов")
-    print("  4. Показать анализ пациента")
-    print("  5. Быстрый анализ лабораторий")
-    print("  6. Импорт из WhatsApp (INBOX)")
-    print("  7. Новый чат с AI-специалистом")
-    print("  8. Список отклонений у всех пациентов")
-    print("  9. 🔍 Поиск по симптому / диагнозу")
-    print("  0. 📊 Статистика базы данных")
-    print("  ── Интеграции ──────────────────────────")
-    print("  a. 🧬 Прогноз старения (CDATA Digital Twin)")
-    print("  b. 💗 Ze-HRV история пациента")
-    print("  c. 🌿 Протоколы питания (Regenesis)")
-    print("  w. 📡 Wearable BLE — записать HRV (5 мин)")
-    print("  q. Выход")
+def print_menu(current_user: dict = None):
+    t = _i18n.t
+    print(t("menu_title"))
+    for k in ("m1","m2","m3","m4","m5","m7","m8","m9","m0"):
+        print(f"  {t(k)}")
+    print(f"  {t('msep1')}")
+    for k in ("ma","mb","mc","mw","mgui","mk"):
+        print(f"  {t(k)}")
+    if current_user and current_user.get("role") == "admin":
+        print(f"  {t('msep2')}")
+        print(f"  {t('mu')}")
+        print(f"  {t('mU')}")
+    print(f"  {t('ml')}")
+    print(f"  {t('mL')}")
+    print(f"  {t('mq')}")
 
 
-def run_interactive():
+def run_interactive(current_user: dict = None):
+    t = _i18n.t
     print_banner()
+    if current_user:
+        print(f"  {t('logged_as', name=current_user.get('display_name', current_user.get('email')), role=current_user.get('role', '?'))}")
 
     patients = list_patients()
     selected_folder = None
 
     while True:
-        print_menu()
-        choice = input("\nВыбор: ").strip().lower()
+        print_menu(current_user)
+        choice = input(f"\n{t('choice')}").strip()
+        choice_lower = choice.lower()
 
-        if choice == "q":
+        if choice_lower == "q":
             break
 
-        elif choice == "1":
+        elif choice == "L":
+            import auth as _auth
+            _auth.logout()
+            print(f"  ✓ {t('logout_done')}")
+            break
+
+        elif choice_lower == "g":
+            _i18n.select_language()
+            print(f"  ✓ {t('lang_changed')}")
+            continue
+
+        elif choice_lower == "d":
+            import subprocess, os
+            gui = os.path.expanduser("~/Desktop/CDATA/target/release/cell_dt_gui")
+            if os.path.exists(gui):
+                subprocess.Popen([gui])
+                print("  ✓ CDATA GUI запущен.")
+            else:
+                print("  ✗ Бинарь не найден. Собрать: cd ~/Desktop/CDATA && cargo build --release -p cell_dt_gui")
+
+        elif choice == "u" and current_user and current_user.get("role") == "admin":
+            import auth as _auth
+            _auth.register_user_interactive(current_user)
+
+        elif choice == "U" and current_user and current_user.get("role") == "admin":
+            import auth as _auth
+            _auth.show_users(current_user)
+
+        elif choice_lower == "1":
             patients = list_patients()
             print(f"\nПациентов: {len(patients)}")
             for i, p in enumerate(patients, 1):
@@ -572,66 +625,60 @@ def run_interactive():
                     ze_info = f"  Ze:{p['ze_v']:.3f}{state_icon}"
                 print(f"  {i:2}. {p['name']}  (р. {dob}){ze_info}")
 
-        elif choice == "2":
+        elif choice_lower == "2":
             patients = list_patients()
             if not patients:
-                print("Нет пациентов.")
+                print(t("no_patients"))
                 continue
             for i, p in enumerate(patients, 1):
                 print(f"  {i}. {p['name']}")
             try:
-                idx = int(input("Номер пациента: ")) - 1
+                idx = int(input(t("patient_num"))) - 1
                 selected_folder = patients[idx]["folder"]
-                force = input("Принудительный пересчёт? (y/N): ").strip().lower() == "y"
-                print(f"\nОбработка: {patients[idx]['name']}...")
+                force = _i18n.is_yes(input(t("force_reprocess")).strip())
+                print(f"\n{t('processing', name=patients[idx]['name'])}")
                 result = analyze_patient(selected_folder, force=force)
-                print(f"Готово: {result}")
+                print(t("done", result=result))
             except (ValueError, IndexError):
-                print("Неверный выбор.")
+                print(t("invalid_choice"))
 
-        elif choice == "3":
-            confirm = input("Обработать всех пациентов? (y/N): ").strip().lower()
-            if confirm == "y":
-                force = input("Принудительный пересчёт? (y/N): ").strip().lower() == "y"
+        elif choice_lower == "3":
+            confirm = input(t("process_all_confirm")).strip()
+            if _i18n.is_yes(confirm):
+                force = _i18n.is_yes(input(t("force_reprocess")).strip())
                 from patient_intake import process_all_patients
                 count = process_all_patients(force=force)
-                print(f"\n✓ Обработано: {count}")
+                print(f"\n✓ {count}")
 
-        elif choice == "4":
+        elif choice_lower == "4":
             patients = list_patients()
             for i, p in enumerate(patients, 1):
                 print(f"  {i}. {p['name']}")
             try:
-                idx = int(input("Номер пациента: ")) - 1
+                idx = int(input(t("patient_num"))) - 1
                 selected_folder = patients[idx]["folder"]
                 text = show_patient_analysis(selected_folder)
                 print("\n" + "─" * 60)
                 print(text[:4000])
                 if len(text) > 4000:
-                    print(f"\n... (ещё {len(text)-4000} символов)")
+                    print(f"\n... (+{len(text)-4000})")
             except (ValueError, IndexError):
-                print("Неверный выбор.")
+                print(t("invalid_choice"))
 
-        elif choice == "5":
+        elif choice_lower == "5":
             patients = list_patients()
             for i, p in enumerate(patients, 1):
                 print(f"  {i}. {p['name']}")
             try:
-                idx = int(input("Номер пациента: ")) - 1
+                idx = int(input(t("patient_num"))) - 1
                 selected_folder = patients[idx]["folder"]
                 result = analyze_labs_only(selected_folder)
                 print("\n" + result)
             except (ValueError, IndexError):
-                print("Неверный выбор.")
+                print(t("invalid_choice"))
 
-        elif choice == "6":
-            from patient_intake import process_inbox, INBOX_DIR
-            print(f"\nПроверка INBOX: {INBOX_DIR}")
-            process_inbox()
-
-        elif choice == "7":
-            print("\nЧат с AI-специалистом (введите 'exit' для выхода)")
-            print("Контекст: интегративная медицина, Dr. Jaba Tkemaladze")
+        elif choice_lower == "7":
+            print(f"\n{t('chat_exit')}")
             history = []
             kb_ctx = knowledge.get_context()
             sys_msg = SYSTEM_PROMPT
@@ -662,7 +709,7 @@ def run_interactive():
                 history.append({"role": "assistant", "content": reply})
                 print(f"\nAI: {reply}")
 
-        elif choice == "8":
+        elif choice_lower == "8":
             print("\nАнализ отклонений у всех пациентов...")
             patients = list_patients()
             all_abnormal = []
@@ -677,79 +724,82 @@ def run_interactive():
                 print("Нет данных или отклонений не найдено.")
                 print("Сначала обработайте пациентов (пункт 3).")
 
-        elif choice == "9":
-            query = input("\nПоиск (симптом, диагноз, препарат): ").strip()
+        elif choice_lower == "9":
+            query = input(f"\n{t('search_prompt')}").strip()
             if query:
                 result = search_patients_by_symptom(query)
                 print("\n" + "─" * 60)
                 print(result)
 
-        elif choice == "0":
+        elif choice_lower == "0":
             print("\n" + db_stats())
 
-        elif choice == "a":
+        elif choice_lower == "a":
             patients = list_patients()
             if not patients:
-                print("Нет пациентов.")
+                print(t("no_patients"))
                 continue
             for i, p in enumerate(patients, 1):
                 print(f"  {i}. {p['name']}")
             try:
-                idx = int(input("Номер пациента: ")) - 1
+                idx = int(input(t("patient_num"))) - 1
                 selected_folder = patients[idx]["folder"]
-                print("\nЗапуск CDATA симуляции...")
                 print(show_aging_prediction(selected_folder))
             except (ValueError, IndexError):
-                print("Неверный выбор.")
+                print(t("invalid_choice"))
 
-        elif choice == "b":
+        elif choice_lower == "b":
             patients = list_patients()
             if not patients:
-                print("Нет пациентов.")
+                print(t("no_patients"))
                 continue
             for i, p in enumerate(patients, 1):
                 ze_s = f"  Ze:{p['ze_v']:.3f}" if p.get("ze_v") is not None else ""
                 print(f"  {i}. {p['name']}{ze_s}")
             try:
-                idx = int(input("Номер пациента: ")) - 1
+                idx = int(input(t("patient_num"))) - 1
                 selected_folder = patients[idx]["folder"]
                 print("\n" + show_ze_history(selected_folder))
             except (ValueError, IndexError):
-                print("Неверный выбор.")
+                print(t("invalid_choice"))
 
-        elif choice == "c":
-            query = input("\n🌿 Поиск протокола (питание, сироп, отвар...): ").strip()
+        elif choice_lower == "c":
+            query = input(f"\n{t('protocol_search')}").strip()
             if query:
                 print("\n" + search_protocols(query))
             else:
-                # Show index
                 from pathlib import Path as _P
                 rec = _P.home() / "Desktop" / "Regenesis" / "Recepturae"
                 if rec.exists():
                     files = sorted(rec.glob("*.md"))
-                    print(f"\n🌿 Recepturae — {len(files)} протоколов:")
+                    print(f"\n🌿 Recepturae — {len(files)}:")
                     for f in files:
                         print(f"  • {f.stem}")
-                    query = input("\nПоиск: ").strip()
+                    query = input(f"{t('search_label')}").strip()
                     if query:
                         print("\n" + search_protocols(query))
 
-        elif choice == "w":
+        elif choice_lower == "w":
             patients = list_patients()
             if not patients:
-                print("Нет пациентов.")
+                print(t("no_patients"))
                 continue
             for i, p in enumerate(patients, 1):
                 print(f"  {i}. {p['name']}")
             try:
-                idx = int(input("Номер пациента: ")) - 1
+                idx = int(input(t("patient_num"))) - 1
                 selected_folder = patients[idx]["folder"]
                 print(f"\n{start_wearable(selected_folder)}")
             except (ValueError, IndexError):
-                print("Неверный выбор.")
+                print(t("invalid_choice"))
+
+        elif choice_lower == "k":
+            import patient_network as _pnet
+            print("\n" + _pnet.show_patient_map())
+            _pnet.manage_clusters_interactive(patients)
 
         else:
-            print("Неверный выбор.")
+            print(t("invalid_choice"))
 
 
 # ── Entry point ────────────────────────────────────────────────
@@ -760,7 +810,6 @@ def main():
     parser.add_argument("--all", action="store_true", help="Process all patients and exit")
     parser.add_argument("--patient", type=str, help="Process specific patient folder and exit")
     parser.add_argument("--force", action="store_true", help="Force re-process")
-    parser.add_argument("--import-inbox", action="store_true", help="Process INBOX and exit")
     args = parser.parse_args()
 
     if args.all:
@@ -776,13 +825,9 @@ def main():
         print(result)
         return
 
-    if args.import_inbox:
-        print_banner()
-        from patient_intake import process_inbox
-        process_inbox()
-        return
-
-    run_interactive()
+    from auth import require_auth
+    current_user = require_auth()
+    run_interactive(current_user)
 
 
 if __name__ == "__main__":

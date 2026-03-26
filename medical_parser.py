@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Parser for patient case history folders.
-Format: ~/AIM/Patients/LastName_FirstName_YYYY_MM_DD/
+Format: ~/Desktop/AIM/Patients/LastName_FirstName_YYYY_MM_DD/
 Inside: text file (same name) with dated entries.
 """
 
@@ -125,7 +125,7 @@ def parse_patient_file(file_path: str) -> List[DateEntry]:
 
 
 def load_all_patients(documents_dir: str = DOCUMENTS_DIR) -> List[PatientRecord]:
-    """Scan ~/AIM/Patients and load all patient records."""
+    """Scan ~/Desktop/AIM/Patients and load all patient records."""
     patients = []
 
     if not os.path.isdir(documents_dir):

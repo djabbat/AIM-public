@@ -2,7 +2,7 @@
 """
 AIM — Audit log.
 Append-only JSONL log of who accessed what.
-File: ~/AIM/logs/audit.jsonl
+File: ~/Desktop/AIM/logs/audit.jsonl
 """
 
 import json

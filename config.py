@@ -10,7 +10,7 @@ from pathlib import Path
 
 # ── Paths ──────────────────────────────────────────────────────
 AIM_DIR      = os.path.dirname(os.path.abspath(__file__))
-PATIENTS_DIR = os.path.expanduser("~/AIM/Patients")
+PATIENTS_DIR = os.path.expanduser("~/Desktop/AIM/Patients")
 INBOX_DIR    = os.path.join(PATIENTS_DIR, "INBOX")
 LOGS_DIR     = os.path.join(AIM_DIR, "logs")
 KNOWLEDGE_FILE = os.path.join(AIM_DIR, "medical_knowledge.json")

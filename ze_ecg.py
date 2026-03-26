@@ -374,7 +374,7 @@ def from_plain_list(values: list) -> list[float]:
 def save_to_patient(report: ZeReport, patient_dir: str | Path, source: str = "") -> Path:
     """
     Сохраняет Ze-отчёт в папку пациента AIM + в SQLite БД.
-    patient_dir: ~/AIM/Patients/SURNAME_NAME_YYYY_MM_DD/
+    patient_dir: ~/Desktop/AIM/Patients/SURNAME_NAME_YYYY_MM_DD/
     Создаёт: patient_dir/ze_hrv.json + ze_hrv_report.txt
     """
     import re as _re
