@@ -1,6 +1,11 @@
+# -*- coding: utf-8 -*-
 """
 AIM v6.0 — medical_system.py
 Главный CLI-интерфейс интегративной медицины.
+
+Patient names, diagnoses, notes, and all free-text fields may contain
+Georgian (ქართული), Kazakh (Қазақша), Arabic (العربية), or any other
+Unicode script. UTF-8 is enforced via config.py at import time.
 
 Запуск:
     python3 medical_system.py

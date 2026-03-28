@@ -53,3 +53,6 @@ httpx>=0.27.0              # Async HTTP
 pydantic>=2.6.0            # Валидация данных
 python-dateutil>=2.9.0     # Работа с датами
 rich>=13.7.0               # Красивый вывод в консоль (опционально)
+
+# ── Локализация / Unicode ──────────────────────────────────
+babel>=2.14.0              # Locale/Unicode text handling; Georgian, Kazakh, Arabic support

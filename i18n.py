@@ -1,12 +1,18 @@
+# -*- coding: utf-8 -*-
 """
 AIM v6.0 — i18n.py
 Мультиязычные строки интерфейса. Источник истины для CLI и GUI.
-Языки: RU (русский) / KA (грузинский) / EN (английский) / KZ (казахский)
+Языки: RU (русский) / KA (грузინский) / EN (английский) / KZ (казахский)
+
+Georgian strings are encoded directly in UTF-8 (mkhedruli script, Unicode
+block U+10D0–U+10FF). No transliteration — always use native script.
 
 Использование:
     from i18n import t, set_lang
     set_lang("ru")
     print(t("m1"))   # "Список пациентов"
+    set_lang("ka")
+    print(t("m1"))   # "პაციენტების სია"
     print(t("welcome"))
 """
 
@@ -164,10 +170,11 @@ STRINGS: Dict[str, Dict[str, str]] = {
     },
 
     # ========================================================================
-    # ГРУЗИНСКИЙ
+    # ГРУЗИНСКИЙ — Georgian (ქართული)
+    # All strings use mkhedruli script (Unicode U+10D0–U+10FF).
     # ========================================================================
     "ka": {
-        # მთავარი მენიუ
+        # მთავარი მენიუ — Main menu
         "m1": "პაციენტების სია",
         "m2": "ახალი პაციენტი",
         "m3": "პაციენტის ძიება",
@@ -180,7 +187,17 @@ STRINGS: Dict[str, Dict[str, str]] = {
         "mw": "გასვლა",
         "mgui": "პარამეტრები",
 
-        # სისტემური
+        # პაციენტის ქვე-მენიუ — Patient sub-menu
+        "mp1": "პაციენტის მონაცემების ნახვა",
+        "mp2": "ანალიზის დამატება",
+        "mp3": "AI-ანალიზი",
+        "mp4": "დიაგნოზების ისტორია",
+        "mp5": "დანიშნულებები და რეცეპტები",
+        "mp6": "ვიზიტების ჩანაწერები",
+        "mp7": "Ze/HRV მონაცემები",
+        "mpb": "უკან",
+
+        # სისტემური — System
         "welcome": "კეთილი იყოს თქვენი მობრძანება AIM v{version}-ში",
         "loading": "იტვირთება...",
         "processing": "მუშავდება...",
@@ -196,18 +213,59 @@ STRINGS: Dict[str, Dict[str, str]] = {
         "cancelled": "გაუქმდა",
         "choose_lang": "Выберите язык / Choose language / აირჩიეთ ენა / Тілді таңдаңыз:",
 
-        # პაციენტები
+        # პაციენტები — Patients
         "patients_title": "=== პაციენტები ===",
         "no_patients": "პაციენტები ვერ მოიძებნა",
+        "patient_created": "პაციენტი შეიქმნა: {name}",
+        "search_prompt": "შეიყვანეთ სახელი ან გვარი საძიებლად: ",
+        "patient_id": "ID",
+        "patient_name": "სახელი",
+        "patient_age": "ასაკი",
+        "patient_sex": "სქესი",
+        "patient_ze": "Ze-სტატუსი",
+        "patient_bio_age": "ბიოლ. ასაკი",
+
+        # AI
         "ai_thinking": "AI აანალიზებს...",
         "ai_title": "=== AI-კონსულტაცია ===",
         "ai_prompt": "თქვენი კითხვა (ან Enter გასვლისთვის): ",
+        "ai_no_key": "DeepSeek API მიუწვდომელია. შეამოწმეთ ~/.aim_env",
+
+        # ლაბორატორია — Lab
+        "lab_title": "=== ლაბორატორიული მონაცემები ===",
+        "lab_input": "შეიყვანეთ ან ჩასვით ანალიზების მონაცემები: ",
+        "lab_analyzing": "ლაბორატორიული მონაცემების ანალიზი...",
+        "lab_no_data": "ლაბორატორიული მონაცემები არ მოიძებნა",
+
+        # Ze/HRV
         "ze_title": "=== Ze-სტატუსი / HRV ===",
+        "ze_status_label": "Ze-სტატუსი",
         "ze_high": "მაღალი — შესანიშნავი ბიოლოგიური რეზერვი",
         "ze_medium": "საშუალო — ზომიერი რეზერვი, პრევენცია",
-        "ze_low": "დაბალი — შემცირებული რეზერვი",
+        "ze_low": "დაბალი — შემცირებული რეზერვი, აქტიური მკურნალობა",
         "ze_critical": "კრიტიკული — მინიმალური რეზერვი",
+
+        # დიაგნოსტიკა — Diagnostics
+        "diag_title": "=== დიფერენციალური დიაგნოსტიკა ===",
+        "diag_symptoms": "შეიყვანეთ სიმპტომები (მძიმით გამოყოფილი): ",
+        "diag_running": "ბაიესური ანალიზი...",
+
+        # პროტოკოლები — Treatment
+        "treatment_title": "=== მკურნალობის პროტოკოლები ===",
+
+        # ანგარიშები — Reports
+        "report_title": "=== ანგარიშები ===",
+        "report_generated": "ანგარიში შეიქმნა: {path}",
+
+        # შეცდომები — Errors
+        "err_db": "მონაცემთა ბაზის შეცდომა: {message}",
+        "err_llm": "LLM მიუწვდომელია: {message}",
+        "err_file": "ფაილის შეცდომა: {message}",
+        "err_permission": "წვდომის უფლება არ არის: {resource}",
+
+        # ვერსია — Version/info
         "version": "AIM v{version}",
+        "system_info": "სისტემა: AIM v{version} | პაციენტები: {patients} | ენა: {lang}",
         "doctor": "ექიმი: დოქ. ჯაბა თქემალაძე",
     },
 

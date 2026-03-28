@@ -1,6 +1,12 @@
+# -*- coding: utf-8 -*-
 """
 AIM v6.0 — db.py
 SQLite слой с полной схемой БД. В production заменяется на PostgreSQL.
+
+All TEXT columns store Unicode natively in UTF-8 (SQLite default).
+Georgian (ქართული), Kazakh (Қазақша), Arabic (العربية) names/notes
+are fully supported. A custom GEORGIAN collation enables Unicode-aware
+sorting for Georgian patient surnames.
 
 Использование:
     from db import get_db, init_db
@@ -11,6 +17,7 @@ SQLite слой с полной схемой БД. В production заменяе�
 import sqlite3
 import json
 import logging
+import unicodedata
 from pathlib import Path
 from datetime import datetime
 from contextlib import contextmanager
@@ -19,6 +26,26 @@ from typing import Optional, List, Dict, Any
 from config import cfg
 
 logger = logging.getLogger(__name__)
+
+# ============================================================================
+# Georgian / Unicode collation
+# ============================================================================
+
+def georgian_collation(a: str, b: str) -> int:
+    """
+    Unicode-aware collation for Georgian (mkhedruli) and other non-Latin scripts.
+    Normalises both strings to NFC before comparing so that precomposed and
+    decomposed representations of the same character sort identically.
+    Returns -1, 0, or 1 (as required by sqlite3.create_collation).
+    """
+    a_norm = unicodedata.normalize("NFC", a or "")
+    b_norm = unicodedata.normalize("NFC", b or "")
+    if a_norm < b_norm:
+        return -1
+    elif a_norm > b_norm:
+        return 1
+    return 0
+
 
 # ============================================================================
 # Схема БД
@@ -320,11 +347,20 @@ def get_connection() -> sqlite3.Connection:
             str(db_path),
             timeout=cfg.DB_TIMEOUT,
             check_same_thread=False,
+            detect_types=sqlite3.PARSE_DECLTYPES,
         )
         _connection.row_factory = sqlite3.Row
+
+        # Enforce UTF-8 encoding at the SQLite level
+        _connection.execute("PRAGMA encoding = 'UTF-8'")
+
         if cfg.DB_WAL_MODE:
             _connection.execute("PRAGMA journal_mode = WAL")
         _connection.execute("PRAGMA foreign_keys = ON")
+
+        # Register Unicode-aware collation for Georgian and other scripts
+        _connection.create_collation("GEORGIAN", georgian_collation)
+
     return _connection
 
 

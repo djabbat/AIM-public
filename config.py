@@ -1,6 +1,10 @@
+# -*- coding: utf-8 -*-
 """
 AIM v6.0 — config.py
 Централизованная конфигурация. Единственный источник истины для всех путей и параметров.
+
+Georgian (ქართული), Kazakh (Қазақша), Arabic (العربية) require UTF-8 throughout.
+This module enforces UTF-8 for stdout/stderr and locale at import time.
 
 Использование:
     from config import cfg
@@ -8,10 +12,31 @@ AIM v6.0 — config.py
     print(cfg.DB_PATH)
 """
 
+import io
 import os
 import sys
+import locale
 from pathlib import Path
 from dotenv import load_dotenv
+
+# ============================================================================
+# UTF-8 enforcement — must happen before any output
+# Georgian (ქართული), Kazakh (Қазақша), Arabic (العربية) require UTF-8 throughout.
+# ============================================================================
+
+# Force UTF-8 on stdout/stderr (safe even if already UTF-8)
+if hasattr(sys.stdout, "buffer"):
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "buffer"):
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+
+# Set locale to UTF-8 (try common variants; silently skip if unavailable)
+for _locale in ("C.UTF-8", "en_US.UTF-8", "ka_GE.UTF-8", "ru_RU.UTF-8", ""):
+    try:
+        locale.setlocale(locale.LC_ALL, _locale)
+        break
+    except locale.Error:
+        continue
 
 # ============================================================================
 # Загрузка переменных окружения
