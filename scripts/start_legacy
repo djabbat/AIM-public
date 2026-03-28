@@ -1,4 +1,0 @@
-#!/bin/bash
-cd ~/AI
-echo "🚀 Запуск AI системы..."
-python3 ai_system.py

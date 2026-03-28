@@ -1,139 +1,141 @@
-# CLAUDE.md — AIM Project Instructions
+# CLAUDE.md — AIM v6.0
 
-This file provides guidance to Claude Code when working with AIM code.
-
----
-
-## Project Identity
-
-**AIM (Assistant of Integrative Medicine)** — Dr. Jaba Tkemaladze's local AI assistant for integrative medicine practice.
-
-- Location: `~/Desktop/AIM/`
-- Entry point (GUI): `aim_gui.py`
-- Entry point (CLI): `medical_system.py`
-- Entry point (bot only): `telegram_bot.py`
-- DB: `aim.db` (SQLite via `db.py`)
-- All LLM calls: `llm.py` (`ask_llm()` / `ask_deep()`)
-- All audit records: `audit_log.py`
+Инструкции для Claude Code при работе с проектом AIM.
 
 ---
 
-## Startup / Ecosystem Protocols
+## Startup Protocol
 
-**Full startup rules:** `~/.claude/protocols/START.md` — read at every session start.
+**Полные правила запуска: `~/Desktop/Claude/protocols/START.md`** — читать при каждом старте сессии.
 
-**Writing backlog:** `~/.claude/writing/NEEDTOWRITE.md`
-
-**Concepts archive:** `~/.claude/writing/CONCEPTS.md`
-
----
-
-## Key Rules
-
-### 1. All LLM tasks → DeepSeek API
-
-Route ALL text/reasoning tasks through DeepSeek API. Key: `~/.aim_env → DEEPSEEK_API_KEY`.
-Entry: `~/Desktop/AIM/llm.py` → `ask_llm()` (fast) / `ask_deep()` (reasoning).
-
-Models:
-- `deepseek-chat` — all normal requests, chat, lab analysis
-- `deepseek-reasoner` — diagnosis (Bayesian confidence < 60% or gap < 15%)
-
-### 2. Architecture invariants
-
-- All DB operations → `db.py`
-- All LLM calls → `llm.py`
-- All audit entries → `audit_log.py`
-- Patient data **never** goes to git (covered by `.gitignore`)
-- New modules must be added to `requirements.txt` and documented in `TODO.md`
-
-### 3. Menu parity rule
-
-`medical_system.py` (terminal menu) and `aim_gui.py` (GUI) must stay in sync.
-When adding/removing a menu item → **change both files**.
-Source of truth: key list in `i18n.py` (`m1`..`mw`, `mgui`, etc.).
-
-### 4. Git push rule
-
-Before every `git push`: ask "private or public repo?" → use `djabbat/AIM` (private) or `djabbat/AIM-public` (public).
-Public repo excludes: `CONCEPT.md`, `CLAUDE.md`, `TODO.md`, `PARAMETERS.md`, `MAP.md`.
-
-### 5. Patient data
-
-Patient folders live in `Patients/SURNAME_NAME_YYYY_MM_DD/`.
-New files dropped in `Patients/INBOX/` are auto-processed by `inbox_watcher.py`.
-WhatsApp contacts must be named `SURNAME П FIRSTNAME` (separator П/п/პ).
+**Краткое резюме 6 правил:**
+1. Desktop Audit — `ls ~/Desktop/` → сравнить с таблицей проектов
+2. Читать `~/Desktop/AIM/TODO.md`
+3. Сканировать TODO всех проектов экосистемы
+4. Два Claude работают параллельно — перед перезаписью спрашивать
+5. Читать `~/Desktop/Claude/writing/NEEDTOWRITE.md`
+6. Все задачи через DeepSeek API
 
 ---
 
-## Running AIM
+## Правило DeepSeek — ВСЕ задачи через API
+
+**Никогда не делать вручную то, что может сделать DeepSeek.**
+
+| Категория | Примеры |
+|-----------|---------|
+| Текст / статьи | написать раздел, введение, обсуждение |
+| Перевод | медицинский, научный текст |
+| Рецензирование | peer review, ответ рецензентам |
+| Гранты | питч, меморандум, резюме |
+| Пациенты | объяснить диагноз, анализы |
+| Код | docstrings, code review, тесты |
+
+**Ключ:** `~/.aim_env → DEEPSEEK_API_KEY`
+**Модели:** `deepseek-chat` (быстро) · `deepseek-reasoner` (сложные рассуждения)
+**Точка входа:** `~/Desktop/AIM/llm.py`
+
+---
+
+## Архитектурные инварианты v6.0
+
+1. **Данные пациентов неприкосновенны** — `Patients/` никогда не трогать, не читать без явной команды, не коммитить
+2. **SQLite-файлы не коммитятся** — все `*.db` в .gitignore
+3. **Ключи не в репозитории** — `~/.aim_env`, никогда не в коде
+4. **LLM через `llm.py`** — всегда использовать `ask_llm()` / `ask_deep()`, не вызывать API напрямую
+5. **Конфиг из `config.py`** — все пути и параметры через `config.py`, не хардкодить
+6. **Мульти-тенантность** — каждый тенант изолирован; не смешивать данные разных тенантов
+7. **RBAC всегда** — каждое действие проверяет права через `PermissionMatrix`
+
+---
+
+## Правило паритета меню
+
+**AIM:** `medical_system.py` (terminal CLI) и `aim_gui.py` (GUI) —
+при добавлении/удалении пункта меню **изменить оба файла**.
+Источник истины — список ключей в `i18n.py`.
+
+---
+
+## Правило git push
+
+**Перед каждым git push спрашивать: приватный или публичный репозиторий?**
+
+- Приватный: `git push origin` → `djabbat/AIM`
+- Публичный: `git push public` → `djabbat/AIM-public`
+  - Публичный исключает: `CONCEPT.md`, `CLAUDE.md`, `TODO.md`, `PARAMETERS.md`, `MAP.md`, `Patients/`, `~/.aim_env`
+
+Если репозиторий не существует — создать перед push.
+
+---
+
+## Правило данных пациентов
+
+- `Patients/` — **НИКОГДА не читать, не изменять, не коммитить** без явной команды пользователя
+- Данные обрабатываются только через `medical_system.py` и `patient_intake.py`
+- Формат папок: `SURNAME_NAME_YYYY_MM_DD/`
+- INBOX: `Patients/INBOX/` — новые файлы для автоматической обработки
+
+---
+
+## Команды запуска
 
 ```bash
-# GUI mode (main, auto-starts Telegram bot)
-cd ~/Desktop/AIM && source venv/bin/activate && python3 aim_gui.py
+# Главный запуск
+cd ~/Desktop/AIM && ./start.sh
 
-# CLI mode
+# CLI напрямую
 cd ~/Desktop/AIM && source venv/bin/activate && python3 medical_system.py
 
-# Bot only (headless server)
-cd ~/Desktop/AIM && source venv/bin/activate && python3 telegram_bot.py
+# Обработка всех пациентов
+python3 medical_system.py --all
 
-# Process all patients (OCR + PDF + AI)
-cd ~/Desktop/AIM && source venv/bin/activate && python3 patient_intake.py --all
-
-# DB stats / migration
-cd ~/Desktop/AIM && source venv/bin/activate && python3 db.py --stats
-cd ~/Desktop/AIM && source venv/bin/activate && python3 db.py --migrate
-
-# Quick launcher
-cd ~/Desktop/AIM && ./start.sh
+# GUI (если есть)
+python3 aim_gui.py
 ```
 
 ---
 
-## Module Map (quick reference)
+## Карта модулей
 
-| Module | Role |
-|--------|------|
-| `aim_gui.py` | Main GUI (tkinter), auto-starts bot |
-| `medical_system.py` | CLI menu, SYSTEM_PROMPT |
-| `db.py` | SQLite layer — patients, labs, diagnoses, ze_hrv |
-| `llm.py` | Unified LLM calls (DeepSeek API) |
-| `audit_log.py` | Audit log → `logs/audit.jsonl` |
-| `patient_intake.py` | Pipeline: OCR → PDF → labs → diagnosis → DB |
-| `ocr_engine.py` | Tesseract / rapidocr |
-| `lab_parser.py` | Extract lab values from text |
-| `lab_reference.py` | 165+ reference ranges |
-| `diagnosis_engine.py` | Bayesian + DeepSeek R1 |
-| `space_nutrition.py` | Nutrition protocol (47 forbidden / 69 allowed) |
-| `ze_ecg.py` | RR → Ze-flow, HRV, classification |
-| `wearable_importer.py` | BLE Heart Rate (UUID 0x180D) |
-| `telegram_bot.py` | aiogram 3.x bot "DrJaba" |
-| `inbox_watcher.py` | Watcher for Patients/INBOX/ |
-| `whatsapp_importer.py` | Parse WhatsApp TXT exports |
-| `tg_desktop_importer.py` | Parse Telegram Desktop JSON exports |
-| `cdata_bridge.py` | CDATA Rust simulation bridge |
-| `knowledge_graph.py` | Patient knowledge graph |
-| `pdf_export.py` | PDF patient report export |
-| `backup_github.py` | Auto-backup to GitHub (3rd of each month) |
-| `i18n.py` | All UI strings (RU/KA/EN) |
-| `config.py` | Central config, paths, logging |
-| `auth.py` | Authentication |
+| Файл | Назначение |
+|------|-----------|
+| `medical_system.py` | Главный CLI-интерфейс (точка входа) |
+| `config.py` | Конфигурация, пути, env |
+| `llm.py` | DeepSeek API: ask_llm(), ask_deep() |
+| `db.py` | SQLite-слой, схема БД |
+| `i18n.py` | RU/KA/EN/KZ строки |
+| `core/rbac.py` | RBAC, роли, права |
+| `core/tenant.py` | Мульти-тенантность |
+| `start.sh` | Лаунчер |
+| `requirements.txt` | Python зависимости |
+
+**Пациентские модули (если добавляются):**
+- `patient_intake.py` — OCR + PDF + AI pipeline
+- `lab_parser.py` — парсинг лаб. данных
+- `diagnosis_engine.py` — байесовская диагностика
+- `treatment_recommender.py` — протоколы лечения
 
 ---
 
-## Ecosystem integrations
+## Интеграции с экосистемой
 
-| Source | Data | Module |
-|--------|------|--------|
-| Ze + HealthWearable | RR/HRV | `ze_ecg.py` |
-| WhatsApp/Telegram | Correspondence | importers |
-| Labs (PDF/photo) | OCR + parse | `patient_intake.py` |
-| ClinicA | Clinic patients | `patient_intake.py` |
-| CDATA | Aging simulation | `cdata_bridge.py` |
-| Regenesis | Treatment protocols | `knowledge/` |
-| Dietebi | Clinical cases | `dietebi_importer.py` |
+| Проект | Интеграция |
+|--------|-----------|
+| CDATA | Клинические данные, Ze-теория |
+| ZeAnastasis | EEG/HRV данные пациентов |
+| Regenesis | Протоколы регенеративной медицины |
+| DrJaba | Публичный сайт, запись пациентов |
+| BioSense | Биосенсорные данные |
+| FCLC | Федеральная клиническая сеть |
+| WLRAbastumani | Санаторий, данные пациентов |
 
 ---
 
-*AIM — Assistant of Integrative Medicine. Dr. Jaba Tkemaladze, Georgia. 2026.*
+## Self-Citation Rule (для всех статей)
+
+При написании любой статьи всегда включать:
+1. PMID 36583780 — Tkemaladze J. *Mol Biol Reports* 2023
+2. PMID 20480236 — Lezhava T. et al. *Biogerontology* 2011
+3. Zenodo CDATA — DOI: https://doi.org/10.5281/zenodo.19174506
+4. Zenodo Ze — DOI: https://doi.org/10.5281/zenodo.19174630

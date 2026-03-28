@@ -1,171 +1,237 @@
-# MAP.md — AIM Project Map
-
-Complete file and module map for AIM (Assistant of Integrative Medicine).
+# AIM v6.0 — MAP (Карта компонентов)
 
 ---
 
-## Directory Structure
+## Верхнеуровневая архитектура
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        AIM v6.0                                 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │                  ТОЧКИ ВХОДА                             │   │
+│  │  start.sh → aim_gui.py (GUI) | medical_system.py (CLI)  │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                           │                                      │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │                  ЯДРО СИСТЕМЫ                            │   │
+│  │  config.py ── llm.py ── db.py ── i18n.py                │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                           │                                      │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │              МЕДИЦИНСКИЕ МОДУЛИ                          │   │
+│  │  patient_intake.py → ocr_engine.py + lab_parser.py       │   │
+│  │  diagnosis_engine.py → treatment_recommender.py          │   │
+│  │  bayesian_medical.py                                     │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                           │                                      │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │              БЕЗОПАСНОСТЬ                                │   │
+│  │  core/rbac.py ── core/tenant.py ── JWT ── Rate Limiting  │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                           │                                      │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │                  ДАННЫЕ                                  │   │
+│  │  aim.db (SQLite) │ Patients/ │ medical_knowledge.json    │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                           │                                      │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │              ВНЕШНИЕ СЕРВИСЫ                             │   │
+│  │  DeepSeek API │ FCM/APNs │ Stripe │ S3 │ Sentry          │   │
+│  └──────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Потоки данных
+
+### 1. Обработка нового пациента (intake pipeline)
+
+```
+Patients/INBOX/ (новый файл)
+    ↓
+patient_intake.py
+    ├── WhatsApp → whatsapp_importer.py → текст
+    ├── Изображение → ocr_engine.py (tesseract/rapidocr) → текст
+    └── PDF → pdfplumber → текст
+         ↓
+    lab_parser.py → лаб. значения + оценка vs reference
+         ↓
+    llm.py → ask_llm() → AI-анализ (DeepSeek)
+         ↓
+    diagnosis_engine.py → байесовская диагностика
+         ↓
+    treatment_recommender.py → протоколы лечения
+         ↓
+    _ai_analysis.txt (в папке пациента)
+```
+
+### 2. CLI-сессия врача
+
+```
+medical_system.py (запуск)
+    ↓
+i18n.py (выбор языка: RU/KA/EN/KZ)
+    ↓
+Главное меню (пункты m1..mw)
+    ├── Просмотр пациента → db.py → данные
+    ├── AI-консультация → llm.py → DeepSeek
+    ├── Анализ EEG/HRV → интеграция ZeAnastasis/BioSense
+    └── Отчёт → reports/
+```
+
+### 3. LLM-вызов
+
+```
+ask_llm(prompt, lang="ru")         # быстро, deepseek-chat
+    ↓
+config.py → DEEPSEEK_API_KEY
+    ↓
+DeepSeek API (api.deepseek.com)
+    ↓
+ответ → caller
+
+ask_deep(prompt)                   # глубокое рассуждение, deepseek-reasoner
+    ↓
+DeepSeek API (reasoning mode)
+    ↓
+ответ → caller
+```
+
+### 4. Мульти-тенантная изоляция
+
+```
+HTTP запрос + X-Tenant-ID header
+    ↓
+core/tenant.py → get_tenant(tenant_id)
+    ↓
+TenantLimits.check()  → ошибка если лимит превышен
+    ↓
+db.py → использует схему aim_tenant_{id}
+    ↓
+core/rbac.py → AccessContext(tenant_id=...)
+    ↓
+бизнес-логика с изолированными данными
+```
+
+---
+
+## Файловая структура
 
 ```
 ~/Desktop/AIM/
+├── CONCEPT.md              ← Источник истины v6.0
+├── CLAUDE.md               ← Инструкции для Claude
+├── README.md               ← Публичное описание
+├── TODO.md                 ← Задачи
+├── PARAMETERS.md           ← Все параметры конфигурации
+├── MAP.md                  ← Этот файл
+├── MEMORY.md               ← Решения и история
+├── LINKS.md                ← Ссылки на экосистему
+├── KNOWLEDGE.md            ← Медицинская база знаний
 │
-├── aim_gui.py              ← MAIN ENTRY POINT (GUI + auto-start bot)
-├── medical_system.py       ← CLI menu, SYSTEM_PROMPT, interactive shell
-├── telegram_bot.py         ← aiogram 3.x Telegram bot "DrJaba"
+├── config.py               ← Централизованная конфигурация
+├── llm.py                  ← DeepSeek API wrapper
+├── db.py                   ← SQLite слой
+├── i18n.py                 ← RU/KA/EN/KZ строки
+├── medical_system.py       ← Главный CLI
+├── requirements.txt
+├── start.sh
 │
-├── ── CORE PIPELINE ──────────────────────────────────────────────────
-├── patient_intake.py       ← Full pipeline: OCR → PDF → labs → diagnosis → DB
-│     ├── ocr_engine.py         Tesseract / rapidocr fallback
-│     ├── lab_parser.py         Extract lab values from text
-│     ├── lab_reference.py      165+ reference ranges (gender/age-aware)
-│     └── diagnosis_engine.py   Bayesian differential diagnosis + DeepSeek R1
+├── core/
+│   ├── rbac.py             ← RBAC (из CONCEPT.md)
+│   └── tenant.py           ← Мульти-тенантность
 │
-├── ── DATA LAYER ─────────────────────────────────────────────────────
-├── db.py                   ← SQLite layer (patients, lab_snapshots, diagnoses,
-│                             ze_hrv, knowledge, audit_log)
-├── audit_log.py            ← Audit log → logs/audit.jsonl
-├── config.py               ← Central config, paths, logging setup
-├── llm.py                  ← Unified LLM calls (DeepSeek API)
-├── i18n.py                 ← All UI strings: RU / KA / EN
-├── auth.py                 ← Authentication (session, tokens)
+├── Patients/               ← НИКОГДА НЕ КОММИТИТЬ
+│   ├── INBOX/              ← Входящие файлы
+│   └── SURNAME_NAME_YYYY_MM_DD/
+│       ├── *.jpg / *.pdf
+│       └── _ai_analysis.txt
 │
-├── ── MEDICAL MODULES ────────────────────────────────────────────────
-├── space_nutrition.py      ← Nutrition protocol (47 forbidden / 69 allowed)
-├── ze_ecg.py               ← RR → Ze-flow, HRV, classification
-├── wearable_importer.py    ← BLE Heart Rate Profile (UUID 0x180D)
-├── knowledge_graph.py      ← Patient knowledge graph
-├── patient_analysis.py     ← Interactive patient case history analysis
-├── patient_network.py      ← Patient relationship network
-├── medical_parser.py       ← Load patient records from Patients/
-├── regenesis_protocol.py   ← Regenesis treatment protocol integration
-├── drug_interaction_checker.py ← Drug interaction checking
-├── numerology.py           ← Numerological profile from patient DOB
-│
-├── ── IMPORTERS / BRIDGES ────────────────────────────────────────────
-├── whatsapp_importer.py    ← Parse WhatsApp TXT exports
-├── tg_desktop_importer.py  ← Parse Telegram Desktop JSON exports
-├── telegram_chat_importer.py ← Telegram chat import utilities
-├── telegram_search.py      ← Search Telegram history
-├── cdata_bridge.py         ← CDATA Rust simulation bridge
-├── dietebi_importer.py     ← Import Dietebi clinical cases (.docx)
-├── cdata_nutrition.py      ← CDATA × nutrition integration
-│
-├── ── MONITORING / OUTPUT ────────────────────────────────────────────
-├── literature_monitor.py   ← PubMed / arXiv literature monitor
-├── pdf_export.py           ← Export PDF patient reports
-├── trend_chart.py          ← HRV / lab trend charts
-├── voice_input.py          ← Microphone → Whisper → text
-├── inbox_watcher.py        ← Watcher for Patients/INBOX/ (2-sec polling)
-│
-├── ── SYSTEM / OPS ───────────────────────────────────────────────────
-├── backup_github.py        ← Auto-backup to GitHub (3rd of month)
-├── backup_data.py          ← Local data backup
-├── config.json.example     ← Config template (copy to config.json)
-├── requirements.txt        ← Python dependencies
-├── install.sh              ← First-time install script
-├── start.sh                ← Quick launcher (aim_gui.py)
-├── build_deploy.sh         ← Build distributable archive
-│
-├── ── DOCUMENTATION ──────────────────────────────────────────────────
-├── README.md               ← Public-facing documentation
-├── CONCEPT.md              ← Full architectural spec (v6.0 vision)
-├── CLAUDE.md               ← Claude Code instructions (this ecosystem)
-├── TODO.md                 ← Tasks and roadmap
-├── PARAMETERS.md           ← All configurable parameters
-├── MAP.md                  ← This file
-├── DOCX_FORMAT.md          ← Document formatting standards
-├── INSTALL.md              ← Install instructions (brief)
-├── ИНСТРУКЦИЯ.md           ← Instructions in Russian
-│
-├── ── DATA DIRECTORIES ───────────────────────────────────────────────
-├── Patients/               ← Patient records (git-excluded)
-│   ├── INBOX/              ← Drop files here for auto-intake
-│   └── SURNAME_NAME_YYYY_MM_DD/  ← One folder per patient
-├── knowledge/              ← Medical knowledge base files
-├── logs/                   ← Log files (git-excluded)
-│   └── audit.jsonl         ← Audit log of all actions
-├── literature_digest/      ← Downloaded literature digests
-├── reports/                ← Generated reports (git-excluded)
-├── trend_reports/          ← HRV/lab trend reports (git-excluded)
-├── search_results/         ← Search results cache (git-excluded)
-├── backups/                ← Local backups (git-excluded)
-├── feedback/               ← User feedback data
-├── learning/               ← Self-learning data
-│
-├── ── RUNTIME DATA (git-excluded) ────────────────────────────────────
-├── aim.db                  ← SQLite: all structured patient data
-├── medical_knowledge.json  ← Self-learning knowledge base
-├── processed_files.json    ← OCR processing log
-├── medical_bayes.json      ← Bayesian network data
-├── nutrition_rules.json    ← Nutrition protocol (editable from GUI)
-├── author_publications.json ← Publication metadata
-├── chat_history.json       ← Chat session history
-├── projects_memory.json    ← General project memory
-│
-├── ── CODE SUBDIRS ───────────────────────────────────────────────────
-├── agents/                 ← Agent base classes
-├── integrations/           ← External integration stubs
-├── config/                 ← Config files
-├── projects/               ← Legacy project memory
-│
-└── venv/                   ← Python virtual environment (git-excluded)
+├── .gitignore
+├── venv/                   ← Python venv (не коммитить)
+└── .git/
 ```
 
 ---
 
-## Data Flow
+## Схема БД (SQLite → PostgreSQL в Production)
+
+### Основные таблицы
+
+| Таблица | Назначение |
+|---------|-----------|
+| `tenants` | Клиники/организации |
+| `users` | Все пользователи (врачи, пациенты, персонал) |
+| `patients` | Профили пациентов |
+| `analyses` | Анализы и лаб. данные |
+| `prescriptions` | Рецепты и назначения |
+| `appointments` | Записи на приём |
+| `messages` | Чат врач-пациент |
+| `push_tokens` | FCM/APNs токены |
+| `audit_log` | Аудит всех действий |
+| `billing` | Оплаты и подписки |
+
+### Связи
 
 ```
-Ze + HealthWearable  →  RR/HRV data     →  ze_ecg.py         →  aim.db (ze_hrv)
-WhatsApp export      →  .txt            →  whatsapp_importer  →  Patients/
-Telegram export      →  .json           →  tg_desktop_importer→  Patients/
-Lab PDFs / photos    →  OCR + parse     →  patient_intake     →  aim.db (labs)
-CDATA Rust binary    →  aging sim       →  cdata_bridge       →  aim.db (diagnoses)
-Regenesis protocol   →  treatment data  →  regenesis_protocol →  knowledge/
-Dietebi .docx        →  clinical cases  →  dietebi_importer   →  aim.db (knowledge)
-ClinicA              →  patient data    →  patient_intake     →  aim.db
-
-aim.db               →  all data        →  medical_system.py  →  LLM analysis
-aim.db               →  all data        →  aim_gui.py         →  GUI display
-aim.db               →  patient data    →  telegram_bot.py    →  DrJaba bot replies
-```
-
----
-
-## GitHub Repos
-
-| Repo | Contents | URL |
-|------|----------|-----|
-| `djabbat/AIM` | Full private repo | git@github.com:djabbat/AIM.git |
-| `djabbat/AIM-public` | Public (no patient data, no internal docs) | github.com/djabbat/AIM-public |
-
-Public repo excludes: `CONCEPT.md`, `CLAUDE.md`, `TODO.md`, `PARAMETERS.md`, `MAP.md`, `Patients/`, `aim.db`, `*.json` (data).
-
----
-
-## Key Commands
-
-```bash
-# Run
-cd ~/Desktop/AIM && source venv/bin/activate && python3 aim_gui.py          # GUI
-cd ~/Desktop/AIM && source venv/bin/activate && python3 medical_system.py   # CLI
-cd ~/Desktop/AIM && source venv/bin/activate && python3 telegram_bot.py     # Bot
-
-# Patient intake
-cd ~/Desktop/AIM && source venv/bin/activate && python3 patient_intake.py --all
-cd ~/Desktop/AIM && source venv/bin/activate && python3 patient_intake.py --patient SURNAME_NAME_YYYY_MM_DD
-
-# DB
-cd ~/Desktop/AIM && source venv/bin/activate && python3 db.py --stats
-cd ~/Desktop/AIM && source venv/bin/activate && python3 db.py --migrate
-
-# Backup
-cd ~/Desktop/AIM && source venv/bin/activate && python3 backup_github.py
-
-# Deploy archive
-cd ~/Desktop/AIM && ./build_deploy.sh
+tenants ──< users ──< patients
+                  ──< analyses
+                  ──< prescriptions
+                  ──< appointments
+                  ──< messages
+                  ──< push_tokens
+users ──< audit_log
+tenants ──< billing
 ```
 
 ---
 
-*Last updated: 2026-03-28*
+## Петли обратной связи
+
+### Самообучение
+
+```
+Пациент обработан
+    ↓
+diagnosis_engine.py → паттерн диагноза
+    ↓
+MedicalKnowledge.update(pattern)
+    ↓
+medical_knowledge.json (накопление)
+    ↓
+Следующий пациент — более точный диагноз
+```
+
+### Ze-HRV обратная связь
+
+```
+BioSense EEG/HRV данные
+    ↓
+ZeAnastasis анализ → Ze-статус пациента
+    ↓
+AIM diagnosis_engine.py → учитывает Ze-статус
+    ↓
+treatment_recommender.py → Ze-скорректированный протокол
+    ↓
+Мониторинг ответа на лечение
+    ↓
+CDATA обновление клинических данных
+```
+
+---
+
+## Экосистемные связи (детали в LINKS.md)
+
+```
+AIM
+ ├── → CDATA (клинические данные, Ze-теория)
+ ├── → ZeAnastasis (Ze-терапия, EEG/HRV)
+ ├── → Regenesis (протоколы)
+ ├── → DrJaba (публичный сайт)
+ ├── → BioSense (биосенсоры)
+ ├── → FCLC (федеральная клиника)
+ └── → WLRAbastumani (санаторий)
+```

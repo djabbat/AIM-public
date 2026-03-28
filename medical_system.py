@@ -1,837 +1,870 @@
-#!/usr/bin/env python3
 """
-Integrative Medicine AI System
-================================
-Self-developing digital specialist for Dr. Jaba Tkemaladze.
+AIM v6.0 — medical_system.py
+Главный CLI-интерфейс интегративной медицины.
 
-Features:
-  • Patient record management (~/Desktop/AIM/Patients/)
-  • Lab analysis with deviations + diagnosis suggestions
-  • WhatsApp chat import (patients marked with P/П/პ)
-  • OCR of medical screenshots
-  • Treatment recommendations (integrative medicine)
-  • Self-learning: builds knowledge base from each patient
-
-Run: python3 medical_system.py
+Запуск:
+    python3 medical_system.py
+    python3 medical_system.py --all   # обработать всех пациентов
+    python3 medical_system.py --lang ka
 """
 
-import os
 import sys
-import json
-import re
-from datetime import datetime, date
+import os
+import argparse
+import logging
 from pathlib import Path
-from typing import Optional, List, Dict
+from datetime import datetime
+from typing import Optional
 
-# ── Path setup ─────────────────────────────────────────────────
-AI_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, AI_DIR)
+# Добавляем директорию проекта в путь
+sys.path.insert(0, str(Path(__file__).parent))
 
-VENV_SITE = os.path.expanduser("~/Desktop/AIM/venv/lib/python3.*/site-packages")
-import glob as _glob
-_sp = _glob.glob(VENV_SITE)
-if _sp:
-    sys.path.insert(0, _sp[0])
+from config import cfg
+from i18n import t, set_lang, choose_language_interactive, get_lang
+from db import init_db, fetchall, fetchone, execute, get_db
 
-from config import (PATIENTS_DIR as DOCUMENTS_DIR,
-                    KNOWLEDGE_FILE, MODEL, get_logger)
-from llm import ask_llm as _ask_llm_deepseek
-import db as _db
-import i18n as _i18n
-_db.init_db()
-try:
-    from filelock import FileLock as _FileLock
-    _KNOWLEDGE_LOCK = _FileLock(str(KNOWLEDGE_FILE) + ".lock")
-except ImportError:
-    import threading
-    _KNOWLEDGE_LOCK = threading.Lock()  # type: ignore[assignment]
-log = get_logger("medical_system")
+# Настройка логирования
+logging.basicConfig(
+    level=getattr(logging, cfg.LOG_LEVEL, logging.INFO),
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logger = logging.getLogger("aim.main")
 
-# ── LLM ───────────────────────────────────────────────────────
-from space_nutrition import NUTRITION_RULES_PROMPT
+# ============================================================================
+# Версия и баннер
+# ============================================================================
 
-SYSTEM_PROMPT = """Ты — цифровой ассистент доктора Джаба Ткемаладзе (Dr. Jaba Tkemaladze), \
-специалиста по интегративной медицине, Тбилиси.
+BANNER = r"""
+    ___    ____  ___    _   __ ____
+   /   |  /  _/ /   |  / | / // __ \
+  / /| |  / /  / /| | /  |/ // / / /
+ / ___ |_/ /  / ___ |/ /|  // /_/ /
+/_/  |_/___/ /_/  |_/_/ |_//_____/
 
-РОЛЬ И ФИЛОСОФИЯ:
-Ты сочетаешь доказательную медицину с интегративным подходом. Болезнь — это адаптивный \
-ответ организма, а не только патология. Работай с причиной, не только с симптомом. \
-Каждый пациент уникален: учитывай возраст, пол, образ жизни, психоэмоциональный фон, \
-питание, культурный контекст (Грузия, Казахстан, Россия).
+  Ассистент Интегративной Медицины
+  Assistant of Integrative Medicine
+  v6.0 | drjaba.com
+"""
 
-КЛИНИЧЕСКИЕ ПРИНЦИПЫ:
-1. Дифференциальный диагноз — всегда перечисляй 2–4 наиболее вероятных варианта с обоснованием
-2. Лабораторные отклонения — интерпретируй в контексте клиники, не изолированно
-3. Нутрициология — добавки, дефициты, питание как первая линия при функциональных нарушениях
-4. Психосоматика — стресс, сон, эмоциональный фон влияют на физиологию; спрашивай о них
-5. Медикаменты — назначай с дозой, длительностью, контролем; предупреждай о побочных эффектах
-6. Follow-up — каждая рекомендация должна иметь срок контроля и критерий эффективности
+# ============================================================================
+# Главный класс системы
+# ============================================================================
 
-ФОРМАТ ОТВЕТА (всегда использовать эти разделы если применимо):
-## Оценка ситуации
-## Дифференциальный диагноз
-## Лабораторные показатели
-## Рекомендации
-  ### Питание и образ жизни
-  ### Нутрицевтики / добавки
-  ### Медикаменты (если необходимо)
-## Контроль и follow-up
-
-ЯЗЫК: Отвечай на русском. Если пациент пишет на грузинском или казахском — понимай, \
-но отвечай на русском (или на языке пациента если доктор попросит).
-СТИЛЬ: Конкретно, без воды. Дозы — цифрами. Сроки — чёткими датами или неделями.
-""" + NUTRITION_RULES_PROMPT
-
-
-def ask_llm(prompt: str, system: str = SYSTEM_PROMPT,
-            max_tokens: int = 2048) -> str:
-    return _ask_llm_deepseek(prompt, system=system, max_tokens=max_tokens)
-
-
-# ── Knowledge base (self-learning) ────────────────────────────
-
-class MedicalKnowledge:
+class AIMSystem:
     """
-    Accumulates findings across patients.
-    Stores: patterns (symptom→diagnosis), outcome notes, treatment efficacy.
+    Главный координатор AIM v6.0.
+    Управляет CLI-сессией врача.
     """
 
-    def __init__(self):
-        self.data: Dict = self._load()
+    def __init__(self, lang: str = None):
+        self.lang = lang or cfg.DEFAULT_LANG
+        set_lang(self.lang)
+        self.running = True
+        self.current_tenant_id = 1  # По умолчанию — drjaba
 
-    def _load(self) -> Dict:
-        if os.path.exists(KNOWLEDGE_FILE):
+        # Lazy imports (модули могут быть ещё не созданы)
+        self._llm = None
+        self._patient_intake = None
+        self._lab_parser = None
+        self._diagnosis_engine = None
+        self._treatment_recommender = None
+
+    # ------------------------------------------------------------------
+    # LLM
+    # ------------------------------------------------------------------
+
+    def _get_llm(self):
+        """Lazy load llm модуля"""
+        if self._llm is None:
             try:
-                with open(KNOWLEDGE_FILE, encoding="utf-8") as f:
-                    return json.load(f)
-            except Exception:
-                pass
-        return {"patterns": {}, "treatments": {}, "notes": [], "patient_count": 0, "lab_dynamics": {}}
-
-    def save(self):
-        with _KNOWLEDGE_LOCK:
-            with open(KNOWLEDGE_FILE, "w", encoding="utf-8") as f:
-                json.dump(self.data, f, ensure_ascii=False, indent=2)
-
-    def record_patient_analysis(self, patient_name: str,
-                                 diagnoses: List[str],
-                                 treatments: List[str],
-                                 outcome_notes: str = ""):
-        """Called after each patient analysis to build up knowledge."""
-        self.data["patient_count"] += 1
-
-        for dx in diagnoses:
-            if dx not in self.data["patterns"]:
-                self.data["patterns"][dx] = {"count": 0, "treatments": []}
-            self.data["patterns"][dx]["count"] += 1
-
-        for tx in treatments:
-            if tx not in self.data["treatments"]:
-                self.data["treatments"][tx] = {"count": 0, "diagnoses": []}
-            self.data["treatments"][tx]["count"] += 1
-
-        if outcome_notes:
-            self.data["notes"].append({
-                "patient": patient_name,
-                "date": date.today().isoformat(),
-                "note": outcome_notes[:500],
-            })
-            # Keep last 200 notes
-            self.data["notes"] = self.data["notes"][-200:]
-
-        self.save()
-
-    def record_lab_snapshot(self, patient_name: str, lab_results: list):
-        """Store lab values over time for trend analysis."""
-        today = date.today().isoformat()
-        if "lab_dynamics" not in self.data:
-            self.data["lab_dynamics"] = {}
-        if patient_name not in self.data["lab_dynamics"]:
-            self.data["lab_dynamics"][patient_name] = {}
-        self.data["lab_dynamics"][patient_name][today] = {
-            r.param_id: {"value": r.value, "unit": r.unit, "status": r.status}
-            for r in lab_results
-        }
-        self.save()
-
-    def get_lab_trend(self, patient_name: str, param_id: str) -> str:
-        """Return trend string for a lab parameter: ↑↓→ over time."""
-        history = self.data.get("lab_dynamics", {}).get(patient_name, {})
-        if not history:
-            return ""
-        points = []
-        for date_str in sorted(history.keys()):
-            entry = history[date_str].get(param_id)
-            if entry:
-                points.append(f"{date_str}: {entry['value']} {entry['unit']} ({entry['status']})")
-        return "\n".join(points) if points else ""
-
-    def get_context(self) -> str:
-        """Build a context summary from accumulated knowledge."""
-        n = self.data.get("patient_count", 0)
-        if n == 0:
-            return ""
-        top_dx = sorted(self.data.get("patterns", {}).items(),
-                         key=lambda x: x[1]["count"], reverse=True)[:5]
-        lines = [f"База знаний: {n} пациентов проанализировано."]
-        if top_dx:
-            lines.append("Частые диагнозы: " + ", ".join(f"{d}({c['count']})" for d, c in top_dx))
-        return " ".join(lines)
-
-
-knowledge = MedicalKnowledge()
-
-
-# ── Patient management ─────────────────────────────────────────
-
-def list_patients() -> List[Dict]:
-    """Return list of patients. Reads from SQLite DB (fast), fallback to filesystem."""
-    try:
-        rows = _db.list_patients()
-        if rows:
-            patients = []
-            for r in rows:
-                info = {
-                    "folder": r["folder_path"],
-                    "name": f"{r['surname']} {r['name']}",
-                    "folder_name": Path(r["folder_path"]).name,
-                    "id": r["id"],
+                from llm import ask_llm, ask_deep, ask_medical, check_llm_status
+                self._llm = {
+                    "ask": ask_llm,
+                    "deep": ask_deep,
+                    "medical": ask_medical,
+                    "status": check_llm_status,
                 }
-                if r["dob"]:
-                    parts = r["dob"].split("-")
-                    if len(parts) == 3:
-                        info["dob"] = f"{parts[2]}.{parts[1]}.{parts[0]}"
-                # Ze-статус из БД
-                ze = _db.get_latest_ze(r["id"])
-                if ze:
-                    info["ze_v"]    = ze["ze_v"]
-                    info["ze_state"] = ze["ze_state"]
-                return patients
-            return patients
-    except Exception:
-        pass
+            except ImportError as e:
+                logger.warning(f"llm.py недоступен: {e}")
+        return self._llm
 
-    # Fallback — файловая система
-    docs = Path(DOCUMENTS_DIR)
-    patients = []
-    for d in sorted(docs.iterdir()):
-        if not d.is_dir() or d.name.startswith("."):
-            continue
-        parts = d.name.split("_")
-        if len(parts) >= 2:
-            info = {
-                "folder": str(d),
-                "name": f"{parts[0]} {parts[1]}",
-                "folder_name": d.name,
-            }
-            if len(parts) >= 5:
-                try:
-                    info["dob"] = f"{parts[4]}.{parts[3]}.{parts[2]}"
-                except Exception:
-                    pass
-            patients.append(info)
-    return patients
+    # ------------------------------------------------------------------
+    # Запуск
+    # ------------------------------------------------------------------
 
+    def start(self):
+        """Запустить AIM"""
+        print(BANNER)
+        print(t("welcome", version=cfg.VERSION))
+        print(t("doctor"))
+        print()
 
-def search_patients_by_symptom(query: str) -> str:
-    """
-    Полнотекстовый поиск по диагнозам и анализам всех пациентов.
-    Использует SQLite FTS5 по таблице diagnoses.
-    Возвращает форматированный текст с результатами.
-    """
-    query = query.strip()
-    if not query:
-        return "Введите поисковый запрос."
-    try:
-        results = _db.search_diagnoses(query, limit=20)
-        if not results:
-            # Попробовать LIKE-поиск если FTS не нашёл
-            results = _db.search_diagnoses(f'"{query}"', limit=20)
-        if not results:
-            return f"По запросу «{query}» ничего не найдено."
+        # Проверка конфигурации
+        warnings = cfg.validate()
+        if warnings:
+            for w in warnings:
+                print(f"  ! {w}")
+            print()
 
-        lines = [f"Найдено совпадений: {len(results)} по запросу «{query}»\n"]
-        seen_patients = set()
-        for r in results:
-            pid = r["patient_id"]
-            patient_label = f"{r['surname']} {r['name']}"
-            if patient_label not in seen_patients:
-                seen_patients.add(patient_label)
-                lines.append(f"─── {patient_label} ───")
-            # Выдержка из диагноза (первые 300 символов)
-            text = r["llm_text"] or ""
-            # Найти фрагмент вокруг запроса
-            idx = text.lower().find(query.lower())
-            if idx >= 0:
-                start = max(0, idx - 80)
-                end   = min(len(text), idx + 200)
-                snippet = ("..." if start > 0 else "") + text[start:end] + ("..." if end < len(text) else "")
+        # Инициализация БД
+        try:
+            init_db()
+        except Exception as e:
+            print(t("err_db", message=str(e)))
+            logger.error(f"БД ошибка при запуске: {e}")
+
+        # LLM статус
+        llm_mod = self._get_llm()
+        if llm_mod:
+            status = llm_mod["status"]()
+            backend = status.get("active_backend", "none")
+            if backend == "none":
+                print(f"  ! {t('ai_no_key')}")
             else:
-                snippet = text[:280]
-            lines.append(f"  [{r['created_at'][:10]}] {snippet.strip()}\n")
+                print(f"  LLM: {backend}")
+            print()
 
-        return "\n".join(lines)
-    except Exception as e:
-        return f"Ошибка поиска: {e}"
+        # Система информации
+        patient_count = self._count_patients()
+        print(t("system_info", version=cfg.VERSION, patients=patient_count, lang=self.lang))
+        print()
 
+        # Главный цикл
+        self._main_loop()
 
-def db_stats() -> str:
-    """Статистика базы данных AIM."""
-    try:
-        conn = _db._connect()
-        lines = ["База данных AIM:"]
-        for table in ["patients", "lab_snapshots", "diagnoses", "ze_hrv", "knowledge", "processed_files"]:
-            n = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
-            lines.append(f"  {table}: {n}")
-        return "\n".join(lines)
-    except Exception as e:
-        return f"Ошибка: {e}"
+    def _main_loop(self):
+        """Главный цикл меню"""
+        while self.running:
+            self._show_menu()
+            choice = input("\n>> ").strip()
+            self._handle_choice(choice)
 
+    def _show_menu(self):
+        """Показать главное меню"""
+        print("\n" + "="*50)
+        print(t("version", version=cfg.VERSION))
+        print("="*50)
+        print(f"  1. {t('m1')}")
+        print(f"  2. {t('m2')}")
+        print(f"  3. {t('m3')}")
+        print(f"  4. {t('m4')}")
+        print(f"  5. {t('m5')}")
+        print(f"  6. {t('m6')}")
+        print(f"  7. {t('m7')}")
+        print(f"  8. {t('m8')}")
+        print(f"  9. {t('m9')}")
+        print(f"  L. Язык / Language")
+        print(f"  0. {t('mw')}")
+        print("="*50)
 
-def analyze_patient(folder_path: str, force: bool = False) -> str:
-    """Run full intake pipeline on patient folder."""
-    from patient_intake import process_patient_folder
-    return process_patient_folder(folder_path, force=force)
+    def _handle_choice(self, choice: str):
+        """Обработать выбор меню"""
+        handlers = {
+            "1": self._menu_patients,
+            "2": self._menu_new_patient,
+            "3": self._menu_search_patient,
+            "4": self._menu_ai_consultation,
+            "5": self._menu_lab_analysis,
+            "6": self._menu_bayesian_diagnosis,
+            "7": self._menu_treatment,
+            "8": self._menu_ze_hrv,
+            "9": self._menu_reports,
+            "l": self._menu_language,
+            "L": self._menu_language,
+            "0": self._exit,
+            "": None,
+        }
 
-
-def show_patient_analysis(folder_path: str) -> str:
-    """Return the AI analysis for a patient."""
-    folder = Path(folder_path)
-    analysis_file = folder / "_ai_analysis.txt"
-    if analysis_file.exists():
-        return analysis_file.read_text(encoding="utf-8", errors="replace")
-    return "Анализ не найден. Запустите: analyze_patient()"
-
-
-def show_aging_prediction(folder_path: str) -> str:
-    """CDATA bridge: predict biological aging for patient."""
-    try:
-        from cdata_bridge import analyze_patient_aging
-        import db as _db2
-
-        folder = Path(folder_path)
-        patient = _db2._connect().execute(
-            "SELECT * FROM patients WHERE folder_path=?", (str(folder),)
-        ).fetchone()
-
-        if not patient:
-            return "Пациент не найден в базе. Сначала обработайте папку (пункт 2)."
-
-        # Age from dob
-        age = 50.0
-        if patient["dob"]:
+        handler = handlers.get(choice)
+        if handler:
             try:
-                from datetime import date
-                birth = date.fromisoformat(patient["dob"][:10])
-                age = (date.today() - birth).days / 365.25
+                handler()
+            except KeyboardInterrupt:
+                print("\n" + t("cancelled"))
+            except Exception as e:
+                print(t("error", message=str(e)))
+                logger.error(f"Ошибка при выполнении [{choice}]: {e}", exc_info=True)
+        elif choice:
+            print(t("not_found"))
+
+    # ------------------------------------------------------------------
+    # Меню — Список пациентов
+    # ------------------------------------------------------------------
+
+    def _menu_patients(self):
+        """Список пациентов"""
+        print(f"\n{t('patients_title')}")
+        patients = fetchall(
+            "SELECT id, surname, first_name, birth_date, sex, ze_status, biological_age "
+            "FROM patients WHERE tenant_id = ? ORDER BY surname, first_name",
+            [self.current_tenant_id]
+        )
+
+        if not patients:
+            print(t("no_patients"))
+            return
+
+        print(f"\n{'ID':>4}  {'Фамилия/Name':<25}  {'Возраст':>7}  {'Пол':>3}  {'Ze':>6}")
+        print("-" * 55)
+        for p in patients:
+            age_str = self._calc_age(p.get("birth_date")) or "—"
+            ze_str = f"{p['ze_status']:.0f}" if p.get("ze_status") else "—"
+            print(f"  {p['id']:>3}  {p['surname']} {p['first_name']:<20}  {age_str:>7}  {p.get('sex','?'):>3}  {ze_str:>6}")
+
+        print(f"\nВсего: {len(patients)}")
+
+        # Выбор пациента
+        pid_str = input("\nВведите ID пациента (или Enter назад): ").strip()
+        if pid_str.isdigit():
+            self._show_patient(int(pid_str))
+
+    # ------------------------------------------------------------------
+    # Меню — Новый пациент
+    # ------------------------------------------------------------------
+
+    def _menu_new_patient(self):
+        """Создать нового пациента"""
+        print(f"\n{t('m2')}")
+        print("-" * 30)
+
+        surname = input("Фамилия / Surname: ").strip()
+        if not surname:
+            print(t("cancelled"))
+            return
+
+        first_name = input("Имя / First name: ").strip()
+        birth_date = input("Дата рождения (YYYY-MM-DD, Enter пропустить): ").strip() or None
+        sex = input("Пол / Sex (M/F, Enter пропустить): ").strip().upper() or None
+        if sex and sex not in ("M", "F"):
+            sex = None
+        phone = input("Телефон / Phone: ").strip() or None
+
+        with get_db() as db:
+            cursor = db.execute(
+                """INSERT INTO patients (tenant_id, surname, first_name, birth_date, sex, phone)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                [self.current_tenant_id, surname, first_name, birth_date, sex, phone]
+            )
+            new_id = cursor.lastrowid
+
+        # Аудит
+        self._audit("create_patient", "patient", str(new_id))
+
+        print(t("patient_created", name=f"{surname} {first_name}"))
+        print(f"ID: {new_id}")
+
+    # ------------------------------------------------------------------
+    # Меню — Поиск пациента
+    # ------------------------------------------------------------------
+
+    def _menu_search_patient(self):
+        """Поиск пациента"""
+        query = input(t("search_prompt")).strip()
+        if not query:
+            return
+
+        patients = fetchall(
+            """SELECT id, surname, first_name, birth_date, sex, ze_status
+               FROM patients
+               WHERE tenant_id = ? AND (
+                   surname LIKE ? OR first_name LIKE ? OR phone LIKE ?
+               )
+               ORDER BY surname""",
+            [self.current_tenant_id, f"%{query}%", f"%{query}%", f"%{query}%"]
+        )
+
+        if not patients:
+            print(t("not_found"))
+            return
+
+        print(f"\nНайдено: {len(patients)}")
+        for p in patients:
+            ze_str = f"Ze={p['ze_status']:.0f}" if p.get("ze_status") else ""
+            print(f"  [{p['id']}] {p['surname']} {p['first_name']} {ze_str}")
+
+        pid_str = input("\nВведите ID (или Enter назад): ").strip()
+        if pid_str.isdigit():
+            self._show_patient(int(pid_str))
+
+    # ------------------------------------------------------------------
+    # Меню — AI-консультация
+    # ------------------------------------------------------------------
+
+    def _menu_ai_consultation(self):
+        """AI-консультация"""
+        print(f"\n{t('ai_title')}")
+        llm_mod = self._get_llm()
+
+        if not llm_mod:
+            print(t("ai_no_key"))
+            return
+
+        print("Введите вопрос или описание клинической ситуации.")
+        print("Введите 'пациент' для консультации с контекстом пациента.")
+        print("Для выхода нажмите Enter.\n")
+
+        while True:
+            prompt = input(t("ai_prompt")).strip()
+            if not prompt:
+                break
+
+            print(f"\n{t('ai_thinking')}")
+            try:
+                if prompt.lower() in ("пациент", "patient"):
+                    pid_str = input("ID пациента: ").strip()
+                    if pid_str.isdigit():
+                        patient = self._get_patient_data(int(pid_str))
+                        question = input("Ваш вопрос: ").strip()
+                        answer = llm_mod["medical"](patient, question, lang=self.lang)
+                    else:
+                        print(t("not_found"))
+                        continue
+                else:
+                    answer = llm_mod["deep"](prompt, lang=self.lang)
+
+                print(f"\n{'─'*50}")
+                print(answer)
+                print(f"{'─'*50}\n")
+            except Exception as e:
+                print(t("err_llm", message=str(e)))
+
+    # ------------------------------------------------------------------
+    # Меню — Лабораторные данные
+    # ------------------------------------------------------------------
+
+    def _menu_lab_analysis(self):
+        """Анализ лабораторных данных"""
+        print(f"\n{t('lab_title')}")
+        llm_mod = self._get_llm()
+
+        print("Вставьте текст с лабораторными данными пациента.")
+        print("Введите 'END' на новой строке для завершения.\n")
+
+        lines = []
+        while True:
+            line = input()
+            if line.strip().upper() == "END":
+                break
+            lines.append(line)
+
+        if not lines:
+            print(t("cancelled"))
+            return
+
+        raw_text = "\n".join(lines)
+        print(f"\n{t('lab_analyzing')}")
+
+        prompt = (
+            f"Проанализируй следующие лабораторные данные пациента. "
+            f"Укажи отклонения от нормы, их клиническое значение, "
+            f"рекомендации по дообследованию и коррекции.\n\n"
+            f"Данные:\n{raw_text}"
+        )
+
+        if llm_mod:
+            result = llm_mod["deep"](prompt, lang=self.lang)
+            print(f"\n{'─'*50}")
+            print(result)
+            print(f"{'─'*50}")
+        else:
+            print(t("ai_no_key"))
+
+    # ------------------------------------------------------------------
+    # Меню — Байесовская диагностика
+    # ------------------------------------------------------------------
+
+    def _menu_bayesian_diagnosis(self):
+        """Байесовская дифференциальная диагностика"""
+        print(f"\n{t('diag_title')}")
+        llm_mod = self._get_llm()
+
+        symptoms_str = input(t("diag_symptoms")).strip()
+        if not symptoms_str:
+            return
+
+        print(f"\n{t('diag_running')}")
+
+        prompt = (
+            f"Проведи дифференциальную диагностику для следующих симптомов, "
+            f"используя байесовский подход. Перечисли наиболее вероятные диагнозы "
+            f"с указанием вероятности (%), ключевых признаков и необходимых тестов.\n\n"
+            f"Симптомы: {symptoms_str}"
+        )
+
+        if llm_mod:
+            result = llm_mod["deep"](prompt, lang=self.lang)
+            print(f"\n{'─'*50}")
+            print(result)
+            print(f"{'─'*50}")
+        else:
+            print(t("ai_no_key"))
+
+    # ------------------------------------------------------------------
+    # Меню — Протоколы лечения
+    # ------------------------------------------------------------------
+
+    def _menu_treatment(self):
+        """Протоколы лечения"""
+        print(f"\n{t('treatment_title')}")
+        llm_mod = self._get_llm()
+
+        print("Введите диагноз или состояние для получения протокола лечения:")
+        diagnosis = input(">> ").strip()
+        if not diagnosis:
+            return
+
+        print("\nУкажите контекст (Ze-статус, возраст, сопутствующие болезни, Enter пропустить):")
+        context = input(">> ").strip()
+
+        prompt = (
+            f"Составь протокол интегративного лечения для: {diagnosis}.\n"
+            f"Включи: основное лечение, нутрициологическую поддержку, "
+            f"Ze-коррекционный компонент, мониторинг."
+        )
+        if context:
+            prompt += f"\n\nКонтекст пациента: {context}"
+
+        if llm_mod:
+            result = llm_mod["deep"](prompt, lang=self.lang)
+            print(f"\n{'─'*50}")
+            print(result)
+            print(f"{'─'*50}")
+        else:
+            print(t("ai_no_key"))
+
+    # ------------------------------------------------------------------
+    # Меню — Ze/HRV
+    # ------------------------------------------------------------------
+
+    def _menu_ze_hrv(self):
+        """Ze-статус / HRV"""
+        print(f"\n{t('ze_title')}")
+
+        print("Введите SDNN (мс): ", end="")
+        sdnn_str = input().strip()
+        print("Введите RMSSD (мс): ", end="")
+        rmssd_str = input().strip()
+        print("Введите LF/HF ratio: ", end="")
+        lf_hf_str = input().strip()
+
+        try:
+            sdnn = float(sdnn_str) if sdnn_str else None
+            rmssd = float(rmssd_str) if rmssd_str else None
+            lf_hf = float(lf_hf_str) if lf_hf_str else None
+        except ValueError:
+            print(t("error", message="Некорректные данные"))
+            return
+
+        # Простая оценка Ze-статуса по HRV
+        ze_score = self._estimate_ze_from_hrv(sdnn, rmssd, lf_hf)
+
+        print(f"\n{t('ze_status_label')}: {ze_score:.1f}/100")
+        if ze_score >= 80:
+            print(t("ze_high"))
+        elif ze_score >= 50:
+            print(t("ze_medium"))
+        elif ze_score >= 20:
+            print(t("ze_low"))
+        else:
+            print(t("ze_critical"))
+
+        # AI-интерпретация
+        llm_mod = self._get_llm()
+        if llm_mod and sdnn:
+            prompt = (
+                f"Проинтерпретируй данные HRV пациента в контексте Ze-теории:\n"
+                f"SDNN={sdnn} мс, RMSSD={rmssd} мс, LF/HF={lf_hf}.\n"
+                f"Ze-статус (оценочно): {ze_score:.0f}/100.\n"
+                f"Дай клиническую интерпретацию и рекомендации."
+            )
+            print(f"\n{t('ai_thinking')}")
+            result = llm_mod["ask"](prompt, lang=self.lang)
+            print(f"\n{result}")
+
+    # ------------------------------------------------------------------
+    # Меню — Отчёты
+    # ------------------------------------------------------------------
+
+    def _menu_reports(self):
+        """Отчёты и экспорт"""
+        print(f"\n{t('report_title')}")
+        print("1. Сводка по пациентам")
+        print("2. Статистика Ze-статуса")
+        print("0. Назад")
+
+        choice = input("\n>> ").strip()
+        if choice == "1":
+            self._report_patients_summary()
+        elif choice == "2":
+            self._report_ze_stats()
+
+    # ------------------------------------------------------------------
+    # Меню — Язык
+    # ------------------------------------------------------------------
+
+    def _menu_language(self):
+        """Смена языка"""
+        lang = choose_language_interactive()
+        self.lang = lang
+        print(t("success"))
+
+    # ------------------------------------------------------------------
+    # Выход
+    # ------------------------------------------------------------------
+
+    def _exit(self):
+        """Выход из системы"""
+        print(f"\n{t('exit')} AIM v{cfg.VERSION}")
+        self.running = False
+
+    # ------------------------------------------------------------------
+    # Вспомогательные методы
+    # ------------------------------------------------------------------
+
+    def _show_patient(self, patient_id: int):
+        """Показать данные пациента"""
+        patient = fetchone(
+            "SELECT * FROM patients WHERE id = ? AND tenant_id = ?",
+            [patient_id, self.current_tenant_id]
+        )
+        if not patient:
+            print(t("not_found"))
+            return
+
+        print(f"\n{'='*50}")
+        print(f"Пациент: {patient['surname']} {patient['first_name']}")
+        if patient.get("birth_date"):
+            age = self._calc_age(patient["birth_date"])
+            print(f"Возраст: {age} лет ({patient['birth_date']})")
+        if patient.get("sex"):
+            print(f"Пол: {patient['sex']}")
+        if patient.get("phone"):
+            print(f"Телефон: {patient['phone']}")
+        if patient.get("ze_status"):
+            print(f"Ze-статус: {patient['ze_status']:.1f}/100")
+        if patient.get("biological_age"):
+            print(f"Биологический возраст: {patient['biological_age']:.0f} лет")
+
+        # Последние анализы
+        analyses = fetchall(
+            "SELECT id, type, created_at, status FROM analyses "
+            "WHERE patient_id = ? ORDER BY created_at DESC LIMIT 5",
+            [patient_id]
+        )
+        if analyses:
+            print(f"\nПоследние анализы ({len(analyses)}):")
+            for a in analyses:
+                print(f"  [{a['id'][:8]}] {a['type']} {a['created_at'][:10]} [{a['status']}]")
+
+        # Диагнозы
+        diagnoses = fetchall(
+            "SELECT icd11_code, name, confidence, is_primary FROM diagnoses "
+            "WHERE patient_id = ? ORDER BY is_primary DESC, confidence DESC LIMIT 5",
+            [patient_id]
+        )
+        if diagnoses:
+            print(f"\nДиагнозы:")
+            for d in diagnoses:
+                primary = " [основной]" if d.get("is_primary") else ""
+                conf = f" ({d['confidence']*100:.0f}%)" if d.get("confidence") else ""
+                code = f" [{d['icd11_code']}]" if d.get("icd11_code") else ""
+                print(f"  {d['name']}{code}{conf}{primary}")
+
+        print("="*50)
+
+        # Подменю пациента
+        print(f"\n  1. {t('mp3')} (AI)")
+        print(f"  2. {t('mp4')}")
+        print(f"  3. {t('mp7')}")
+        print(f"  0. {t('mpb')}")
+
+        sub = input("\n>> ").strip()
+        if sub == "1":
+            self._patient_ai_analysis(patient)
+        elif sub == "2":
+            self._patient_diagnoses(patient_id)
+        elif sub == "3":
+            self._patient_ze_history(patient_id)
+
+        # Аудит
+        self._audit("view_patient", "patient", str(patient_id))
+
+    def _patient_ai_analysis(self, patient: dict):
+        """AI-анализ данных пациента"""
+        llm_mod = self._get_llm()
+        if not llm_mod:
+            print(t("ai_no_key"))
+            return
+
+        # Собираем данные
+        analyses = fetchall(
+            "SELECT type, lab_values, created_at FROM analyses "
+            "WHERE patient_id = ? AND lab_values IS NOT NULL "
+            "ORDER BY created_at DESC LIMIT 3",
+            [patient["id"]]
+        )
+
+        patient_data = {
+            "name": f"{patient['surname']} {patient['first_name']}",
+            "age": self._calc_age(patient.get("birth_date")),
+            "sex": patient.get("sex"),
+            "ze_status": patient.get("ze_status"),
+        }
+
+        if analyses:
+            import json as _json
+            try:
+                patient_data["labs"] = _json.loads(analyses[0]["lab_values"])
             except Exception:
                 pass
 
-        # Diagnoses from DB
-        diag_row = _db2.get_latest_diagnosis(patient["id"])
-        diagnoses = []
-        risk_factors = []
-        if diag_row and diag_row["llm_text"]:
-            text = diag_row["llm_text"].lower()
-            for kw in ["анемия", "диабет", "гипертония", "ишемия", "онко", "хобл",
-                       "почечная", "печеночная", "сердечная", "рак"]:
-                if kw in text:
-                    diagnoses.append(kw)
-            for rf in ["курение", "алкоголь", "ожирение", "гиподинамия", "стресс"]:
-                if rf in text:
-                    risk_factors.append(rf)
+        print(f"\n{t('ai_thinking')}")
+        question = "Проведи комплексный анализ состояния здоровья пациента с учётом Ze-теории."
+        result = llm_mod["medical"](patient_data, question, lang=self.lang)
+        print(f"\n{'─'*50}")
+        print(result)
+        print(f"{'─'*50}")
 
-        # Ze-HRV from DB (if available)
-        ze_v = None
-        ze_state = "healthy"
-        ze_info = ""
-        try:
-            ze_rows = _db2._connect().execute(
-                "SELECT ze_v, ze_state FROM ze_hrv WHERE patient_id=? ORDER BY recorded_at DESC LIMIT 1",
-                (patient["id"],)
-            ).fetchone()
-            if ze_rows and ze_rows["ze_v"] is not None:
-                ze_v = float(ze_rows["ze_v"])
-                ze_state = ze_rows["ze_state"] or "healthy"
-                ze_info = f"Ze: v={ze_v:.3f}, состояние={ze_state}"
-        except Exception:
-            pass
-
-        lines = [
-            f"🧬 ПРОГНОЗ СТАРЕНИЯ — {patient['surname']} {patient['name']}",
-            f"   Возраст: {age:.1f} лет | Ткань: Blood",
-            f"   Диагнозы: {', '.join(diagnoses) or 'нет данных'}",
-            f"   Факторы риска: {', '.join(risk_factors) or 'нет данных'}",
-        ]
-        if ze_info:
-            lines.append(f"   {ze_info}  ← Ze-HRV биомаркер использован")
-        lines.append("─" * 50)
-
-        result = analyze_patient_aging(
-            age, diagnoses, risk_factors, lang="ru",
-            ze_v=ze_v, ze_state=ze_state,
+    def _patient_diagnoses(self, patient_id: int):
+        """История диагнозов пациента"""
+        diagnoses = fetchall(
+            "SELECT * FROM diagnoses WHERE patient_id = ? ORDER BY created_at DESC",
+            [patient_id]
         )
-        lines.append(result)
-        return "\n".join(lines)
+        if not diagnoses:
+            print(t("not_found"))
+            return
 
-    except Exception as e:
-        return f"Ошибка CDATA bridge: {e}\nПроверьте: cd ~/Desktop/CDATA && cargo build"
+        for d in diagnoses:
+            print(f"\n  {d['created_at'][:10]}: {d['name']}")
+            if d.get("icd11_code"):
+                print(f"    МКБ-11: {d['icd11_code']}")
+            if d.get("ze_context"):
+                print(f"    Ze: {d['ze_context']}")
 
+    def _patient_ze_history(self, patient_id: int):
+        """Ze/HRV история пациента"""
+        readings = fetchall(
+            "SELECT * FROM biosense_readings WHERE patient_id = ? ORDER BY measured_at DESC LIMIT 10",
+            [patient_id]
+        )
+        if not readings:
+            print(t("not_found"))
+            return
 
-def show_ze_history(folder_path: str) -> str:
-    """Show Ze-HRV history from DB for patient."""
-    try:
-        import db as _db2
+        print(f"\n{'Дата':<12} {'Ze':>6} {'SDNN':>6} {'RMSSD':>7} {'LF/HF':>7}")
+        print("-" * 45)
+        for r in readings:
+            date = r["measured_at"][:10] if r.get("measured_at") else "—"
+            ze = f"{r['ze_status']:.0f}" if r.get("ze_status") else "—"
+            sdnn = f"{r['sdnn']:.0f}" if r.get("sdnn") else "—"
+            rmssd = f"{r['rmssd']:.0f}" if r.get("rmssd") else "—"
+            lf_hf = f"{r['lf_hf_ratio']:.2f}" if r.get("lf_hf_ratio") else "—"
+            print(f"  {date:<10} {ze:>6} {sdnn:>6} {rmssd:>7} {lf_hf:>7}")
 
-        folder = Path(folder_path)
-        patient = _db2._connect().execute(
-            "SELECT * FROM patients WHERE folder_path=?", (str(folder),)
-        ).fetchone()
-        if not patient:
-            return "Пациент не найден в базе."
+    def _estimate_ze_from_hrv(
+        self, sdnn: Optional[float], rmssd: Optional[float], lf_hf: Optional[float]
+    ) -> float:
+        """Простая оценка Ze-статуса по HRV (алгоритм v1)"""
+        score = 50.0  # базовый Ze
 
-        rows = _db2.get_ze_history(patient["id"], limit=10)
-        if not rows:
-            return (
-                "Ze-HRV данных нет.\n"
-                "Записать: пункт 'w' → Wearable BLE\n"
-                "Или:      python3 ze_ecg.py <rr_file.csv>"
-            )
+        if sdnn is not None:
+            if sdnn >= 100: score += 20
+            elif sdnn >= 70: score += 15
+            elif sdnn >= 50: score += 10
+            elif sdnn >= 30: score += 0
+            elif sdnn >= 20: score -= 10
+            else: score -= 20
 
-        state_icon = {"healthy": "💚", "stress": "🟡",
-                      "arrhythmia": "🔴", "tachyarrhythmia": "🔴",
-                      "bradyarrhythmia": "🟠"}
+        if rmssd is not None:
+            if rmssd >= 50: score += 10
+            elif rmssd >= 30: score += 5
+            elif rmssd >= 20: score += 0
+            else: score -= 10
 
-        lines = [f"💗 Ze-HRV — {patient['surname']} {patient['name']} (последние {len(rows)} сессий)"]
-        lines.append(f"{'Дата':<20} {'Ze_v':>6} {'RMSSD':>7} {'HR':>5} {'Качество':<10} Статус")
-        lines.append("─" * 70)
-        for r in rows:
-            icon = state_icon.get(r["ze_state"] or "", "⚪")
-            date_s = (r["recorded_at"] or "")[:16]
-            ze_v   = f"{r['ze_v']:.3f}" if r["ze_v"] is not None else "—"
-            rmssd  = f"{r['rmssd']:.1f}" if r["rmssd"] is not None else "—"
-            hr     = f"{r['mean_hr']:.0f}" if r["mean_hr"] is not None else "—"
-            qual   = r["quality"] or "—"
-            state  = r["ze_state"] or "—"
-            lines.append(f"{date_s:<20} {ze_v:>6} {rmssd:>7} {hr:>5} {qual:<10} {icon}{state}")
-        return "\n".join(lines)
+        if lf_hf is not None:
+            if 1.0 <= lf_hf <= 2.0: score += 5
+            elif 0.5 <= lf_hf < 1.0 or 2.0 < lf_hf <= 3.0: score += 0
+            else: score -= 5
 
-    except Exception as e:
-        return f"Ошибка Ze-HRV: {e}"
+        return max(0.0, min(100.0, score))
 
-
-def search_protocols(query: str) -> str:
-    """Search Regenesis Recepturae .md files."""
-    recepturae = Path.home() / "Desktop" / "Regenesis" / "Recepturae"
-    if not recepturae.exists():
-        return "Папка Recepturae не найдена."
-
-    query_lower = query.lower()
-    found = []
-    for md_file in sorted(recepturae.glob("*.md")):
-        text = md_file.read_text(encoding="utf-8", errors="replace")
-        if query_lower in text.lower():
-            # Extract title line
-            title = md_file.stem
-            for line in text.splitlines():
-                if line.startswith("# "):
-                    title = line[2:].strip()
-                    break
-            found.append((title, md_file, text))
-
-    if not found:
-        return f"По запросу «{query}» ничего не найдено в Recepturae."
-
-    if len(found) == 1:
-        title, path, text = found[0]
-        # Show full content (truncated)
-        return f"🌿 {title}\n{'─'*50}\n{text[:3000]}"
-
-    lines = [f"🌿 Протоколы по запросу «{query}» — найдено {len(found)}:"]
-    for i, (title, path, text) in enumerate(found, 1):
-        lines.append(f"  {i}. {title}  [{path.name}]")
-    lines.append("\nВведите номер для просмотра:")
-    print("\n".join(lines))
-    try:
-        idx = int(input("Номер: ").strip()) - 1
-        title, path, text = found[idx]
-        return f"🌿 {title}\n{'─'*50}\n{text[:4000]}"
-    except Exception:
-        return "Отмена."
-
-
-def start_wearable(folder_path: str) -> str:
-    """Launch wearable_importer for BLE HRV recording."""
-    try:
-        import subprocess, sys
-        aim_dir = Path(__file__).parent
-        cmd = [sys.executable, str(aim_dir / "wearable_importer.py"),
-               "--patient", folder_path, "--duration", "300"]
-        print(f"\n📡 Запуск: {' '.join(cmd)}")
-        print("Убедитесь что BLE-устройство включено.")
-        print("Сканирование (8 сек)...\n")
-        proc = subprocess.run(cmd, cwd=str(aim_dir))
-        return f"Wearable сессия завершена (код {proc.returncode})."
-    except Exception as e:
-        return f"Ошибка wearable: {e}"
-
-
-def analyze_labs_only(folder_path: str) -> str:
-    """Quick lab analysis using lab_parser + diagnosis_engine."""
-    folder = Path(folder_path)
-    all_text = ""
-
-    # Collect text from PDFs and OCR files
-    for f in folder.glob("*_text.txt"):
-        all_text += f.read_text(encoding="utf-8", errors="replace") + "\n"
-    for f in folder.glob("*_ocr.txt"):
-        all_text += f.read_text(encoding="utf-8", errors="replace") + "\n"
-
-    if not all_text.strip():
-        return "Нет обработанных данных. Сначала запустите intake pipeline."
-
-    try:
-        from lab_parser import extract_from_text
-        from diagnosis_engine import bayesian_differential, format_differential, run_diagnosis_ai
-        from treatment_recommender import get_protocols, format_treatment
-
-        results = extract_from_text(all_text)
-        if not results:
-            return "Лабораторные показатели не найдены в данных."
-
-        lines = ["ЛАБОРАТОРНЫЕ ПОКАЗАТЕЛИ:\n"]
-        abnormal = []
-        for r in results:
-            icon = {"normal": "✓", "low": "↓", "high": "↑",
-                    "critical_low": "⚠↓", "critical_high": "⚠↑"}.get(r.status, "?")
-            line = f"  {icon} {r.param_id}: {r.value} {r.unit}  [{r.ref_range}]"
-            if r.interpretation:
-                line += f"  — {r.interpretation}"
-            lines.append(line)
-            if r.status not in ("normal", "unknown"):
-                abnormal.append(r)
-
-        if abnormal:
-            lines.append(f"\nОТКЛОНЕНИЙ: {len(abnormal)}")
-
-        # Diagnosis: Bayesian + DeepSeek R1
+    def _calc_age(self, birth_date_str: Optional[str]) -> Optional[int]:
+        """Рассчитать возраст в годах"""
+        if not birth_date_str:
+            return None
         try:
-            folder_name = Path(folder_path).name
-            patient_name = " ".join(folder_name.split("_")[:2])
-            lines.append(run_diagnosis_ai(results, symptom_text="", patient_name=patient_name))
+            birth = datetime.strptime(birth_date_str[:10], "%Y-%m-%d")
+            today = datetime.today()
+            return (today - birth).days // 365
+        except Exception:
+            return None
 
-            # Treatment protocols for top-3 diagnoses
-            bayes = bayesian_differential(results)
-            if bayes:
-                top_icd = [d.disease.icd10 for d in bayes[:3]]
-                protocols = get_protocols(top_icd)
-                if protocols:
-                    lines.append(format_treatment(protocols))
-        except Exception as e:
-            log.warning("Diagnosis error: %s", e)
+    def _count_patients(self) -> int:
+        """Количество пациентов в текущем тенанте"""
+        try:
+            row = fetchone(
+                "SELECT COUNT(*) as cnt FROM patients WHERE tenant_id = ?",
+                [self.current_tenant_id]
+            )
+            return row["cnt"] if row else 0
+        except Exception:
+            return 0
 
-        return "\n".join(lines)
+    def _get_patient_data(self, patient_id: int) -> dict:
+        """Получить данные пациента для AI-запроса"""
+        patient = fetchone("SELECT * FROM patients WHERE id = ?", [patient_id])
+        if not patient:
+            return {}
+        data = dict(patient)
+        data["age"] = self._calc_age(patient.get("birth_date"))
+        return data
 
-    except Exception as e:
-        return f"Ошибка анализа: {e}"
-
-
-# ── Interactive CLI ────────────────────────────────────────────
-
-def print_banner():
-    t = _i18n.t
-    print("\n" + "═" * 60)
-    print(f"   {t('banner_title')}")
-    print(f"   {t('banner_doctor')}")
-    print("═" * 60)
-    kb = knowledge.get_context()
-    if kb:
-        print(f"   {kb}")
-    print()
-
-
-def print_menu(current_user: dict = None):
-    t = _i18n.t
-    print(t("menu_title"))
-    for k in ("m1","m2","m3","m4","m5","m7","m8","m9","m0"):
-        print(f"  {t(k)}")
-    print(f"  {t('msep1')}")
-    for k in ("ma","mb","mc","mw","mgui","mk","mt"):
-        print(f"  {t(k)}")
-    if current_user and current_user.get("role") == "admin":
-        print(f"  {t('msep2')}")
-        print(f"  {t('mu')}")
-        print(f"  {t('mU')}")
-    print(f"  {t('ml')}")
-    print(f"  {t('mL')}")
-    print(f"  {t('mq')}")
-
-
-def run_interactive(current_user: dict = None):
-    t = _i18n.t
-    print_banner()
-    if current_user:
-        print(f"  {t('logged_as', name=current_user.get('display_name', current_user.get('email')), role=current_user.get('role', '?'))}")
-
-    patients = list_patients()
-    selected_folder = None
-
-    while True:
-        print_menu(current_user)
-        choice = input(f"\n{t('choice')}").strip()
-        choice_lower = choice.lower()
-
-        if choice_lower == "q":
-            break
-
-        elif choice == "L":
-            import auth as _auth
-            _auth.logout()
-            print(f"  ✓ {t('logout_done')}")
-            break
-
-        elif choice_lower == "g":
-            _i18n.select_language()
-            print(f"  ✓ {t('lang_changed')}")
-            continue
-
-        elif choice_lower == "d":
-            import subprocess, os
-            gui = os.path.expanduser("~/Desktop/CDATA/target/release/cell_dt_gui")
-            if os.path.exists(gui):
-                subprocess.Popen([gui])
-                print("  ✓ CDATA GUI запущен.")
-            else:
-                print("  ✗ Бинарь не найден. Собрать: cd ~/Desktop/CDATA && cargo build --release -p cell_dt_gui")
-
-        elif choice == "u" and current_user and current_user.get("role") == "admin":
-            import auth as _auth
-            _auth.register_user_interactive(current_user)
-
-        elif choice == "U" and current_user and current_user.get("role") == "admin":
-            import auth as _auth
-            _auth.show_users(current_user)
-
-        elif choice_lower == "1":
-            patients = list_patients()
-            print(f"\nПациентов: {len(patients)}")
-            for i, p in enumerate(patients, 1):
-                dob = p.get("dob", "?")
-                ze_info = ""
-                if p.get("ze_v") is not None:
-                    state_icon = {"healthy": "💚", "stress": "🟡",
-                                  "arrhythmia": "🔴", "tachyarrhythmia": "🔴",
-                                  "bradyarrhythmia": "🟠"}.get(p.get("ze_state", ""), "⚪")
-                    ze_info = f"  Ze:{p['ze_v']:.3f}{state_icon}"
-                print(f"  {i:2}. {p['name']}  (р. {dob}){ze_info}")
-
-        elif choice_lower == "2":
-            patients = list_patients()
-            if not patients:
-                print(t("no_patients"))
-                continue
-            for i, p in enumerate(patients, 1):
-                print(f"  {i}. {p['name']}")
-            try:
-                idx = int(input(t("patient_num"))) - 1
-                selected_folder = patients[idx]["folder"]
-                force = _i18n.is_yes(input(t("force_reprocess")).strip())
-                print(f"\n{t('processing', name=patients[idx]['name'])}")
-                result = analyze_patient(selected_folder, force=force)
-                print(t("done", result=result))
-            except (ValueError, IndexError):
-                print(t("invalid_choice"))
-
-        elif choice_lower == "3":
-            confirm = input(t("process_all_confirm")).strip()
-            if _i18n.is_yes(confirm):
-                force = _i18n.is_yes(input(t("force_reprocess")).strip())
-                from patient_intake import process_all_patients
-                count = process_all_patients(force=force)
-                print(f"\n✓ {count}")
-
-        elif choice_lower == "4":
-            patients = list_patients()
-            for i, p in enumerate(patients, 1):
-                print(f"  {i}. {p['name']}")
-            try:
-                idx = int(input(t("patient_num"))) - 1
-                selected_folder = patients[idx]["folder"]
-                text = show_patient_analysis(selected_folder)
-                print("\n" + "─" * 60)
-                print(text[:4000])
-                if len(text) > 4000:
-                    print(f"\n... (+{len(text)-4000})")
-            except (ValueError, IndexError):
-                print(t("invalid_choice"))
-
-        elif choice_lower == "5":
-            patients = list_patients()
-            for i, p in enumerate(patients, 1):
-                print(f"  {i}. {p['name']}")
-            try:
-                idx = int(input(t("patient_num"))) - 1
-                selected_folder = patients[idx]["folder"]
-                result = analyze_labs_only(selected_folder)
-                print("\n" + result)
-            except (ValueError, IndexError):
-                print(t("invalid_choice"))
-
-        elif choice_lower == "7":
-            print(f"\n{t('chat_exit')}")
-            history = []
-            kb_ctx = knowledge.get_context()
-            sys_msg = SYSTEM_PROMPT
-            if kb_ctx:
-                sys_msg += f"\n\nБаза знаний: {kb_ctx}"
-
-            while True:
-                user_input = input("\nВы: ").strip()
-                if user_input.lower() in ("exit", "выход", "quit"):
-                    break
-                if not user_input:
-                    continue
-
-                history.append({"role": "user", "content": user_input})
-                messages = [{"role": "system", "content": sys_msg}] + history[-10:]
-
-                # для чата передаём историю через системный+user контекст
-                full_prompt = "\n".join(
-                    f"{'Врач' if m['role']=='user' else 'AI'}: {m['content']}"
-                    for m in history[:-1]
+    def _audit(self, action: str, resource: str, resource_id: str, details: str = None):
+        """Записать действие в аудит лог"""
+        try:
+            with get_db() as db:
+                db.execute(
+                    """INSERT INTO audit_log (tenant_id, action, resource, resource_id, details)
+                       VALUES (?, ?, ?, ?, ?)""",
+                    [self.current_tenant_id, action, resource, resource_id, details]
                 )
-                if full_prompt:
-                    full_prompt = "История диалога:\n" + full_prompt + "\n\n" + user_input
-                else:
-                    full_prompt = user_input
-                reply = _ask_llm_deepseek(full_prompt, system=sys_msg,
-                                          max_tokens=1024, temperature=0.4)
-                history.append({"role": "assistant", "content": reply})
-                print(f"\nAI: {reply}")
+        except Exception as e:
+            logger.debug(f"Аудит ошибка: {e}")
 
-        elif choice_lower == "8":
-            print("\nАнализ отклонений у всех пациентов...")
-            patients = list_patients()
-            all_abnormal = []
-            for p in patients:
-                result = analyze_labs_only(p["folder"])
-                if "↓" in result or "↑" in result or "⚠" in result:
-                    all_abnormal.append(f"\n{p['name']}:\n" + result[:600])
-            if all_abnormal:
-                for block in all_abnormal:
-                    print(block)
-            else:
-                print("Нет данных или отклонений не найдено.")
-                print("Сначала обработайте пациентов (пункт 3).")
+    def _report_patients_summary(self):
+        """Сводка по пациентам"""
+        total = self._count_patients()
+        with_ze = fetchone(
+            "SELECT COUNT(*) as cnt FROM patients WHERE tenant_id = ? AND ze_status IS NOT NULL",
+            [self.current_tenant_id]
+        )
+        avg_ze = fetchone(
+            "SELECT AVG(ze_status) as avg FROM patients WHERE tenant_id = ? AND ze_status IS NOT NULL",
+            [self.current_tenant_id]
+        )
 
-        elif choice_lower == "9":
-            query = input(f"\n{t('search_prompt')}").strip()
-            if query:
-                result = search_patients_by_symptom(query)
-                print("\n" + "─" * 60)
-                print(result)
+        print(f"\nСводка пациентов:")
+        print(f"  Всего: {total}")
+        print(f"  С Ze-статусом: {with_ze['cnt'] if with_ze else 0}")
+        if avg_ze and avg_ze.get("avg"):
+            print(f"  Средний Ze-статус: {avg_ze['avg']:.1f}")
 
-        elif choice_lower == "0":
-            print("\n" + db_stats())
+        # Сохранить отчёт
+        report_path = cfg.REPORTS_DIR / f"patients_summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        try:
+            report_path.write_text(
+                f"Сводка пациентов AIM v{cfg.VERSION}\n"
+                f"Дата: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
+                f"Тенант: {self.current_tenant_id}\n\n"
+                f"Всего пациентов: {total}\n"
+                f"С Ze-статусом: {with_ze['cnt'] if with_ze else 0}\n"
+            )
+            print(t("report_generated", path=report_path))
+        except Exception as e:
+            logger.warning(f"Ошибка сохранения отчёта: {e}")
 
-        elif choice_lower == "a":
-            patients = list_patients()
-            if not patients:
-                print(t("no_patients"))
-                continue
-            for i, p in enumerate(patients, 1):
-                print(f"  {i}. {p['name']}")
-            try:
-                idx = int(input(t("patient_num"))) - 1
-                selected_folder = patients[idx]["folder"]
-                print(show_aging_prediction(selected_folder))
-            except (ValueError, IndexError):
-                print(t("invalid_choice"))
+    def _report_ze_stats(self):
+        """Статистика Ze-статуса"""
+        stats = fetchall(
+            """SELECT
+                CASE
+                    WHEN ze_status >= 80 THEN 'Высокий (80-100)'
+                    WHEN ze_status >= 50 THEN 'Средний (50-80)'
+                    WHEN ze_status >= 20 THEN 'Низкий (20-50)'
+                    ELSE 'Критический (<20)'
+                END as category,
+                COUNT(*) as cnt
+               FROM patients
+               WHERE tenant_id = ? AND ze_status IS NOT NULL
+               GROUP BY category""",
+            [self.current_tenant_id]
+        )
 
-        elif choice_lower == "b":
-            patients = list_patients()
-            if not patients:
-                print(t("no_patients"))
-                continue
-            for i, p in enumerate(patients, 1):
-                ze_s = f"  Ze:{p['ze_v']:.3f}" if p.get("ze_v") is not None else ""
-                print(f"  {i}. {p['name']}{ze_s}")
-            try:
-                idx = int(input(t("patient_num"))) - 1
-                selected_folder = patients[idx]["folder"]
-                print("\n" + show_ze_history(selected_folder))
-            except (ValueError, IndexError):
-                print(t("invalid_choice"))
-
-        elif choice_lower == "c":
-            query = input(f"\n{t('protocol_search')}").strip()
-            if query:
-                print("\n" + search_protocols(query))
-            else:
-                from pathlib import Path as _P
-                rec = _P.home() / "Desktop" / "Regenesis" / "Recepturae"
-                if rec.exists():
-                    files = sorted(rec.glob("*.md"))
-                    print(f"\n🌿 Recepturae — {len(files)}:")
-                    for f in files:
-                        print(f"  • {f.stem}")
-                    query = input(f"{t('search_label')}").strip()
-                    if query:
-                        print("\n" + search_protocols(query))
-
-        elif choice_lower == "w":
-            patients = list_patients()
-            if not patients:
-                print(t("no_patients"))
-                continue
-            for i, p in enumerate(patients, 1):
-                print(f"  {i}. {p['name']}")
-            try:
-                idx = int(input(t("patient_num"))) - 1
-                selected_folder = patients[idx]["folder"]
-                print(f"\n{start_wearable(selected_folder)}")
-            except (ValueError, IndexError):
-                print(t("invalid_choice"))
-
-        elif choice_lower == "k":
-            import patient_network as _pnet
-            print("\n" + _pnet.show_patient_map())
-            _pnet.manage_clusters_interactive(patients)
-
-        elif choice_lower == "t":
-            import telegram_search as _ts
-            _ts.run_terminal_search()
-
-        else:
-            print(t("invalid_choice"))
+        print(f"\nСтатистика Ze-статуса:")
+        for s in stats:
+            print(f"  {s['category']}: {s['cnt']} пациентов")
 
 
-# ── Entry point ────────────────────────────────────────────────
+# ============================================================================
+# Пакетный режим
+# ============================================================================
+
+def process_all_patients():
+    """Обработать всех пациентов в INBOX"""
+    print("Обработка всех пациентов в INBOX...")
+    inbox = cfg.PATIENTS_INBOX
+
+    if not inbox.exists():
+        print(f"INBOX не найден: {inbox}")
+        return
+
+    files = list(inbox.iterdir())
+    if not files:
+        print("INBOX пуст")
+        return
+
+    print(f"Найдено файлов: {len(files)}")
+
+    # Пробуем импортировать patient_intake если есть
+    try:
+        from patient_intake import process_inbox
+        process_inbox()
+    except ImportError:
+        print("patient_intake.py не найден — ручная обработка недоступна")
+        print("Создайте patient_intake.py (Фаза 3 из TODO.md)")
+        for f in files[:5]:
+            print(f"  {f.name}")
+
+
+# ============================================================================
+# Entry point
+# ============================================================================
 
 def main():
-    import argparse
-    parser = argparse.ArgumentParser(description="Integrative Medicine AI System")
-    parser.add_argument("--all", action="store_true", help="Process all patients and exit")
-    parser.add_argument("--patient", type=str, help="Process specific patient folder and exit")
-    parser.add_argument("--force", action="store_true", help="Force re-process")
+    parser = argparse.ArgumentParser(
+        description="AIM v6.0 — Ассистент Интегративной Медицины",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--all", action="store_true",
+        help="Обработать всех пациентов в INBOX"
+    )
+    parser.add_argument(
+        "--lang", choices=cfg.SUPPORTED_LANGS, default=cfg.DEFAULT_LANG,
+        help="Язык интерфейса (ru/ka/en/kz)"
+    )
+    parser.add_argument(
+        "--init-db", action="store_true",
+        help="Инициализировать БД и выйти"
+    )
+
     args = parser.parse_args()
 
+    # Инициализация БД
+    try:
+        init_db()
+    except Exception as e:
+        print(f"Ошибка инициализации БД: {e}")
+        sys.exit(1)
+
+    if args.init_db:
+        print("БД инициализирована")
+        sys.exit(0)
+
     if args.all:
-        print_banner()
-        from patient_intake import process_all_patients
-        count = process_all_patients(force=args.force)
-        print(f"\n✓ Обработано пациентов: {count}")
+        process_all_patients()
         return
 
-    if args.patient:
-        print_banner()
-        result = analyze_patient(args.patient, force=args.force)
-        print(result)
-        return
-
-    from auth import require_auth
-    current_user = require_auth()
-    run_interactive(current_user)
+    # Запуск интерактивной системы
+    system = AIMSystem(lang=args.lang)
+    try:
+        system.start()
+    except KeyboardInterrupt:
+        print(f"\n\nAIM завершён.")
+    finally:
+        from db import close
+        close()
 
 
 if __name__ == "__main__":

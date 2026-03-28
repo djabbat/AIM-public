@@ -1,142 +1,182 @@
-# PARAMETERS.md — AIM Configuration Reference
+# AIM v6.0 — PARAMETERS
 
-All configurable parameters for AIM. Source of truth: `config.py` + `~/.aim_env`.
+Все конфигурационные параметры системы.
 
 ---
 
-## Environment Variables (`~/.aim_env`)
+## Версия
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `DEEPSEEK_API_KEY` | **YES** | DeepSeek API key from platform.deepseek.com |
-| `TELEGRAM_BOT_TOKEN` | For bot | Bot token from @BotFather |
-| `TELEGRAM_ALLOWED_ID` | For bot | Telegram user ID(s), comma-separated |
-| `WEARABLE_ADDRESS` | Optional | BLE MAC address of Ze HealthWearable |
+| Параметр | Значение |
+|----------|---------|
+| `AIM_VERSION` | `6.0` |
+| `AIM_ENVIRONMENT` | `development` / `staging` / `production` |
+| `AIM_LOCALE` | `ru` / `ka` / `en` / `kz` |
 
-Example `~/.aim_env`:
+---
+
+## Пути (по умолчанию)
+
+| Параметр | Путь |
+|----------|------|
+| `AIM_ROOT` | `~/Desktop/AIM/` |
+| `PATIENTS_DIR` | `~/Desktop/AIM/Patients/` |
+| `PATIENTS_INBOX` | `~/Desktop/AIM/Patients/INBOX/` |
+| `LOGS_DIR` | `~/Desktop/AIM/logs/` |
+| `REPORTS_DIR` | `~/Desktop/AIM/reports/` |
+| `DB_PATH` | `~/Desktop/AIM/aim.db` |
+| `KNOWLEDGE_FILE` | `~/Desktop/AIM/medical_knowledge.json` |
+| `ENV_FILE` | `~/.aim_env` |
+
+---
+
+## LLM / DeepSeek
+
+| Параметр | Значение |
+|----------|---------|
+| `DEEPSEEK_API_KEY` | из `~/.aim_env` |
+| `DEEPSEEK_BASE_URL` | `https://api.deepseek.com` |
+| `DEEPSEEK_MODEL_FAST` | `deepseek-chat` |
+| `DEEPSEEK_MODEL_REASON` | `deepseek-reasoner` |
+| `LLM_TEMPERATURE` | `0.3` |
+| `LLM_MAX_TOKENS` | `4096` |
+| `LLM_TIMEOUT_SEC` | `60` |
+| `LLM_RETRY_ATTEMPTS` | `3` |
+
+---
+
+## База данных (SQLite — локально)
+
+| Параметр | Значение |
+|----------|---------|
+| `DB_TYPE` | `sqlite` |
+| `DB_PATH` | `aim.db` |
+| `DB_WAL_MODE` | `true` |
+| `DB_TIMEOUT` | `30` |
+| `DB_POOL_SIZE` | `5` |
+
+*(Production: PostgreSQL — параметры в config.yaml)*
+
+---
+
+## API Gateway
+
+| Параметр | Значение |
+|----------|---------|
+| `API_HOST` | `0.0.0.0` |
+| `API_PORT` | `8000` |
+| `API_WORKERS` | `4` |
+| `API_RATE_LIMIT_DEFAULT` | `60 req/min` |
+| `API_RATE_LIMIT_AUTH` | `300 req/min` |
+| `API_RATE_LIMIT_ADMIN` | `1000 req/min` |
+| `CORS_ORIGINS` | `https://app.aim.local, https://*.aim.local` |
+
+---
+
+## JWT / Аутентификация
+
+| Параметр | Значение |
+|----------|---------|
+| `JWT_SECRET` | из `~/.aim_env` |
+| `JWT_ALGORITHM` | `HS256` |
+| `JWT_ACCESS_EXPIRE_MIN` | `60` |
+| `JWT_REFRESH_EXPIRE_DAYS` | `7` |
+| `SESSION_TTL_SEC` | `604800` (7 дней) |
+
+---
+
+## Мульти-тенантность
+
+| Параметр | Значение |
+|----------|---------|
+| `TENANT_MODE` | `isolated` |
+| `TENANT_DEFAULT_PLAN` | `free` |
+| `TENANT_MAX` | `1000` |
+| `TENANT_DB_PREFIX` | `aim_tenant_` |
+
+### Лимиты по планам
+
+| План | Пациентов | Врачей | Хранилище | API calls/min |
+|------|-----------|--------|-----------|---------------|
+| FREE | 50 | 2 | 1 GB | 30 |
+| BASIC | 500 | 10 | 10 GB | 100 |
+| PRO | 5000 | 50 | 100 GB | 300 |
+| ENTERPRISE | без лимита | без лимита | без лимита | 1000 |
+
+---
+
+## Push-уведомления
+
+| Параметр | Значение |
+|----------|---------|
+| `FCM_CREDENTIALS_PATH` | `/etc/aim/fcm-credentials.json` |
+| `APNS_KEY_ID` | из `~/.aim_env` |
+| `APNS_TEAM_ID` | из `~/.aim_env` |
+| `APNS_BUNDLE_ID` | `com.aim.patient` |
+
+---
+
+## Хранилище медиа
+
+| Параметр | Значение |
+|----------|---------|
+| `STORAGE_PROVIDER` | `s3` / `local` / `gcs` |
+| `S3_BUCKET` | `aim-media` |
+| `S3_REGION` | `eu-central-1` |
+| `CDN_URL` | `https://cdn.aim.local` |
+| `LOCAL_MEDIA_PATH` | `~/Desktop/AIM/media/` |
+
+---
+
+## Биллинг (Stripe)
+
+| Параметр | Значение |
+|----------|---------|
+| `STRIPE_SECRET_KEY` | из `~/.aim_env` |
+| `STRIPE_WEBHOOK_SECRET` | из `~/.aim_env` |
+| `PRICE_FREE` | `price_free` |
+| `PRICE_BASIC` | `price_basic_monthly` |
+| `PRICE_PRO` | `price_pro_monthly` |
+| `PRICE_ENTERPRISE` | `price_enterprise` |
+
+---
+
+## Мониторинг
+
+| Параметр | Значение |
+|----------|---------|
+| `SENTRY_DSN` | из `~/.aim_env` |
+| `PROMETHEUS_PORT` | `9090` |
+| `HEALTH_CHECK_PATH` | `/health` |
+| `LOG_LEVEL` | `INFO` |
+| `LOG_FORMAT` | `json` |
+| `LOG_RETENTION_DAYS` | `30` |
+
+---
+
+## OCR (для patient_intake)
+
+| Параметр | Значение |
+|----------|---------|
+| `OCR_ENGINE` | `tesseract` |
+| `OCR_FALLBACK` | `rapidocr` |
+| `OCR_LANGUAGES` | `rus+kat+kaz+eng` |
+| `OCR_DPI` | `300` |
+
+---
+
+## Файл `~/.aim_env` (шаблон)
+
 ```bash
+# AIM Environment — НЕ КОММИТИТЬ
 DEEPSEEK_API_KEY=sk-...
-TELEGRAM_BOT_TOKEN=7...
-TELEGRAM_ALLOWED_ID=123456789
+JWT_SECRET=...
+AIM_DB_PASSWORD=...
+AIM_REDIS_PASSWORD=...
+AIM_S3_KEY=...
+AIM_S3_SECRET=...
+STRIPE_SECRET=...
+STRIPE_WEBHOOK_SECRET=...
+SENTRY_DSN=...
+APNS_KEY_ID=...
+APNS_TEAM_ID=...
 ```
-Permissions must be `chmod 600 ~/.aim_env`.
-
----
-
-## LLM Parameters (`config.py`)
-
-| Parameter | Value | Description |
-|-----------|-------|-------------|
-| `MODEL_FAST` | `deepseek-chat` | DeepSeek V3 — all normal requests |
-| `MODEL_DEEP` | `deepseek-reasoner` | DeepSeek R1 — complex diagnosis |
-| Default `max_tokens` | 2048 | For `ask_llm()` |
-| Deep `max_tokens` | 4096 | For `ask_deep()` |
-| `temperature` (fast) | 0.3 | Balanced creativity |
-| `temperature` (deep) | 0.1 | Deterministic reasoning |
-
-LLM switches to `deepseek-reasoner` when:
-- Bayesian confidence < 60%
-- Gap between top diagnoses < 15%
-
----
-
-## Paths (`config.py`)
-
-| Constant | Default | Description |
-|----------|---------|-------------|
-| `AIM_DIR` | `~/Desktop/AIM/` | Project root |
-| `PATIENTS_DIR` | `~/Desktop/AIM/Patients/` | Patient records |
-| `INBOX_DIR` | `~/Desktop/AIM/Patients/INBOX/` | Auto-intake drop folder |
-| `LOGS_DIR` | `~/Desktop/AIM/logs/` | Log files |
-| `DB_PATH` | `~/Desktop/AIM/aim.db` | SQLite database |
-| `KNOWLEDGE_FILE` | `~/Desktop/AIM/medical_knowledge.json` | Self-learning knowledge |
-| `PROCESSED_LOG` | `~/Desktop/AIM/processed_files.json` | OCR processing log |
-
----
-
-## OCR Parameters (`config.py`)
-
-| Parameter | Value | Description |
-|-----------|-------|-------------|
-| `OCR_LANGS` | `rus+kat+eng` | Tesseract language string |
-| `OCR_MIN_DPI` | 300 | Upscale images below this DPI |
-
-Tesseract packages required: `tesseract-ocr-rus`, `tesseract-ocr-kat`, `tesseract-ocr-kaz`.
-
----
-
-## Nutrition Protocol (`nutrition_rules.json`)
-
-Editable from GUI → tab **Nutrition** → **Save to AIM core**.
-
-| Parameter | Value |
-|-----------|-------|
-| Forbidden products | 47 (11 categories) |
-| Allowed products | 69 (12 categories) |
-| Source | "Mesto Sily" + clinical protocol, 09.03.2026 |
-
-The nutrition context is auto-injected into any LLM prompt that contains food-related queries.
-
----
-
-## Lab Reference Ranges (`lab_reference.py`)
-
-| Parameter | Value |
-|-----------|-------|
-| Total parameters | 165+ |
-| Gender-aware | Yes (separate ranges for M/F) |
-| Age-aware | Yes (pediatric/adult/elderly) |
-
----
-
-## Telegram Bot Parameters (`telegram_bot.py`)
-
-| Parameter | Description |
-|-----------|-------------|
-| `TELEGRAM_BOT_TOKEN` | From `.aim_env` |
-| `TELEGRAM_ALLOWED_ID` | Whitelist of allowed Telegram user IDs |
-| Voice input | Whisper (openai-whisper) → text |
-| Languages | RU / KA / EN |
-
----
-
-## Inbox Watcher (`inbox_watcher.py`)
-
-| Parameter | Value |
-|-----------|-------|
-| Poll interval | 2 seconds |
-| Trigger | New files in `Patients/INBOX/` |
-| Action | `patient_intake.py --all` |
-
----
-
-## Database (`aim.db` — SQLite via `db.py`)
-
-Tables: `patients`, `lab_snapshots`, `diagnoses`, `ze_hrv`, `knowledge`, `audit_log`
-
-Migration: `python3 db.py --migrate`
-Stats: `python3 db.py --stats`
-
----
-
-## GitHub Backup (`backup_github.py`)
-
-| Parameter | Value |
-|-----------|-------|
-| Schedule | 3rd of each month (cron) |
-| Trigger (manual) | `python3 backup_github.py` |
-| Private repo | `djabbat/AIM` |
-| Public repo | `djabbat/AIM-public` |
-| Excluded from public | `CONCEPT.md`, `CLAUDE.md`, `TODO.md`, `PARAMETERS.md`, `MAP.md`, `Patients/`, `*.db` |
-
----
-
-## WhatsApp / Telegram Import
-
-Patient contact name format: `SURNAME П FIRSTNAME`
-Separator variants: `П` (ru) / `п` (lower) / `პ` (ka)
-Examples: `Иванова П Мария`, `Beridze პ Giorgi`
-
----
-
-*Last updated: 2026-03-28*

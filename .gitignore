@@ -60,3 +60,8 @@ Thumbs.db
 search_results/
 trend_reports/
 reports/
+
+# ── AIM v6.0 specifics ────────────
+aim.db
+aim_tenant_*.db
+media/

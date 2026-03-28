@@ -1,658 +1,365 @@
 """
-i18n.py — AIM Internationalization
-6 UN languages + Georgian: en · fr · es · ru · ar · zh · ka
+AIM v6.0 — i18n.py
+Мультиязычные строки интерфейса. Источник истины для CLI и GUI.
+Языки: RU (русский) / KA (грузинский) / EN (английский) / KZ (казахский)
+
+Использование:
+    from i18n import t, set_lang
+    set_lang("ru")
+    print(t("m1"))   # "Список пациентов"
+    print(t("welcome"))
 """
 
-from pathlib import Path
+import os
+from typing import Dict, Optional
+from config import cfg
 
-LANG_FILE = Path.home() / ".aim_lang"
-_lang = "ru"  # runtime current language
+# ============================================================================
+# Текущий язык
+# ============================================================================
 
-LANG_NAMES = {
-    "en": "English",
-    "fr": "Français",
-    "es": "Español",
-    "ru": "Русский",
-    "ar": "العربية",
-    "zh": "中文",
-    "ka": "ქართული",
-}
-
-# ── Translations ───────────────────────────────────────────────────────────────
-
-STRINGS: dict[str, dict[str, str]] = {
-
-# ─── English ──────────────────────────────────────────────────────────────────
-"en": {
-    # auth
-    "login_header":      "AIM — Sign In",
-    "email_prompt":      "Email: ",
-    "password_prompt":   "Password: ",
-    "wrong_creds":       "Wrong credentials. Attempt {n}/3",
-    "access_denied":     "Access denied. Exiting.",
-    "remember_me":       "Remember me? [y/n]: ",
-    "session_saved":     "Session saved.",
-    "login_success":     "Signed in: {name} [{role}]",
-    "welcome_back":      "Welcome back, {name} ({role})",
-    "logout_done":       "Signed out.",
-    "admin_created":     "Admin created: {email}",
-    # admin
-    "admin_only":        "Admin access required.",
-    "reg_header":        "── Register new user ──",
-    "pw_confirm":        "Password (repeat): ",
-    "pw_mismatch":       "Passwords do not match.",
-    "name_prompt":       "Display name: ",
-    "role_prompt":       "Role [doctor/admin/readonly] (default: doctor): ",
-    "user_created":      "User created: {email} [{role}] (id: {uid})",
-    "users_list_header": "Users",
-    "col_id":            "ID",
-    "col_email":         "Email",
-    "col_role":          "Role",
-    "col_name":          "Name",
-    "col_created":       "Created",
-    # menu
-    "banner_title":      "INTEGRATIVE MEDICINE — AI SYSTEM",
-    "banner_doctor":     "Dr. Jaba Tkemaladze",
-    "logged_as":         "Signed in: {name} [{role}]",
-    "menu_title":        "MENU:",
-    "m1":  "1. Patient list",
-    "m2":  "2. Process patient (OCR + PDF + AI analysis)",
-    "m3":  "3. Process all patients",
-    "m4":  "4. Show patient analysis",
-    "m5":  "5. Quick lab analysis",
-    "m6":  "6. Import from WhatsApp (INBOX)",
-    "m7":  "7. New AI chat",
-    "m8":  "8. All patients — deviations",
-    "m9":  "9. 🔍 Search by symptom / diagnosis",
-    "m0":  "0. 📊 Database statistics",
-    "msep1": "── Integrations ────────────────────────",
-    "ma":  "a. 🧬 Aging forecast (CDATA Digital Twin)",
-    "mb":  "b. 💗 Ze-HRV patient history",
-    "mc":  "c. 🌿 Nutrition protocols (Regenesis)",
-    "mw":  "w. 📡 Wearable BLE — record HRV (5 min)",
-    "mgui": "d. 🖥  CDATA Digital Twin GUI",
-    "msep2": "── Administration ──────────────────────",
-    "mu":  "u. 👤 Register new user",
-    "mU":  "U. 📋 List users",
-    "ml":  "g. 🌐 Change language",
-    "mL":  "L. 🔒 Logout",
-    "mq":  "q. Quit",
-    # prompts
-    "choice":            "Choice: ",
-    "no_patients":       "No patients.",
-    "invalid_choice":    "Invalid choice.",
-    "processing":        "Processing: {name}...",
-    "done":              "Done: {result}",
-    "force_reprocess":   "Force reprocess? (y/N): ",
-    "process_all_confirm": "Process all patients? (y/N): ",
-    "patient_num":       "Patient number: ",
-    "search_prompt":     "Search (symptom, diagnosis, drug): ",
-    "chat_exit":         "Type 'exit' to leave chat",
-    "protocol_search":   "🌿 Search protocol (nutrition, syrup, decoction...): ",
-    "search_label":      "Search: ",
-    "lang_changed":      "Language changed.",
-    "mnews": "n. 📰 News on my topics",
-    "news_title":        "News & Publications",
-    "news_loading":      "Fetching news...",
-    "news_topics":       "Topics:",
-    "mk":    "k. 👥 Patient clusters & relationships",
-    "mk_title": "Patient Network",
-    "mk_tip":   "For full management use terminal → k",
-    "mk_refresh": "Refresh",
-    "mt":    "t. 🔍 Telegram / WhatsApp chat search",
-    "tg_search_prompt":    "Search (use * as wildcard, spaces = OR): ",
-    "tg_search_title":     "Telegram / WhatsApp Chat Search",
-    "tg_search_no_results":"No results found.",
-    "tg_search_results":   "{n} matches found",
-    "tg_search_tip":       "Tip: *word* = contains · word* = starts · *word = ends · q = back",
-},
-
-# ─── Français ─────────────────────────────────────────────────────────────────
-"fr": {
-    "login_header":      "AIM — Connexion",
-    "email_prompt":      "E-mail : ",
-    "password_prompt":   "Mot de passe : ",
-    "wrong_creds":       "Identifiants incorrects. Tentative {n}/3",
-    "access_denied":     "Accès refusé. Fermeture.",
-    "remember_me":       "Se souvenir de moi ? [o/n] : ",
-    "session_saved":     "Session enregistrée.",
-    "login_success":     "Connecté : {name} [{role}]",
-    "welcome_back":      "Bienvenue, {name} ({role})",
-    "logout_done":       "Déconnecté.",
-    "admin_created":     "Administrateur créé : {email}",
-    "admin_only":        "Accès administrateur requis.",
-    "reg_header":        "── Créer un utilisateur ──",
-    "pw_confirm":        "Mot de passe (répéter) : ",
-    "pw_mismatch":       "Les mots de passe ne correspondent pas.",
-    "name_prompt":       "Nom affiché : ",
-    "role_prompt":       "Rôle [doctor/admin/readonly] (défaut : doctor) : ",
-    "user_created":      "Utilisateur créé : {email} [{role}] (id : {uid})",
-    "users_list_header": "Utilisateurs",
-    "col_id": "ID", "col_email": "E-mail", "col_role": "Rôle",
-    "col_name": "Nom", "col_created": "Créé le",
-    "banner_title":      "MÉDECINE INTÉGRATIVE — SYSTÈME IA",
-    "banner_doctor":     "Dr. Jaba Tkemaladze",
-    "logged_as":         "Connecté : {name} [{role}]",
-    "menu_title":        "MENU :",
-    "m1":  "1. Liste des patients",
-    "m2":  "2. Traiter patient (OCR + PDF + analyse IA)",
-    "m3":  "3. Traiter tous les patients",
-    "m4":  "4. Afficher l'analyse du patient",
-    "m5":  "5. Analyse rapide de labo",
-    "m6":  "6. Importer depuis WhatsApp (INBOX)",
-    "m7":  "7. Nouveau chat IA",
-    "m8":  "8. Anomalies — tous patients",
-    "m9":  "9. 🔍 Recherche symptôme / diagnostic",
-    "m0":  "0. 📊 Statistiques de la base",
-    "msep1": "── Intégrations ────────────────────────",
-    "ma":  "a. 🧬 Prévision vieillissement (CDATA)",
-    "mb":  "b. 💗 Historique Ze-HRV patient",
-    "mc":  "c. 🌿 Protocoles nutrition (Regenesis)",
-    "mw":  "w. 📡 Wearable BLE — HRV (5 min)",
-    "mgui": "d. 🖥  CDATA Digital Twin GUI",
-    "msep2": "── Administration ──────────────────────",
-    "mu":  "u. 👤 Créer utilisateur",
-    "mU":  "U. 📋 Liste utilisateurs",
-    "ml":  "g. 🌐 Changer la langue",
-    "mL":  "L. 🔒 Déconnexion",
-    "mq":  "q. Quitter",
-    "choice":            "Choix : ",
-    "no_patients":       "Aucun patient.",
-    "invalid_choice":    "Choix invalide.",
-    "processing":        "Traitement : {name}...",
-    "done":              "Terminé : {result}",
-    "force_reprocess":   "Forcer retraitement ? (o/N) : ",
-    "process_all_confirm": "Traiter tous les patients ? (o/N) : ",
-    "patient_num":       "Numéro patient : ",
-    "search_prompt":     "Recherche (symptôme, diagnostic, médicament) : ",
-    "chat_exit":         "Tapez 'exit' pour quitter le chat",
-    "protocol_search":   "🌿 Recherche protocole (nutrition, sirop...) : ",
-    "search_label":      "Recherche : ",
-    "lang_changed":      "Langue modifiée.",
-    "mnews": "n. 📰 Actualités sur mes sujets",
-    "news_title":        "Actualités & Publications",
-    "news_loading":      "Chargement des actualités...",
-    "news_topics":       "Sujets :",
-    "mk":    "k. 👥 Groupes & relations patients",
-    "mk_title": "Réseau patients",
-    "mk_tip":   "Gestion complète : terminal → k",
-    "mk_refresh": "Actualiser",
-    "mt":    "t. 🔍 Recherche chats Telegram/WhatsApp",
-    "tg_search_prompt":    "Recherche (utilisez * joker, espaces = OU) : ",
-    "tg_search_title":     "Recherche chats Telegram / WhatsApp",
-    "tg_search_no_results":"Aucun résultat trouvé.",
-    "tg_search_results":   "{n} correspondances trouvées",
-    "tg_search_tip":       "Astuce : *mot* = contient · mot* = commence · *mot = finit · q = retour",
-},
-
-# ─── Español ──────────────────────────────────────────────────────────────────
-"es": {
-    "login_header":      "AIM — Iniciar sesión",
-    "email_prompt":      "Correo electrónico: ",
-    "password_prompt":   "Contraseña: ",
-    "wrong_creds":       "Datos incorrectos. Intento {n}/3",
-    "access_denied":     "Acceso denegado. Saliendo.",
-    "remember_me":       "¿Recordarme? [s/n]: ",
-    "session_saved":     "Sesión guardada.",
-    "login_success":     "Sesión iniciada: {name} [{role}]",
-    "welcome_back":      "Bienvenido, {name} ({role})",
-    "logout_done":       "Sesión cerrada.",
-    "admin_created":     "Administrador creado: {email}",
-    "admin_only":        "Se requiere acceso de administrador.",
-    "reg_header":        "── Registrar nuevo usuario ──",
-    "pw_confirm":        "Contraseña (repetir): ",
-    "pw_mismatch":       "Las contraseñas no coinciden.",
-    "name_prompt":       "Nombre visible: ",
-    "role_prompt":       "Rol [doctor/admin/readonly] (por defecto: doctor): ",
-    "user_created":      "Usuario creado: {email} [{role}] (id: {uid})",
-    "users_list_header": "Usuarios",
-    "col_id": "ID", "col_email": "Correo", "col_role": "Rol",
-    "col_name": "Nombre", "col_created": "Creado",
-    "banner_title":      "MEDICINA INTEGRATIVA — SISTEMA IA",
-    "banner_doctor":     "Dr. Jaba Tkemaladze",
-    "logged_as":         "Sesión: {name} [{role}]",
-    "menu_title":        "MENÚ:",
-    "m1":  "1. Lista de pacientes",
-    "m2":  "2. Procesar paciente (OCR + PDF + análisis IA)",
-    "m3":  "3. Procesar todos los pacientes",
-    "m4":  "4. Mostrar análisis del paciente",
-    "m5":  "5. Análisis rápido de laboratorio",
-    "m6":  "6. Importar desde WhatsApp (INBOX)",
-    "m7":  "7. Nuevo chat con IA",
-    "m8":  "8. Desviaciones en todos los pacientes",
-    "m9":  "9. 🔍 Buscar por síntoma / diagnóstico",
-    "m0":  "0. 📊 Estadísticas de la base de datos",
-    "msep1": "── Integraciones ───────────────────────",
-    "ma":  "a. 🧬 Pronóstico de envejecimiento (CDATA)",
-    "mb":  "b. 💗 Historial Ze-HRV del paciente",
-    "mc":  "c. 🌿 Protocolos de nutrición (Regenesis)",
-    "mw":  "w. 📡 Wearable BLE — HRV (5 min)",
-    "mgui": "d. 🖥  CDATA Digital Twin GUI",
-    "msep2": "── Administración ──────────────────────",
-    "mu":  "u. 👤 Registrar nuevo usuario",
-    "mU":  "U. 📋 Lista de usuarios",
-    "ml":  "g. 🌐 Cambiar idioma",
-    "mL":  "L. 🔒 Cerrar sesión",
-    "mq":  "q. Salir",
-    "choice":            "Selección: ",
-    "no_patients":       "No hay pacientes.",
-    "invalid_choice":    "Selección inválida.",
-    "processing":        "Procesando: {name}...",
-    "done":              "Listo: {result}",
-    "force_reprocess":   "¿Forzar reprocesamiento? (s/N): ",
-    "process_all_confirm": "¿Procesar todos los pacientes? (s/N): ",
-    "patient_num":       "Número de paciente: ",
-    "search_prompt":     "Buscar (síntoma, diagnóstico, medicamento): ",
-    "chat_exit":         "Escribe 'exit' para salir del chat",
-    "protocol_search":   "🌿 Buscar protocolo (nutrición, jarabe...): ",
-    "search_label":      "Búsqueda: ",
-    "lang_changed":      "Idioma cambiado.",
-    "mnews": "n. 📰 Noticias sobre mis temas",
-    "news_title":        "Noticias y publicaciones",
-    "news_loading":      "Cargando noticias...",
-    "news_topics":       "Temas:",
-    "mk":    "k. 👥 Grupos & relaciones de pacientes",
-    "mk_title": "Red de pacientes",
-    "mk_tip":   "Gestión completa: terminal → k",
-    "mk_refresh": "Actualizar",
-    "mt":    "t. 🔍 Búsqueda chats Telegram/WhatsApp",
-    "tg_search_prompt":    "Búsqueda (use * comodín, espacios = O): ",
-    "tg_search_title":     "Búsqueda chats Telegram / WhatsApp",
-    "tg_search_no_results":"No se encontraron resultados.",
-    "tg_search_results":   "{n} coincidencias encontradas",
-    "tg_search_tip":       "Consejo: *pal* = contiene · pal* = empieza · *pal = termina · q = volver",
-},
-
-# ─── Русский ──────────────────────────────────────────────────────────────────
-"ru": {
-    "login_header":      "AIM — Вход в систему",
-    "email_prompt":      "Email: ",
-    "password_prompt":   "Пароль: ",
-    "wrong_creds":       "Неверные данные. Попытка {n}/3",
-    "access_denied":     "Доступ запрещён. Завершение.",
-    "remember_me":       "Запомнить меня? [д/n]: ",
-    "session_saved":     "Сессия сохранена.",
-    "login_success":     "Вход выполнен: {name} [{role}]",
-    "welcome_back":      "Добро пожаловать, {name} ({role})",
-    "logout_done":       "Выход из системы.",
-    "admin_created":     "Администратор создан: {email}",
-    "admin_only":        "Только администратор.",
-    "reg_header":        "── Регистрация нового пользователя ──",
-    "pw_confirm":        "Пароль (повтор): ",
-    "pw_mismatch":       "Пароли не совпадают.",
-    "name_prompt":       "Имя (отображаемое): ",
-    "role_prompt":       "Роль [doctor/admin/readonly] (по умолчанию: doctor): ",
-    "user_created":      "Пользователь создан: {email} [{role}] (id: {uid})",
-    "users_list_header": "Пользователи",
-    "col_id": "ID", "col_email": "Email", "col_role": "Роль",
-    "col_name": "Имя", "col_created": "Создан",
-    "banner_title":      "ИНТЕГРАТИВНАЯ МЕДИЦИНА — AI СИСТЕМА",
-    "banner_doctor":     "Dr. Jaba Tkemaladze",
-    "logged_as":         "Вошёл: {name} [{role}]",
-    "menu_title":        "МЕНЮ:",
-    "m1":  "1. Список пациентов",
-    "m2":  "2. Обработать пациента (OCR + PDF + AI анализ)",
-    "m3":  "3. Обработать всех пациентов",
-    "m4":  "4. Показать анализ пациента",
-    "m5":  "5. Быстрый анализ лабораторий",
-    "m6":  "6. Импорт из WhatsApp (INBOX)",
-    "m7":  "7. Новый чат с AI-специалистом",
-    "m8":  "8. Список отклонений у всех пациентов",
-    "m9":  "9. 🔍 Поиск по симптому / диагнозу",
-    "m0":  "0. 📊 Статистика базы данных",
-    "msep1": "── Интеграции ──────────────────────────",
-    "ma":  "a. 🧬 Прогноз старения (CDATA Digital Twin)",
-    "mb":  "b. 💗 Ze-HRV история пациента",
-    "mc":  "c. 🌿 Протоколы питания (Regenesis)",
-    "mw":  "w. 📡 Wearable BLE — записать HRV (5 мин)",
-    "mgui": "d. 🖥  CDATA Digital Twin GUI",
-    "msep2": "── Администрирование ───────────────────",
-    "mu":  "u. 👤 Зарегистрировать нового пользователя",
-    "mU":  "U. 📋 Список пользователей",
-    "ml":  "g. 🌐 Сменить язык",
-    "mL":  "L. 🔒 Выйти из системы (logout)",
-    "mq":  "q. Выход",
-    "choice":            "Выбор: ",
-    "no_patients":       "Нет пациентов.",
-    "invalid_choice":    "Неверный выбор.",
-    "processing":        "Обработка: {name}...",
-    "done":              "Готово: {result}",
-    "force_reprocess":   "Принудительный пересчёт? (y/N): ",
-    "process_all_confirm": "Обработать всех пациентов? (y/N): ",
-    "patient_num":       "Номер пациента: ",
-    "search_prompt":     "Поиск (симптом, диагноз, препарат): ",
-    "chat_exit":         "Введите 'exit' для выхода",
-    "protocol_search":   "🌿 Поиск протокола (питание, сироп, отвар...): ",
-    "search_label":      "Поиск: ",
-    "lang_changed":      "Язык изменён.",
-    "mnews": "n. 📰 Новости по моим темам",
-    "news_title":        "Новости и публикации",
-    "news_loading":      "Загрузка новостей...",
-    "news_topics":       "Темы:",
-    "mk":    "k. 👥 Кластеры & связи пациентов",
-    "mk_title": "Сеть пациентов",
-    "mk_tip":   "Управление: терминал → k",
-    "mk_refresh": "Обновить",
-    "mt":    "t. 🔍 Поиск в Telegram/WhatsApp чатах",
-    "tg_search_prompt":    "Поиск (* — маска, пробелы = ИЛИ): ",
-    "tg_search_title":     "Поиск в чатах Telegram / WhatsApp",
-    "tg_search_no_results":"Ничего не найдено.",
-    "tg_search_results":   "Найдено совпадений: {n}",
-    "tg_search_tip":       "Подсказка: *слово* = содержит · слово* = начало · *слово = конец · q = выход",
-},
-
-# ─── العربية ──────────────────────────────────────────────────────────────────
-"ar": {
-    "login_header":      "AIM — تسجيل الدخول",
-    "email_prompt":      "البريد الإلكتروني: ",
-    "password_prompt":   "كلمة المرور: ",
-    "wrong_creds":       "بيانات خاطئة. المحاولة {n}/3",
-    "access_denied":     "الوصول مرفوض. جارٍ الإغلاق.",
-    "remember_me":       "تذكّرني؟ [ن/لا]: ",
-    "session_saved":     "تم حفظ الجلسة.",
-    "login_success":     "تم تسجيل الدخول: {name} [{role}]",
-    "welcome_back":      "مرحباً بعودتك، {name} ({role})",
-    "logout_done":       "تم تسجيل الخروج.",
-    "admin_created":     "تم إنشاء المسؤول: {email}",
-    "admin_only":        "يلزم صلاحية المسؤول.",
-    "reg_header":        "── تسجيل مستخدم جديد ──",
-    "pw_confirm":        "كلمة المرور (تأكيد): ",
-    "pw_mismatch":       "كلمتا المرور غير متطابقتين.",
-    "name_prompt":       "الاسم المعروض: ",
-    "role_prompt":       "الدور [doctor/admin/readonly] (الافتراضي: doctor): ",
-    "user_created":      "تم إنشاء المستخدم: {email} [{role}] (id: {uid})",
-    "users_list_header": "المستخدمون",
-    "col_id": "ID", "col_email": "البريد", "col_role": "الدور",
-    "col_name": "الاسم", "col_created": "تاريخ الإنشاء",
-    "banner_title":      "الطب التكاملي — نظام الذكاء الاصطناعي",
-    "banner_doctor":     "د. جابا تكيمالادزي",
-    "logged_as":         "مسجّل الدخول: {name} [{role}]",
-    "menu_title":        "القائمة:",
-    "m1":  "1. قائمة المرضى",
-    "m2":  "2. معالجة مريض (OCR + PDF + تحليل ذكاء اصطناعي)",
-    "m3":  "3. معالجة جميع المرضى",
-    "m4":  "4. عرض تحليل المريض",
-    "m5":  "5. تحليل المختبر السريع",
-    "m6":  "6. استيراد من واتساب (INBOX)",
-    "m7":  "7. محادثة جديدة مع الذكاء الاصطناعي",
-    "m8":  "8. الانحرافات لدى جميع المرضى",
-    "m9":  "9. 🔍 بحث بالعرض / التشخيص",
-    "m0":  "0. 📊 إحصائيات قاعدة البيانات",
-    "msep1": "── التكاملات ───────────────────────────",
-    "ma":  "a. 🧬 توقع الشيخوخة (CDATA)",
-    "mb":  "b. 💗 سجل Ze-HRV للمريض",
-    "mc":  "c. 🌿 بروتوكولات التغذية (Regenesis)",
-    "mw":  "w. 📡 جهاز قابل للارتداء BLE — HRV (5 دقائق)",
-    "mgui": "d. 🖥  CDATA Digital Twin GUI",
-    "msep2": "── الإدارة ──────────────────────────────",
-    "mu":  "u. 👤 تسجيل مستخدم جديد",
-    "mU":  "U. 📋 قائمة المستخدمين",
-    "ml":  "g. 🌐 تغيير اللغة",
-    "mL":  "L. 🔒 تسجيل الخروج",
-    "mq":  "q. خروج",
-    "choice":            "الاختيار: ",
-    "no_patients":       "لا يوجد مرضى.",
-    "invalid_choice":    "اختيار غير صالح.",
-    "processing":        "جارٍ المعالجة: {name}...",
-    "done":              "تمّ: {result}",
-    "force_reprocess":   "إعادة المعالجة بالقوة؟ (ن/لا): ",
-    "process_all_confirm": "معالجة جميع المرضى؟ (ن/لا): ",
-    "patient_num":       "رقم المريض: ",
-    "search_prompt":     "بحث (عرض، تشخيص، دواء): ",
-    "chat_exit":         "اكتب 'exit' للخروج من المحادثة",
-    "protocol_search":   "🌿 البحث عن بروتوكول (تغذية، شراب...): ",
-    "search_label":      "بحث: ",
-    "lang_changed":      "تم تغيير اللغة.",
-    "mnews": "n. 📰 أخبار مواضيعي",
-    "news_title":        "الأخبار والمنشورات",
-    "news_loading":      "جارٍ تحميل الأخبار...",
-    "news_topics":       "المواضيع:",
-    "mk":    "k. 👥 مجموعات وعلاقات المرضى",
-    "mk_title": "شبكة المرضى",
-    "mk_tip":   "للإدارة الكاملة: الطرفية ← k",
-    "mk_refresh": "تحديث",
-    "mt":    "t. 🔍 بحث في محادثات Telegram/WhatsApp",
-    "tg_search_prompt":    "بحث (استخدم * كبطاقة جوكر، مسافات = أو): ",
-    "tg_search_title":     "بحث محادثات Telegram / WhatsApp",
-    "tg_search_no_results":"لم يتم العثور على نتائج.",
-    "tg_search_results":   "وجدت {n} تطابق",
-    "tg_search_tip":       "نصيحة: *كلمة* = يحتوي · كلمة* = يبدأ · *كلمة = ينتهي · q = عودة",
-},
-
-# ─── 中文 ──────────────────────────────────────────────────────────────────────
-"zh": {
-    "login_header":      "AIM — 登录系统",
-    "email_prompt":      "邮箱：",
-    "password_prompt":   "密码：",
-    "wrong_creds":       "凭据错误。第 {n}/3 次尝试",
-    "access_denied":     "访问被拒绝。正在退出。",
-    "remember_me":       "记住我？[是/否]：",
-    "session_saved":     "会话已保存。",
-    "login_success":     "登录成功：{name} [{role}]",
-    "welcome_back":      "欢迎回来，{name}（{role}）",
-    "logout_done":       "已退出登录。",
-    "admin_created":     "管理员已创建：{email}",
-    "admin_only":        "需要管理员权限。",
-    "reg_header":        "── 注册新用户 ──",
-    "pw_confirm":        "密码（重复）：",
-    "pw_mismatch":       "两次密码不一致。",
-    "name_prompt":       "显示名称：",
-    "role_prompt":       "角色 [doctor/admin/readonly]（默认：doctor）：",
-    "user_created":      "用户已创建：{email} [{role}]（id：{uid}）",
-    "users_list_header": "用户列表",
-    "col_id": "ID", "col_email": "邮箱", "col_role": "角色",
-    "col_name": "姓名", "col_created": "创建时间",
-    "banner_title":      "整合医学 — AI 系统",
-    "banner_doctor":     "贾巴·特克马拉泽医生",
-    "logged_as":         "已登录：{name} [{role}]",
-    "menu_title":        "菜单：",
-    "m1":  "1. 患者列表",
-    "m2":  "2. 处理患者（OCR + PDF + AI 分析）",
-    "m3":  "3. 处理所有患者",
-    "m4":  "4. 显示患者分析",
-    "m5":  "5. 快速实验室分析",
-    "m6":  "6. 从 WhatsApp 导入（INBOX）",
-    "m7":  "7. 新建 AI 对话",
-    "m8":  "8. 所有患者异常值",
-    "m9":  "9. 🔍 按症状 / 诊断搜索",
-    "m0":  "0. 📊 数据库统计",
-    "msep1": "── 集成 ─────────────────────────────────",
-    "ma":  "a. 🧬 衰老预测（CDATA 数字孪生）",
-    "mb":  "b. 💗 患者 Ze-HRV 历史",
-    "mc":  "c. 🌿 营养方案（Regenesis）",
-    "mw":  "w. 📡 可穿戴 BLE — HRV（5 分钟）",
-    "mgui": "d. 🖥  CDATA Digital Twin GUI",
-    "msep2": "── 管理 ─────────────────────────────────",
-    "mu":  "u. 👤 注册新用户",
-    "mU":  "U. 📋 用户列表",
-    "ml":  "g. 🌐 更改语言",
-    "mL":  "L. 🔒 退出登录",
-    "mq":  "q. 退出",
-    "choice":            "选择：",
-    "no_patients":       "暂无患者。",
-    "invalid_choice":    "无效选择。",
-    "processing":        "正在处理：{name}...",
-    "done":              "完成：{result}",
-    "force_reprocess":   "强制重新处理？(y/N)：",
-    "process_all_confirm": "处理所有患者？(y/N)：",
-    "patient_num":       "患者编号：",
-    "search_prompt":     "搜索（症状、诊断、药物）：",
-    "chat_exit":         "输入 'exit' 退出对话",
-    "protocol_search":   "🌿 搜索方案（营养、糖浆...）：",
-    "search_label":      "搜索：",
-    "lang_changed":      "语言已更改。",
-    "mnews": "n. 📰 我的主题新闻",
-    "news_title":        "新闻与出版物",
-    "news_loading":      "正在加载新闻...",
-    "news_topics":       "主题：",
-    "mk":    "k. 👥 患者分组 & 关系网络",
-    "mk_title": "患者网络",
-    "mk_tip":   "完整管理：终端 → k",
-    "mk_refresh": "刷新",
-    "mt":    "t. 🔍 搜索 Telegram/WhatsApp 聊天",
-    "tg_search_prompt":    "搜索（* 通配符，空格 = 或）：",
-    "tg_search_title":     "Telegram / WhatsApp 聊天搜索",
-    "tg_search_no_results":"未找到结果。",
-    "tg_search_results":   "找到 {n} 条匹配",
-    "tg_search_tip":       "提示：*词* = 包含 · 词* = 开头 · *词 = 结尾 · q = 返回",
-},
-
-# ─── ქართული ──────────────────────────────────────────────────────────────────
-"ka": {
-    "login_header":      "AIM — სისტემაში შესვლა",
-    "email_prompt":      "ელ-ფოსტა: ",
-    "password_prompt":   "პაროლი: ",
-    "wrong_creds":       "არასწორი მონაცემები. მცდელობა {n}/3",
-    "access_denied":     "წვდომა აკრძალულია. გამოსვლა.",
-    "remember_me":       "დამახსოვრება? [კ/არა]: ",
-    "session_saved":     "სესია შენახულია.",
-    "login_success":     "შესვლა: {name} [{role}]",
-    "welcome_back":      "მოგესალმებით, {name} ({role})",
-    "logout_done":       "სისტემიდან გასვლა.",
-    "admin_created":     "ადმინისტრატორი შექმნილია: {email}",
-    "admin_only":        "მხოლოდ ადმინისტრატორისთვის.",
-    "reg_header":        "── ახალი მომხმარებლის რეგისტრაცია ──",
-    "pw_confirm":        "პაროლი (გამეორება): ",
-    "pw_mismatch":       "პაროლები არ ემთხვევა.",
-    "name_prompt":       "სახელი (ეკრანზე): ",
-    "role_prompt":       "როლი [doctor/admin/readonly] (ნაგულისხმევი: doctor): ",
-    "user_created":      "მომხმარებელი შექმნილია: {email} [{role}] (id: {uid})",
-    "users_list_header": "მომხმარებლები",
-    "col_id": "ID", "col_email": "ელ-ფოსტა", "col_role": "როლი",
-    "col_name": "სახელი", "col_created": "შექმნილია",
-    "banner_title":      "ინტეგრაციული მედიცინა — AI სისტემა",
-    "banner_doctor":     "ექ. ჯაბა თქემალაძე",
-    "logged_as":         "შესული: {name} [{role}]",
-    "menu_title":        "მენიუ:",
-    "m1":  "1. პაციენტების სია",
-    "m2":  "2. პაციენტის დამუშავება (OCR + PDF + AI ანალიზი)",
-    "m3":  "3. ყველა პაციენტის დამუშავება",
-    "m4":  "4. პაციენტის ანალიზის ჩვენება",
-    "m5":  "5. ლაბორატორიის სწრაფი ანალიზი",
-    "m6":  "6. WhatsApp-იდან იმპორტი (INBOX)",
-    "m7":  "7. ახალი AI-ჩატი",
-    "m8":  "8. გადახრები ყველა პაციენტთან",
-    "m9":  "9. 🔍 ძიება სიმპტომით / დიაგნოზით",
-    "m0":  "0. 📊 მონაცემთა ბაზის სტატისტიკა",
-    "msep1": "── ინტეგრაციები ────────────────────────",
-    "ma":  "a. 🧬 დაბერების პროგნოზი (CDATA Digital Twin)",
-    "mb":  "b. 💗 Ze-HRV პაციენტის ისტორია",
-    "mc":  "c. 🌿 კვების პროტოკოლები (Regenesis)",
-    "mw":  "w. 📡 Wearable BLE — HRV ჩაწერა (5 წთ)",
-    "mgui": "d. 🖥  CDATA Digital Twin GUI",
-    "msep2": "── ადმინისტრირება ──────────────────────",
-    "mu":  "u. 👤 ახალი მომხმარებლის რეგისტრაცია",
-    "mU":  "U. 📋 მომხმარებელთა სია",
-    "ml":  "g. 🌐 ენის შეცვლა",
-    "mL":  "L. 🔒 სისტემიდან გასვლა",
-    "mq":  "q. გამოსვლა",
-    "choice":            "არჩევანი: ",
-    "no_patients":       "პაციენტები არ არის.",
-    "invalid_choice":    "არასწორი არჩევანი.",
-    "processing":        "დამუშავება: {name}...",
-    "done":              "მზადაა: {result}",
-    "force_reprocess":   "იძულებითი გადაანგარიშება? (y/N): ",
-    "process_all_confirm": "ყველა პაციენტის დამუშავება? (y/N): ",
-    "patient_num":       "პაციენტის ნომერი: ",
-    "search_prompt":     "ძიება (სიმპტომი, დიაგნოზი, პრეპარატი): ",
-    "chat_exit":         "გასასვლელად შეიყვანეთ 'exit'",
-    "protocol_search":   "🌿 პროტოკოლის ძიება (კვება, სიროფი...): ",
-    "search_label":      "ძიება: ",
-    "lang_changed":      "ენა შეცვლილია.",
-    "mnews": "n. 📰 სიახლეები ჩემს თემებზე",
-    "news_title":        "სიახლეები და პუბლიკაციები",
-    "news_loading":      "სიახლეების ჩატვირთვა...",
-    "news_topics":       "თემები:",
-    "mk":    "k. 👥 პაციენტთა ჯგუფები & კავშირები",
-    "mk_title": "პაციენტთა ქსელი",
-    "mk_tip":   "სრული მართვა: ტერმინალი → k",
-    "mk_refresh": "განახლება",
-    "mt":    "t. 🔍 Telegram/WhatsApp ჩატების ძიება",
-    "tg_search_prompt":    "ძიება (* — ნიღაბი, სფასი = ან): ",
-    "tg_search_title":     "Telegram / WhatsApp ჩატების ძიება",
-    "tg_search_no_results":"შედეგები ვერ მოიძებნა.",
-    "tg_search_results":   "ნაპოვნია {n} შედეგი",
-    "tg_search_tip":       "მინიშნება: *სიტყვა* = შეიცავს · სიტყვა* = იწყება · *სიტყვა = მთავრდება · q = გასვლა",
-},
-
-}  # end STRINGS
-
-# ── Public API ─────────────────────────────────────────────────────────────────
-
-def load() -> None:
-    """Load saved language from ~/.aim_lang (called at startup)."""
-    global _lang
-    if LANG_FILE.exists():
-        code = LANG_FILE.read_text(encoding="utf-8").strip()
-        if code in STRINGS:
-            _lang = code
+_current_lang: str = cfg.DEFAULT_LANG
 
 
-def current() -> str:
-    return _lang
+def set_lang(lang: str):
+    """Установить язык интерфейса"""
+    global _current_lang
+    if lang in cfg.SUPPORTED_LANGS:
+        _current_lang = lang
+    else:
+        raise ValueError(f"Неподдерживаемый язык: {lang}. Доступно: {cfg.SUPPORTED_LANGS}")
 
 
-def set_lang(code: str) -> None:
-    global _lang
-    if code in STRINGS:
-        _lang = code
-        LANG_FILE.write_text(code, encoding="utf-8")
+def get_lang() -> str:
+    return _current_lang
 
 
-def t(key: str, **kwargs) -> str:
-    """Translate key in current language, with optional format kwargs."""
-    text = STRINGS.get(_lang, STRINGS["ru"]).get(key) \
-           or STRINGS["ru"].get(key, key)
+def t(key: str, lang: str = None, **kwargs) -> str:
+    """
+    Получить строку по ключу.
+    Если ключ не найден — возвращает ключ в скобках [key].
+
+    Args:
+        key:    Ключ строки
+        lang:   Язык (если None — использует текущий)
+        kwargs: Аргументы для форматирования (str.format(**kwargs))
+    """
+    lang = lang or _current_lang
+    lang_dict = STRINGS.get(lang, STRINGS["ru"])
+    result = lang_dict.get(key) or STRINGS["ru"].get(key) or f"[{key}]"
     if kwargs:
         try:
-            text = text.format(**kwargs)
-        except KeyError:
+            result = result.format(**kwargs)
+        except (KeyError, IndexError):
             pass
-    return text
+    return result
 
 
-# Affirmative answers by language (for y/n prompts)
-_YES: dict[str, set] = {
-    "en": {"y", "yes"},
-    "fr": {"o", "oui", "y"},
-    "es": {"s", "si", "sí", "y"},
-    "ru": {"д", "да", "y", "yes", "1"},
-    "ar": {"ن", "نعم", "y"},
-    "zh": {"是", "y", "1"},
-    "ka": {"კ", "კი", "y", "1"},
+# ============================================================================
+# Строки интерфейса
+# ============================================================================
+# Ключи меню: m1..m9, mw, mgui (дополнительные)
+# Ключи системы: welcome, loading, error, success, ...
+# ============================================================================
+
+STRINGS: Dict[str, Dict[str, str]] = {
+
+    # ========================================================================
+    # РУССКИЙ
+    # ========================================================================
+    "ru": {
+        # Главное меню
+        "m1": "Список пациентов",
+        "m2": "Новый пациент",
+        "m3": "Поиск пациента",
+        "m4": "AI-консультация",
+        "m5": "Анализ лабораторных данных",
+        "m6": "Байесовская диагностика",
+        "m7": "Протоколы лечения",
+        "m8": "Ze-статус / HRV",
+        "m9": "Отчёты и экспорт",
+        "mw": "Выход",
+        "mgui": "Настройки",
+
+        # Подменю пациента
+        "mp1": "Просмотр данных пациента",
+        "mp2": "Добавить анализ",
+        "mp3": "AI-анализ анализов",
+        "mp4": "История диагнозов",
+        "mp5": "Назначения и рецепты",
+        "mp6": "Записи на приём",
+        "mp7": "Ze/HRV данные",
+        "mpb": "Назад",
+
+        # Системные
+        "welcome": "Добро пожаловать в AIM v{version}",
+        "loading": "Загрузка...",
+        "processing": "Обработка...",
+        "error": "Ошибка: {message}",
+        "success": "Готово",
+        "confirm": "Подтвердить? (д/н): ",
+        "yes": "д",
+        "no": "н",
+        "back": "Назад",
+        "exit": "Выход",
+        "not_found": "Не найдено",
+        "saved": "Сохранено",
+        "cancelled": "Отменено",
+        "choose_lang": "Выберите язык / Choose language / აირჩიეთ ენა / Тілді таңдаңыз:",
+
+        # Пациенты
+        "patients_title": "=== ПАЦИЕНТЫ ===",
+        "patient_id": "ID",
+        "patient_name": "Имя",
+        "patient_age": "Возраст",
+        "patient_sex": "Пол",
+        "patient_ze": "Ze-статус",
+        "patient_bio_age": "Биол. возраст",
+        "no_patients": "Пациентов не найдено",
+        "patient_created": "Пациент создан: {name}",
+        "search_prompt": "Введите имя или фамилию для поиска: ",
+
+        # AI
+        "ai_thinking": "AI анализирует...",
+        "ai_title": "=== AI-КОНСУЛЬТАЦИЯ ===",
+        "ai_prompt": "Ваш вопрос (или Enter для выхода): ",
+        "ai_no_key": "DeepSeek API недоступен. Проверьте ~/.aim_env",
+
+        # Анализы
+        "lab_title": "=== ЛАБОРАТОРНЫЕ ДАННЫЕ ===",
+        "lab_input": "Введите или вставьте данные анализов: ",
+        "lab_analyzing": "Анализ лабораторных данных...",
+        "lab_no_data": "Лабораторных данных не найдено",
+
+        # Ze/HRV
+        "ze_title": "=== Ze-СТАТУС / HRV ===",
+        "ze_status_label": "Ze-статус",
+        "ze_high": "Высокий — отличный биологический резерв",
+        "ze_medium": "Средний — умеренный резерв, профилактика",
+        "ze_low": "Низкий — сниженный резерв, активное лечение",
+        "ze_critical": "Критический — минимальный резерв",
+
+        # Диагностика
+        "diag_title": "=== ДИФФЕРЕНЦИАЛЬНАЯ ДИАГНОСТИКА ===",
+        "diag_symptoms": "Введите симптомы (через запятую): ",
+        "diag_running": "Байесовский анализ...",
+
+        # Протоколы
+        "treatment_title": "=== ПРОТОКОЛЫ ЛЕЧЕНИЯ ===",
+
+        # Отчёты
+        "report_title": "=== ОТЧЁТЫ ===",
+        "report_generated": "Отчёт создан: {path}",
+
+        # Ошибки
+        "err_db": "Ошибка базы данных: {message}",
+        "err_llm": "LLM недоступен: {message}",
+        "err_file": "Ошибка файла: {message}",
+        "err_permission": "Нет прав доступа: {resource}",
+
+        # Версия/инфо
+        "version": "AIM v{version}",
+        "system_info": "Система: AIM v{version} | Пациентов: {patients} | Язык: {lang}",
+        "doctor": "Врач: Д-р Джаба Ткемаладзе",
+    },
+
+    # ========================================================================
+    # ГРУЗИНСКИЙ
+    # ========================================================================
+    "ka": {
+        # მთავარი მენიუ
+        "m1": "პაციენტების სია",
+        "m2": "ახალი პაციენტი",
+        "m3": "პაციენტის ძიება",
+        "m4": "AI-კონსულტაცია",
+        "m5": "ლაბორატორიული მონაცემების ანალიზი",
+        "m6": "ბაიესური დიაგნოსტიკა",
+        "m7": "მკურნალობის პროტოკოლები",
+        "m8": "Ze-სტატუსი / HRV",
+        "m9": "ანგარიშები და ექსპორტი",
+        "mw": "გასვლა",
+        "mgui": "პარამეტრები",
+
+        # სისტემური
+        "welcome": "კეთილი იყოს თქვენი მობრძანება AIM v{version}-ში",
+        "loading": "იტვირთება...",
+        "processing": "მუშავდება...",
+        "error": "შეცდომა: {message}",
+        "success": "დასრულდა",
+        "confirm": "დაადასტურეთ? (დ/არ): ",
+        "yes": "დ",
+        "no": "არ",
+        "back": "უკან",
+        "exit": "გასვლა",
+        "not_found": "ვერ მოიძებნა",
+        "saved": "შენახულია",
+        "cancelled": "გაუქმდა",
+        "choose_lang": "Выберите язык / Choose language / აირჩიეთ ენა / Тілді таңдаңыз:",
+
+        # პაციენტები
+        "patients_title": "=== პაციენტები ===",
+        "no_patients": "პაციენტები ვერ მოიძებნა",
+        "ai_thinking": "AI აანალიზებს...",
+        "ai_title": "=== AI-კონსულტაცია ===",
+        "ai_prompt": "თქვენი კითხვა (ან Enter გასვლისთვის): ",
+        "ze_title": "=== Ze-სტატუსი / HRV ===",
+        "ze_high": "მაღალი — შესანიშნავი ბიოლოგიური რეზერვი",
+        "ze_medium": "საშუალო — ზომიერი რეზერვი, პრევენცია",
+        "ze_low": "დაბალი — შემცირებული რეზერვი",
+        "ze_critical": "კრიტიკული — მინიმალური რეზერვი",
+        "version": "AIM v{version}",
+        "doctor": "ექიმი: დოქ. ჯაბა თქემალაძე",
+    },
+
+    # ========================================================================
+    # АНГЛИЙСКИЙ
+    # ========================================================================
+    "en": {
+        # Main menu
+        "m1": "Patient List",
+        "m2": "New Patient",
+        "m3": "Search Patient",
+        "m4": "AI Consultation",
+        "m5": "Lab Data Analysis",
+        "m6": "Bayesian Diagnostics",
+        "m7": "Treatment Protocols",
+        "m8": "Ze-Status / HRV",
+        "m9": "Reports & Export",
+        "mw": "Exit",
+        "mgui": "Settings",
+
+        # System
+        "welcome": "Welcome to AIM v{version}",
+        "loading": "Loading...",
+        "processing": "Processing...",
+        "error": "Error: {message}",
+        "success": "Done",
+        "confirm": "Confirm? (y/n): ",
+        "yes": "y",
+        "no": "n",
+        "back": "Back",
+        "exit": "Exit",
+        "not_found": "Not found",
+        "saved": "Saved",
+        "cancelled": "Cancelled",
+        "choose_lang": "Выберите язык / Choose language / აირჩიეთ ენა / Тілді таңдаңыз:",
+
+        # Patients
+        "patients_title": "=== PATIENTS ===",
+        "no_patients": "No patients found",
+        "patient_created": "Patient created: {name}",
+        "search_prompt": "Enter name to search: ",
+
+        # AI
+        "ai_thinking": "AI is analyzing...",
+        "ai_title": "=== AI CONSULTATION ===",
+        "ai_prompt": "Your question (or Enter to exit): ",
+        "ai_no_key": "DeepSeek API unavailable. Check ~/.aim_env",
+
+        # Ze/HRV
+        "ze_title": "=== Ze-STATUS / HRV ===",
+        "ze_high": "High — excellent biological reserve",
+        "ze_medium": "Medium — moderate reserve, prevention",
+        "ze_low": "Low — reduced reserve, active treatment",
+        "ze_critical": "Critical — minimal reserve",
+
+        # Diagnosis
+        "diag_title": "=== DIFFERENTIAL DIAGNOSIS ===",
+        "diag_symptoms": "Enter symptoms (comma-separated): ",
+        "diag_running": "Bayesian analysis...",
+
+        # Version
+        "version": "AIM v{version}",
+        "system_info": "System: AIM v{version} | Patients: {patients} | Lang: {lang}",
+        "doctor": "Physician: Dr. Jaba Tkemaladze",
+    },
+
+    # ========================================================================
+    # КАЗАХСКИЙ
+    # ========================================================================
+    "kz": {
+        # Басты мәзір
+        "m1": "Пациенттер тізімі",
+        "m2": "Жаңа пациент",
+        "m3": "Пациентті іздеу",
+        "m4": "AI кеңесі",
+        "m5": "Зертханалық деректерді талдау",
+        "m6": "Байесиандық диагностика",
+        "m7": "Емдеу хаттамалары",
+        "m8": "Ze-мәртебесі / HRV",
+        "m9": "Есептер және экспорт",
+        "mw": "Шығу",
+        "mgui": "Параметрлер",
+
+        # Жүйелік
+        "welcome": "AIM v{version}-ге қош келдіңіз",
+        "loading": "Жүктелуде...",
+        "processing": "Өңделуде...",
+        "error": "Қате: {message}",
+        "success": "Дайын",
+        "confirm": "Растайсыз ба? (и/ж): ",
+        "yes": "и",
+        "no": "ж",
+        "back": "Артқа",
+        "exit": "Шығу",
+        "not_found": "Табылмады",
+        "saved": "Сақталды",
+        "cancelled": "Болдырылмады",
+        "choose_lang": "Выберите язык / Choose language / აირჩიეთ ენა / Тілді таңдаңыз:",
+
+        # Пациенттер
+        "patients_title": "=== ПАЦИЕНТТЕР ===",
+        "no_patients": "Пациенттер табылмады",
+
+        # AI
+        "ai_thinking": "AI талдауда...",
+        "ai_title": "=== AI КЕҢЕС ===",
+        "ai_prompt": "Сұрағыңыз (немесе шығу үшін Enter): ",
+
+        # Ze/HRV
+        "ze_title": "=== Ze-МӘРТЕБЕСІ / HRV ===",
+        "ze_high": "Жоғары — өте жақсы биологиялық резерв",
+        "ze_medium": "Орташа — қалыпты резерв, профилактика",
+        "ze_low": "Төмен — резерв азайған",
+        "ze_critical": "Критикалық — минималды резерв",
+
+        # Нұсқа
+        "version": "AIM v{version}",
+        "doctor": "Дәрігер: Д-р Джаба Ткемаладзе",
+    },
 }
 
-def is_yes(answer: str) -> bool:
-    """Return True if answer is affirmative in current language."""
-    s = answer.strip().lower()
-    return s in _YES.get(_lang, _YES["ru"]) or s in {"y", "yes", "1"}
+
+# ============================================================================
+# Выбор языка (интерактивный)
+# ============================================================================
+
+def choose_language_interactive() -> str:
+    """Интерактивный выбор языка при запуске"""
+    print("\n" + t("choose_lang", "ru"))
+    print("  1. Русский")
+    print("  2. ქართული")
+    print("  3. English")
+    print("  4. Қазақша")
+
+    choice = input("\nВыбор / Choice / არჩევანი / Таңдау [1-4, Enter=RU]: ").strip()
+
+    lang_map = {"1": "ru", "2": "ka", "3": "en", "4": "kz", "": "ru"}
+    selected = lang_map.get(choice, "ru")
+    set_lang(selected)
+    return selected
 
 
-def select_language() -> str:
-    """
-    Show language selection screen (all languages) and return chosen code.
-    Saves choice to ~/.aim_lang.
-    """
-    lines = [
-        "╔══════════════════════════════════════════════╗",
-        "║         AIM — Select Language / Язык         ║",
-        "╚══════════════════════════════════════════════╝",
-        "",
-    ]
-    codes = list(LANG_NAMES.keys())
-    for i, code in enumerate(codes, 1):
-        lines.append(f"  {i}. {LANG_NAMES[code]}")
-    lines.append("")
-    print("\n".join(lines))
+# ============================================================================
+# CLI тест
+# ============================================================================
 
-    while True:
-        try:
-            raw = input("  1–7: ").strip()
-            idx = int(raw) - 1
-            if 0 <= idx < len(codes):
-                code = codes[idx]
-                set_lang(code)
-                return code
-        except (ValueError, EOFError):
-            pass
-        print("  ?")
+if __name__ == "__main__":
+    for lang in cfg.SUPPORTED_LANGS:
+        set_lang(lang)
+        print(f"\n[{lang.upper()}]")
+        print(f"  welcome: {t('welcome', version='6.0')}")
+        print(f"  m1: {t('m1')}")
+        print(f"  m4: {t('m4')}")
+        print(f"  ze_high: {t('ze_high')}")
+    print("\ni18n.py — OK")
