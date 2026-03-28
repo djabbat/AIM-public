@@ -21,6 +21,7 @@ from medical_system import (
     analyze_labs_only, show_aging_prediction, show_ze_history,
     search_patients_by_symptom, db_stats, search_protocols,
 )
+from telegram_search import search_chats, format_results_text
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -170,7 +171,8 @@ class AimGUI(ctk.CTk):
 
         sep("── " + t("msep1").lstrip("─ "))
         for k, lk in [("aging","ma"),("ze_hrv","mb"),("protocols","mc"),
-                      ("wearable","mw"),("cdata_gui","mgui"),("clusters","mk")]:
+                      ("wearable","mw"),("cdata_gui","mgui"),("clusters","mk"),
+                      ("tg_search","mt")]:
             btn(k, t(lk))
 
         btn("news", t("mnews"))
@@ -195,7 +197,7 @@ class AimGUI(ctk.CTk):
     TITLES = {"patients":"m1","process1":"m2","process_all":"m3","analysis":"m4",
               "labs":"m5","chat":"m7","deviations":"m8","search":"m9","stats":"m0",
               "aging":"ma","ze_hrv":"mb","protocols":"mc","wearable":"mw",
-              "cdata_gui":"mgui","clusters":"mk","news":"mnews",
+              "cdata_gui":"mgui","clusters":"mk","tg_search":"mt","news":"mnews",
               "reg_user":"mu","list_users":"mU"}
 
     def _go(self, key):
@@ -589,6 +591,72 @@ class AimGUI(ctk.CTk):
                            (u.get("display_name") or "",180),(u["created_at"][:10],100)]:
                 ctk.CTkLabel(row, text=str(val), font=FONT_S,
                              width=w, anchor="w").pack(side="left", padx=8, pady=6)
+
+    # ── Telegram / WhatsApp chat search ───────────────────────────────────────
+
+    def _s_tg_search(self):
+        t = _i18n.t
+        fr = ctk.CTkFrame(self.cf, fg_color="transparent")
+        fr.pack(fill="both", expand=True, padx=12, pady=12)
+        fr.grid_rowconfigure(1, weight=1)
+        fr.grid_columnconfigure(0, weight=1)
+
+        # ── Search bar ────────────────────────────────────────────────────────
+        ctrl = ctk.CTkFrame(fr, fg_color="#252540", corner_radius=8)
+        ctrl.grid(row=0, column=0, sticky="ew", pady=(0, 8))
+        ctrl.grid_columnconfigure(1, weight=1)
+
+        ctk.CTkLabel(ctrl, text="🔍", font=("Helvetica", 16)).grid(
+            row=0, column=0, padx=(14, 4), pady=10)
+
+        qv = ctk.StringVar()
+        entry = ctk.CTkEntry(
+            ctrl, textvariable=qv,
+            placeholder_text=t("tg_search_prompt"),
+            font=FONT_B, height=36,
+        )
+        entry.grid(row=0, column=1, sticky="ew", padx=4, pady=8)
+
+        stat_lbl = ctk.CTkLabel(ctrl, text=t("tg_search_tip"), font=FONT_S,
+                                text_color="#8888aa")
+        stat_lbl.grid(row=0, column=2, padx=(4, 8))
+
+        btn_search = ctk.CTkButton(ctrl, text="⏎", font=FONT_M, width=44,
+                                   height=36, corner_radius=6)
+        btn_search.grid(row=0, column=3, padx=(0, 10), pady=8)
+
+        # ── Results window (NOT disabled — user can select & copy) ────────────
+        result_box = ctk.CTkTextbox(
+            fr, font=("Courier", 11),
+            fg_color="#0d1117", text_color="#c9d1d9",
+            wrap="word",
+        )
+        result_box.grid(row=1, column=0, sticky="nsew")
+        result_box.insert("end", t("tg_search_tip") + "\n")
+        # textbox remains NORMAL (editable) so text is selectable & copyable
+
+        def _do_search(*_):
+            query = qv.get().strip()
+            if not query:
+                return
+            result_box.delete("1.0", "end")
+            result_box.insert("end", "⏳ Поиск...\n")
+            result_box.update()
+
+            def _worker():
+                results = search_chats(query)
+                text = format_results_text(results, query)
+                n = len(results)
+                label = t("tg_search_results").format(n=n) if n else t("tg_search_no_results")
+                self.after(0, lambda: (
+                    result_box.delete("1.0", "end"),
+                    result_box.insert("end", text),
+                    stat_lbl.configure(text=label),
+                ))
+            threading.Thread(target=_worker, daemon=True).start()
+
+        btn_search.configure(command=_do_search)
+        entry.bind("<Return>", _do_search)
 
     # ── Language / Logout ──────────────────────────────────────────────────────
 

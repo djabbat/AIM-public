@@ -99,6 +99,12 @@ STRINGS: dict[str, dict[str, str]] = {
     "mk_title": "Patient Network",
     "mk_tip":   "For full management use terminal → k",
     "mk_refresh": "Refresh",
+    "mt":    "t. 🔍 Telegram / WhatsApp chat search",
+    "tg_search_prompt":    "Search (use * as wildcard, spaces = OR): ",
+    "tg_search_title":     "Telegram / WhatsApp Chat Search",
+    "tg_search_no_results":"No results found.",
+    "tg_search_results":   "{n} matches found",
+    "tg_search_tip":       "Tip: *word* = contains · word* = starts · *word = ends · q = back",
 },
 
 # ─── Français ─────────────────────────────────────────────────────────────────
@@ -171,6 +177,12 @@ STRINGS: dict[str, dict[str, str]] = {
     "mk_title": "Réseau patients",
     "mk_tip":   "Gestion complète : terminal → k",
     "mk_refresh": "Actualiser",
+    "mt":    "t. 🔍 Recherche chats Telegram/WhatsApp",
+    "tg_search_prompt":    "Recherche (utilisez * joker, espaces = OU) : ",
+    "tg_search_title":     "Recherche chats Telegram / WhatsApp",
+    "tg_search_no_results":"Aucun résultat trouvé.",
+    "tg_search_results":   "{n} correspondances trouvées",
+    "tg_search_tip":       "Astuce : *mot* = contient · mot* = commence · *mot = finit · q = retour",
 },
 
 # ─── Español ──────────────────────────────────────────────────────────────────
@@ -243,6 +255,12 @@ STRINGS: dict[str, dict[str, str]] = {
     "mk_title": "Red de pacientes",
     "mk_tip":   "Gestión completa: terminal → k",
     "mk_refresh": "Actualizar",
+    "mt":    "t. 🔍 Búsqueda chats Telegram/WhatsApp",
+    "tg_search_prompt":    "Búsqueda (use * comodín, espacios = O): ",
+    "tg_search_title":     "Búsqueda chats Telegram / WhatsApp",
+    "tg_search_no_results":"No se encontraron resultados.",
+    "tg_search_results":   "{n} coincidencias encontradas",
+    "tg_search_tip":       "Consejo: *pal* = contiene · pal* = empieza · *pal = termina · q = volver",
 },
 
 # ─── Русский ──────────────────────────────────────────────────────────────────
@@ -315,6 +333,12 @@ STRINGS: dict[str, dict[str, str]] = {
     "mk_title": "Сеть пациентов",
     "mk_tip":   "Управление: терминал → k",
     "mk_refresh": "Обновить",
+    "mt":    "t. 🔍 Поиск в Telegram/WhatsApp чатах",
+    "tg_search_prompt":    "Поиск (* — маска, пробелы = ИЛИ): ",
+    "tg_search_title":     "Поиск в чатах Telegram / WhatsApp",
+    "tg_search_no_results":"Ничего не найдено.",
+    "tg_search_results":   "Найдено совпадений: {n}",
+    "tg_search_tip":       "Подсказка: *слово* = содержит · слово* = начало · *слово = конец · q = выход",
 },
 
 # ─── العربية ──────────────────────────────────────────────────────────────────
@@ -387,6 +411,12 @@ STRINGS: dict[str, dict[str, str]] = {
     "mk_title": "شبكة المرضى",
     "mk_tip":   "للإدارة الكاملة: الطرفية ← k",
     "mk_refresh": "تحديث",
+    "mt":    "t. 🔍 بحث في محادثات Telegram/WhatsApp",
+    "tg_search_prompt":    "بحث (استخدم * كبطاقة جوكر، مسافات = أو): ",
+    "tg_search_title":     "بحث محادثات Telegram / WhatsApp",
+    "tg_search_no_results":"لم يتم العثور على نتائج.",
+    "tg_search_results":   "وجدت {n} تطابق",
+    "tg_search_tip":       "نصيحة: *كلمة* = يحتوي · كلمة* = يبدأ · *كلمة = ينتهي · q = عودة",
 },
 
 # ─── 中文 ──────────────────────────────────────────────────────────────────────
@@ -459,6 +489,12 @@ STRINGS: dict[str, dict[str, str]] = {
     "mk_title": "患者网络",
     "mk_tip":   "完整管理：终端 → k",
     "mk_refresh": "刷新",
+    "mt":    "t. 🔍 搜索 Telegram/WhatsApp 聊天",
+    "tg_search_prompt":    "搜索（* 通配符，空格 = 或）：",
+    "tg_search_title":     "Telegram / WhatsApp 聊天搜索",
+    "tg_search_no_results":"未找到结果。",
+    "tg_search_results":   "找到 {n} 条匹配",
+    "tg_search_tip":       "提示：*词* = 包含 · 词* = 开头 · *词 = 结尾 · q = 返回",
 },
 
 # ─── ქართული ──────────────────────────────────────────────────────────────────
@@ -531,6 +567,12 @@ STRINGS: dict[str, dict[str, str]] = {
     "mk_title": "პაციენტთა ქსელი",
     "mk_tip":   "სრული მართვა: ტერმინალი → k",
     "mk_refresh": "განახლება",
+    "mt":    "t. 🔍 Telegram/WhatsApp ჩატების ძიება",
+    "tg_search_prompt":    "ძიება (* — ნიღაბი, სფასი = ან): ",
+    "tg_search_title":     "Telegram / WhatsApp ჩატების ძიება",
+    "tg_search_no_results":"შედეგები ვერ მოიძებნა.",
+    "tg_search_results":   "ნაპოვნია {n} შედეგი",
+    "tg_search_tip":       "მინიშნება: *სიტყვა* = შეიცავს · სიტყვა* = იწყება · *სიტყვა = მთავრდება · q = გასვლა",
 },
 
 }  # end STRINGS

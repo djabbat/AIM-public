@@ -556,7 +556,7 @@ def print_menu(current_user: dict = None):
     for k in ("m1","m2","m3","m4","m5","m7","m8","m9","m0"):
         print(f"  {t(k)}")
     print(f"  {t('msep1')}")
-    for k in ("ma","mb","mc","mw","mgui","mk"):
+    for k in ("ma","mb","mc","mw","mgui","mk","mt"):
         print(f"  {t(k)}")
     if current_user and current_user.get("role") == "admin":
         print(f"  {t('msep2')}")
@@ -797,6 +797,10 @@ def run_interactive(current_user: dict = None):
             import patient_network as _pnet
             print("\n" + _pnet.show_patient_map())
             _pnet.manage_clusters_interactive(patients)
+
+        elif choice_lower == "t":
+            import telegram_search as _ts
+            _ts.run_terminal_search()
 
         else:
             print(t("invalid_choice"))
