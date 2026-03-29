@@ -26,9 +26,10 @@ fi
 source "$VENV_DIR/bin/activate"
 
 # ── Проверка зависимостей ─────────────────────────────────────────────────
-if ! python3 -c "import openai" 2>/dev/null; then
+if ! python3 -c "import openai, streamlit" 2>/dev/null; then
     echo "Установка зависимостей..."
     pip install -q -r "$AIM_DIR/requirements.txt"
+    pip install -q streamlit pandas
 fi
 
 # ── Загрузка env ──────────────────────────────────────────────────────────
@@ -49,8 +50,8 @@ if [ "$1" = "--all" ]; then
     echo "Режим: обработка всех пациентов"
     python3 medical_system.py --all
 elif [ -f "$AIM_DIR/aim_gui.py" ]; then
-    echo "Режим: GUI"
-    python3 aim_gui.py
+    echo "Режим: GUI (Streamlit — открывается в браузере)"
+    streamlit run aim_gui.py --server.headless false
 else
     echo "Режим: CLI"
     python3 medical_system.py "$@"
