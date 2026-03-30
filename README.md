@@ -88,7 +88,7 @@ AIM интегрирован с:
 
 ## Авторство
 
-Д-р Джаба Ткемаладзе, MD PhD
+Д-р Джаба Ткемаладзе, MD
 ORCID: 0000-0002-XXXX-XXXX
-Email: jaba@drjaba.com
+Email: hello@drjaba.com
 Web: https://drjaba.com

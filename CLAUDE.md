@@ -104,7 +104,7 @@ python3 aim_gui.py
 | `config.py` | Конфигурация, пути, env |
 | `llm.py` | DeepSeek API: ask_llm(), ask_deep() |
 | `db.py` | SQLite-слой, схема БД |
-| `i18n.py` | RU/KA/EN/KZ строки |
+| `i18n.py` | RU/EN/FR/ES/AR/ZH/KA строки (ООН-6 + грузинский) |
 | `core/rbac.py` | RBAC, роли, права |
 | `core/tenant.py` | Мульти-тенантность |
 | `start.sh` | Лаунчер |

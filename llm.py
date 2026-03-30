@@ -2,10 +2,19 @@
 AIM v6.0 — llm.py
 DeepSeek API wrapper. Единственная точка входа для всех LLM-вызовов в системе.
 
+Поддерживаемые языки: RU / EN / FR / ES / AR / ZH / KA (ООН-6 + грузинский).
+
+Маршрутизация моделей (route_model):
+    task_type="fast"   → deepseek-chat    (быстрые запросы, все языки)
+    task_type="reason" → deepseek-reasoner (сложные рассуждения, дифдиагноз)
+    task_type="medical"→ deepseek-reasoner (медицинский анализ с контекстом)
+    offline            → ollama/llama3.2   (если нет DeepSeek ключа)
+
 Использование:
     from llm import ask_llm, ask_deep
 
     answer = ask_llm("Объясни результаты анализов пациента", lang="ru")
+    answer = ask_llm("Explain lab results", lang="en", task_type="fast")
     reasoning = ask_deep("Дифференциальная диагностика: боль в груди + одышка")
 """
 
@@ -42,23 +51,78 @@ SYSTEM_PROMPTS = {
         "Всегда учитывай Ze-теорию (биологический возраст, Ze-статус). "
         "При неопределённости — честно указывай на необходимость дополнительного обследования."
     ),
-    "ka": (
-        "შენ ხარ AIM — დოქტორ თქემალაძის ინტეგრაციული მედიცინის ასისტენტი. "
-        "უპასუხე ზუსტად, სტრუქტურირებულად, ქართულ ენაზე. "
-        "გაითვალისწინე Ze-თეორია (ბიოლოგიური ასაკი, Ze-სტატუსი)."
-    ),
     "en": (
         "You are AIM, an integrative medicine AI assistant for Dr. Tkemaladze. "
         "Answer accurately, structured, in English. "
         "Always consider Ze-theory (biological age, Ze-status). "
         "If uncertain, honestly indicate the need for additional testing."
     ),
+    "fr": (
+        "Vous êtes AIM, l'assistant IA en médecine intégrative du Dr Tkemaladze. "
+        "Répondez avec précision et structure, en français. "
+        "Tenez compte de la théorie Ze (âge biologique, statut Ze). "
+        "En cas d'incertitude, indiquez honnêtement la nécessité d'examens complémentaires."
+    ),
+    "es": (
+        "Eres AIM, el asistente de IA en medicina integrativa del Dr. Tkemaladze. "
+        "Responde con precisión y estructura, en español. "
+        "Considera siempre la teoría Ze (edad biológica, estado Ze). "
+        "Ante la incertidumbre, indica honestamente la necesidad de pruebas adicionales."
+    ),
+    "ar": (
+        "أنت AIM، مساعد الذكاء الاصطناعي للطب التكاملي للدكتور تكيمالادزي. "
+        "أجب بدقة وبشكل منظم باللغة العربية. "
+        "ضع دائماً في الاعتبار نظرية Ze (العمر البيولوجي، حالة Ze). "
+        "عند عدم اليقين، أشر بصدق إلى الحاجة لفحوصات إضافية."
+    ),
+    "zh": (
+        "您是AIM——Tkemaladze博士整合医学AI助手。"
+        "请用中文准确、有条理地回答。"
+        "始终考虑Ze理论（生物年龄、Ze状态）。"
+        "如有不确定，请如实指出需要进一步检查。"
+    ),
+    "ka": (
+        "შენ ხარ AIM — დოქტორ თქემალაძის ინტეგრაციული მედიცინის ასისტენტი. "
+        "უპასუხე ზუსტად, სტრუქტურირებულად, ქართულ ენაზე. "
+        "გაითვალისწინე Ze-თეორია (ბიოლოგიური ასაკი, Ze-სტატუსი)."
+    ),
+    # Backward-compat: Kazakh (not in official 7, kept for existing integrations)
     "kz": (
         "Сіз — Дәрігер Ткемаладзенің AIM интегративті медицина жасанды интеллект көмекшісісіз. "
         "Дәл, құрылымды, қазақ тілінде жауап беріңіз. "
         "Ze-теориясын ескеріңіз (биологиялық жас, Ze-мәртебесі)."
     ),
 }
+
+# ============================================================================
+# Маршрутизация моделей
+# ============================================================================
+
+def route_model(task_type: str = "fast", model_override: str = None) -> str:
+    """
+    Выбрать модель DeepSeek по типу задачи.
+
+    Правила маршрутизации:
+        "fast"   → deepseek-chat    (быстрые запросы, перевод, объяснения)
+        "reason" → deepseek-reasoner (дифдиагноз, сложные рассуждения)
+        "medical"→ deepseek-reasoner (медицинский анализ с контекстом пациента)
+
+    Все 7 языков (RU/EN/FR/ES/AR/ZH/KA) поддерживаются обеими моделями.
+    Offline fallback (ollama/llama3.2) применяется в _call_deepseek при недоступности ключа.
+
+    Args:
+        task_type:      Тип задачи: "fast" | "reason" | "medical"
+        model_override: Явное указание модели (переопределяет маршрутизацию)
+
+    Returns:
+        Строка с названием модели DeepSeek
+    """
+    if model_override:
+        return model_override
+    if task_type in ("reason", "medical"):
+        return cfg.DEEPSEEK_MODEL_REASON
+    return cfg.DEEPSEEK_MODEL_FAST
+
 
 # ============================================================================
 # Основные функции
@@ -71,18 +135,20 @@ def ask_llm(
     temperature: float = None,
     max_tokens: int = None,
     model: str = None,
+    task_type: str = "fast",
 ) -> str:
     """
-    Быстрый запрос к DeepSeek (deepseek-chat).
+    Запрос к DeepSeek с автоматической маршрутизацией по задаче и языку.
     Fallback на Ollama если нет ключа.
 
     Args:
         prompt:      Запрос пользователя
-        lang:        Язык ответа ('ru'/'ka'/'en'/'kz'). По умолчанию — cfg.DEFAULT_LANG
+        lang:        Язык ответа (ru/en/fr/es/ar/zh/ka). По умолчанию cfg.DEFAULT_LANG
         system:      Системный промпт (переопределяет встроенный)
         temperature: Температура генерации (по умолчанию cfg.LLM_TEMPERATURE)
         max_tokens:  Максимум токенов (по умолчанию cfg.LLM_MAX_TOKENS)
-        model:       Модель (по умолчанию deepseek-chat)
+        model:       Явное указание модели (переопределяет route_model)
+        task_type:   Тип задачи: "fast" | "reason" | "medical" (влияет на выбор модели)
 
     Returns:
         Ответ модели как строка
@@ -90,12 +156,12 @@ def ask_llm(
     lang = lang or cfg.DEFAULT_LANG
     temperature = temperature if temperature is not None else cfg.LLM_TEMPERATURE
     max_tokens = max_tokens or cfg.LLM_MAX_TOKENS
-    model = model or cfg.DEEPSEEK_MODEL_FAST
+    selected_model = route_model(task_type, model_override=model)
 
     sys_prompt = system or SYSTEM_PROMPTS.get(lang, SYSTEM_PROMPTS["ru"])
 
     if cfg.has_deepseek() and _openai_available:
-        return _call_deepseek(prompt, sys_prompt, model, temperature, max_tokens)
+        return _call_deepseek(prompt, sys_prompt, selected_model, temperature, max_tokens)
     elif _ollama_available:
         logger.warning("DeepSeek недоступен — используется Ollama fallback")
         return _call_ollama(prompt, sys_prompt)
@@ -111,22 +177,22 @@ def ask_deep(
     """
     Глубокое рассуждение через DeepSeek-Reasoner.
     Для сложных диагностических задач, дифференциальной диагностики,
-    анализа лабораторных данных.
+    анализа лабораторных данных. Поддерживает все 7 языков AIM.
 
     Args:
         prompt: Сложный запрос для глубокого рассуждения
-        lang:   Язык ответа
+        lang:   Язык ответа (ru/en/fr/es/ar/zh/ka)
         system: Системный промпт (опционально)
 
     Returns:
-        Ответ с полным цепочкой рассуждений
+        Ответ с полной цепочкой рассуждений
     """
     return ask_llm(
         prompt=prompt,
         lang=lang,
         system=system,
-        model=cfg.DEEPSEEK_MODEL_REASON,
-        temperature=0.1,  # Более детерминированный для рассуждений
+        task_type="reason",
+        temperature=0.1,  # Детерминированный для медицинских рассуждений
         max_tokens=8192,
     )
 
@@ -234,11 +300,15 @@ def _call_ollama(prompt: str, system: str) -> str:
 
 
 def _no_llm_response(lang: str) -> str:
-    """Ответ когда LLM недоступен"""
+    """Ответ когда LLM недоступен (все 7 языков AIM + KZ backward-compat)"""
     messages = {
         "ru": "[LLM недоступен. Установите DEEPSEEK_API_KEY в ~/.aim_env или запустите Ollama]",
-        "ka": "[LLM მიუწვდომელია. დააყენეთ DEEPSEEK_API_KEY ან გაუშვით Ollama]",
         "en": "[LLM unavailable. Set DEEPSEEK_API_KEY in ~/.aim_env or start Ollama]",
+        "fr": "[LLM indisponible. Définissez DEEPSEEK_API_KEY dans ~/.aim_env ou lancez Ollama]",
+        "es": "[LLM no disponible. Configure DEEPSEEK_API_KEY en ~/.aim_env o inicie Ollama]",
+        "ar": "[LLM غير متوفر. أضف DEEPSEEK_API_KEY في ~/.aim_env أو شغّل Ollama]",
+        "zh": "[LLM不可用。请在~/.aim_env中设置DEEPSEEK_API_KEY或启动Ollama]",
+        "ka": "[LLM მიუწვდომელია. დააყენეთ DEEPSEEK_API_KEY ან გაუშვით Ollama]",
         "kz": "[LLM қол жетімсіз. ~/.aim_env ішінде DEEPSEEK_API_KEY орнатыңыз]",
     }
     return messages.get(lang, messages["ru"])

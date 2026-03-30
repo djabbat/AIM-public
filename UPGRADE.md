@@ -13,38 +13,38 @@ Suggestions for project development from external analysis, literature, and cros
 
 ## [2026-03-29] Push Notification Optimization for Mobile Clients
 **Source:** Cross-project analysis of AIM ecosystem; mobile usage patterns in clinical settings
-**Status:** [ ] proposed
+**Status:** [⏸ отложено — после Фаз 2+5+6]
 
-Current AIM architecture lacks a push notification layer for mobile clients. Implementing a lightweight notification broker (e.g., Firebase Cloud Messaging or a self-hosted alternative like ntfy) would allow timely delivery of lab result alerts, appointment reminders, and critical diagnosis flags to patients and clinicians. Priority should be given to offline-first queuing so notifications are not lost when connectivity is intermittent.
+Peer review (2026-03-30): технически корректно, но преждевременно. Зависимости: JWT/RBAC (Фаза 2), REST API (Фаза 5), Flutter-приложения (Фаза 6). Дополнительно: медицинские данные через FCM требуют GDPR-оценки; рекомендован self-hosted ntfy или метаданные без PHI в payload.
 
 ---
 
-## [2026-03-29] AI Model Upgrade: llama3.2 → Newer Foundation Models
-**Source:** Rapid model release cadence (Llama 3.3, Mistral Medical, BioMistral); internal performance review
-**Status:** [ ] proposed
+## [2026-03-29] AI Model Upgrade: маршрутизация по задаче и языку
+**Source:** Rapid model release cadence; internal performance review
+**Status:** [✓ approved 2026-03-30] [✓✓ implemented 2026-03-30]
 
-The current default model (llama3.2) should be evaluated against newer alternatives including Llama 3.3 70B, BioMistral-7B, and OpenBioLLM. A benchmarking harness using real (de-identified) AIM patient cases should be built to compare diagnostic accuracy, multilingual output quality (RU/EN/KA/KZ), and inference speed on local hardware. DeepSeek API (`deepseek-reasoner`) can serve as a high-accuracy reference baseline during evaluation.
+Добавлена маршрутизация модели в `llm.py`: task_type="fast"→deepseek-chat, task_type="reason"/"medical"→deepseek-reasoner. Расширена языковая поддержка до 7 языков (ООН-6 + грузинский): добавлены системные промпты FR/ES/AR/ZH. SUPPORTED_LANGS обновлён в config.py. Ollama/llama3.2 — offline fallback без изменений.
 
 ---
 
 ## [2026-03-29] FHIR R4 Compliance for Medical Data Export
 **Source:** International interoperability standards; potential cross-border patient referrals
-**Status:** [ ] proposed
+**Status:** [⏸ отложено — после Фаз 3+5+7]
 
-Introducing FHIR R4-compliant export endpoints would allow AIM patient records to be shared with partner clinics, EHR systems, and research platforms without custom adapters. A minimal implementation would cover Patient, Observation (lab results), DiagnosticReport, and MedicationRequest resources. This also positions AIM favorably for any future regulatory certification in Georgia or Kazakhstan.
+Peer review (2026-03-30): нет схемы БД для медданных, нет REST API — экспортировать нечего. Технически корректно; реализовать после завершения медицинских модулей и API-слоя.
 
 ---
 
 ## [2026-03-29] Multilingual Patient-Facing Reports
-**Source:** AIM multilingual architecture (RU/EN/KA/KZ); patient literacy considerations
-**Status:** [ ] proposed
+**Source:** AIM multilingual architecture; patient literacy considerations
+**Status:** [⏸ отложено — после Фазы 3]
 
-AI-generated diagnostic summaries and treatment plans are currently produced in the language of the input prompt, without a structured translation pipeline. Adding a dedicated report-rendering module that calls DeepSeek for localization into all four supported languages would ensure every patient receives a readable, culturally appropriate summary. Templates should be medically reviewed once and reused to minimize per-report LLM cost.
+Peer review (2026-03-30): нет diagnosis_engine.py/treatment_recommender.py — источника данных для отчётов. Реализовать после Фазы 3. Языки теперь ООН-6 + грузинский (7 языков).
 
 ---
 
 ## [2026-03-29] Integration with External Laboratory Information Systems (LIS)
-**Source:** Clinical workflow analysis; redundant manual data entry observed in lab_parser.py pipeline
-**Status:** [ ] proposed
+**Source:** Clinical workflow analysis; redundant manual data entry in lab_parser.py pipeline
+**Status:** [⏸ отложено — после Фазы 3 + партнёрских договорённостей]
 
-The current pipeline requires manual upload of PDF lab reports. Establishing HL7 v2.x or FHIR-based inbound feeds from partner laboratories (e.g., Synevo Georgia, Invitro Kazakhstan) would eliminate transcription errors and reduce turnaround time from result receipt to AI analysis. A polling adapter with credential vault (encrypted via AIM's existing config layer) should be implemented as the first step.
+Peer review (2026-03-30): нет lab_parser.py, нет схемы для лаб. значений. Synevo Georgia / Invitro Kazakhstan — требуются реальные API-договорённости. Реализовать после Фазы 3.

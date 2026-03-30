@@ -111,7 +111,8 @@ class AIMConfig:
     # Язык по умолчанию
     # ------------------------------------------------------------------
     DEFAULT_LANG: str = os.getenv("AIM_LANG", "ru")
-    SUPPORTED_LANGS: list = ["ru", "ka", "en", "kz"]
+    # UN official 6 languages + Georgian (2026-03-30)
+    SUPPORTED_LANGS: list = ["ru", "en", "fr", "es", "ar", "zh", "ka"]
 
     # ------------------------------------------------------------------
     # API Gateway

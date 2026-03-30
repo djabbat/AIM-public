@@ -208,3 +208,30 @@ P(D|S) = P(S|D) × P(D) / P(S)
 - AHA/ACC Cardiovascular Guidelines 2025
 - Endocrine Society Clinical Practice Guidelines 2024
 - European Society of Cardiology HRV Standards 1996 (Task Force)
+
+---
+
+## 6. Архитектурные решения (v6.0+)
+
+### Языки интерфейса (2026-03-30)
+
+AIM поддерживает 7 языков: 6 официальных языков ООН + грузинский.
+
+| Код | Язык | Системный промпт | Статус |
+|-----|------|-----------------|--------|
+| ru | Русский | ✅ llm.py | Основной |
+| en | English | ✅ llm.py | Полный |
+| fr | Français | ✅ llm.py | Полный |
+| es | Español | ✅ llm.py | Полный |
+| ar | العربية | ✅ llm.py | Полный |
+| zh | 中文 | ✅ llm.py | Полный |
+| ka | ქართული | ✅ llm.py | Полный |
+
+### Маршрутизация LLM-моделей (route_model, 2026-03-30)
+
+| task_type | Модель | Назначение |
+|-----------|--------|-----------|
+| "fast" | deepseek-chat | Быстрые запросы, перевод, объяснения |
+| "reason" | deepseek-reasoner | Дифдиагноз, сложные рассуждения |
+| "medical" | deepseek-reasoner | Анализ с контекстом пациента |
+| offline | ollama/llama3.2 | Fallback без интернета |
