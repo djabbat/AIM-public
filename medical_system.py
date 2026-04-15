@@ -11,6 +11,8 @@ from config import VERSION, APP_NAME, DEFAULT_LANG, SUPPORTED_LANGS, PATIENTS_DI
 from llm import ask, ask_deep, ask_long, providers_status
 from i18n import t, lang_name, lang_menu
 from db import list_patients, get_patient, upsert_patient, new_session, save_message, get_history
+from agents import DoctorAgent, IntakeAgent, LangAgent
+from agents.lang import LANG_NAMES
 
 # ── Логирование ───────────────────────────────────────────────────────────────
 
@@ -31,6 +33,9 @@ class AIM:
         self.lang = DEFAULT_LANG
         self.patient = None          # dict или None
         self.session_id = None       # int
+        self.doctor = DoctorAgent()
+        self.intake = IntakeAgent()
+        self.lang_agent = LangAgent()
 
     # ── Утилиты ───────────────────────────────────────────────────────────────
 
@@ -95,68 +100,71 @@ class AIM:
 
     def lab_intake(self):
         print("\n── Анализы (OCR/PDF) ──")
-        path_str = self.input("Путь к файлу (PDF/PNG/JPG): ")
-        path = Path(path_str)
-        if not path.exists():
-            print(f"Файл не найден: {path}")
-            return
-        # Читаем файл и отправляем в KIMI (длинный контекст)
-        try:
-            text = path.read_text(encoding="utf-8", errors="ignore")
-        except Exception:
-            text = f"[бинарный файл: {path.name}]"
-        system = t("system_doctor", self.lang)
-        prompt = f"Проанализируй следующие медицинские данные:\n\n{text}"
-        print(f"\n{t('thinking', self.lang)}")
-        result = ask_long(prompt, system=system, lang=self.lang)
-        print(f"\n{result}\n")
-        if self.session_id:
-            save_message(self.session_id, "user", f"Файл: {path.name}", provider="user")
-            save_message(self.session_id, "assistant", result)
+        print("1. Загрузить файл  2. Сканировать INBOX  0. Назад")
+        choice = self.input()
+        if choice == "1":
+            path_str = self.input("Путь к файлу (PDF/PNG/JPG/TXT): ")
+            path = Path(path_str)
+            if not path.exists():
+                print(f"Файл не найден: {path}")
+                return
+            print(f"\n{t('thinking', self.lang)}")
+            result = self.intake.process_file(path, lang=self.lang,
+                                              session_id=self.session_id)
+            print(f"\n{result}\n")
+        elif choice == "2":
+            print(f"\n{t('thinking', self.lang)}")
+            items = self.intake.scan_inbox(lang=self.lang)
+            if not items:
+                print("INBOX пуст.")
+                return
+            for item in items:
+                print(f"\n── {item['path'].name} [{item['type']}] ──")
+                result = self.intake.analyze_labs(item["text"], lang=self.lang,
+                                                  session_id=self.session_id)
+                print(f"{result}\n")
 
     def diagnose(self):
         print("\n── Диагностика ──")
         complaint = self.input("Жалобы / симптомы: ")
         if not complaint:
             return
-        context = ""
-        if self.patient:
-            context = f"Пациент: {self.patient['name']}\n"
-        system = t("system_doctor", self.lang)
-        prompt = f"{context}Проведи дифференциальную диагностику. Жалобы: {complaint}"
+        context = f"Пациент: {self.patient['name']}\n" if self.patient else ""
         print(f"\n{t('thinking', self.lang)}")
-        result = ask_deep(prompt, system=system, lang=self.lang)
+        result = self.doctor.diagnose(complaint, patient_context=context,
+                                      lang=self.lang, session_id=self.session_id)
         print(f"\n{result}\n")
-        if self.session_id:
-            save_message(self.session_id, "user", complaint)
-            save_message(self.session_id, "assistant", result)
 
     def treatment(self):
         print("\n── Протокол лечения ──")
         diagnosis = self.input("Диагноз: ")
         if not diagnosis:
             return
-        system = t("system_doctor", self.lang)
-        prompt = f"Составь протокол интегративного лечения для: {diagnosis}"
+        context = f"Пациент: {self.patient['name']}\n" if self.patient else ""
         print(f"\n{t('thinking', self.lang)}")
-        result = ask_deep(prompt, system=system, lang=self.lang)
+        result = self.doctor.treatment_plan(diagnosis, patient_context=context,
+                                            lang=self.lang, session_id=self.session_id)
         print(f"\n{result}\n")
-        if self.session_id:
-            save_message(self.session_id, "user", f"Протокол: {diagnosis}")
-            save_message(self.session_id, "assistant", result)
 
     def translate(self):
         print("\n── Перевод документа ──")
-        print("Языки:", ", ".join(SUPPORTED_LANGS))
+        langs_str = "  ".join(f"{c}={LANG_NAMES.get(c,c)}"
+                               for c in SUPPORTED_LANGS)
+        print(f"Языки: {langs_str}")
         target = self.input("Целевой язык (код): ")
         if target not in SUPPORTED_LANGS:
             print("Неизвестный язык.")
             return
-        text = self.input("Текст для перевода:\n")
-        system = t("system_translator", target)
-        prompt = f"Переведи на язык [{target}]:\n\n{text}"
+        print("Тип: 1=медицинский  2=научный  3=для пациента  4=общий")
+        type_map = {"1": "medical", "2": "scientific", "3": "patient", "4": "general"}
+        ttype = type_map.get(self.input("Тип [1]: ") or "1", "medical")
+        text = self.input("Текст:\n")
+        if not text:
+            return
         print(f"\n{t('thinking', self.lang)}")
-        result = ask(prompt, system=system, lang=target)
+        result = self.lang_agent.translate(text, target_lang=target,
+                                           translation_type=ttype,
+                                           session_id=self.session_id)
         print(f"\n{result}\n")
 
     def consult(self):
@@ -164,22 +172,15 @@ class AIM:
         print("(Enter для выхода)\n")
         if not self.session_id:
             self.session_id = new_session(None, self.lang)
-        system = t("system_doctor", self.lang)
         while True:
             user_input = self.input("Вы: ")
             if not user_input:
                 break
             print(f"{t('thinking', self.lang)}")
-            # Передаём историю как контекст
             history = get_history(self.session_id, limit=6)
-            hist_text = "\n".join(
-                f"{m['role'].upper()}: {m['content']}" for m in history
-            )
-            prompt = f"{hist_text}\nUSER: {user_input}" if hist_text else user_input
-            result = ask(prompt, system=system, lang=self.lang)
+            result = self.doctor.chat(user_input, history=history,
+                                      lang=self.lang, session_id=self.session_id)
             print(f"\nAIM: {result}\n")
-            save_message(self.session_id, "user", user_input)
-            save_message(self.session_id, "assistant", result)
 
     def settings(self):
         print("\n── Настройки ──")
