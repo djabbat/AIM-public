@@ -25,30 +25,31 @@
 
 ---
 
-## Фаза 2: Агенты
+## Фаза 2: Агенты ✅ 2026-04-16
 
-- [ ] `agents/doctor.py` — диагностика + рекомендации
-- [ ] `agents/intake.py` — OCR + PDF + анализы
-- [ ] `agents/lang.py` — языковой агент + автодетект
-
----
-
-## Фаза 3: Пациентский pipeline
-
-- [ ] OCR (tesseract / rapidocr)
-- [ ] PDF-парсер (pymupdf или pdfplumber)
-- [ ] Автоматический intake из `Patients/INBOX/`
-- [ ] Лаб. нормы (`lab_reference.py`)
+- [x] `agents/doctor.py` — диагностика, лечение, интерпретация анализов, чат
+- [x] `agents/intake.py` — OCR (tesseract+rapidocr), PDF (pymupdf+pdfplumber), INBOX, WhatsApp
+- [x] `agents/lang.py` — перевод 4 типов, detect, explain_term, simplify
 
 ---
 
-## Фаза 4: Telegram-бот
+## Фаза 3: Пациентский pipeline ✅ 2026-04-16
 
-- [ ] `telegram_bot.py` — Telegram-интерфейс (уже есть TOKEN)
-- [ ] Мультиязычный + роутер
+- [x] OCR (tesseract / rapidocr)
+- [x] PDF-парсер (pymupdf + pdfplumber)
+- [x] Автоматический intake из `Patients/INBOX/`
+- [ ] Лаб. нормы (`lab_reference.py`) — следующий шаг
 
 ---
 
-## Фаза 5: GUI
+## Фаза 4: Telegram-бот ✅ 2026-04-16
 
-- [ ] `aim_gui.py` — графический интерфейс (паритет с CLI)
+- [x] `telegram_bot.py` — диагностика, лечение, перевод, фото OCR, PDF intake
+- [x] Мультиязычный (автодетект языка) + роутер LLM
+
+---
+
+## Фаза 5: GUI ✅ 2026-04-16
+
+- [x] `aim_gui.py` — customtkinter, полный паритет с CLI (m1-m8)
+- [x] Async LLM через threading (не замораживает UI)
