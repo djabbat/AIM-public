@@ -1,423 +1,232 @@
-# -*- coding: utf-8 -*-
 """
-AIM v6.0 — i18n.py
-Мультиязычные строки интерфейса. Источник истины для CLI и GUI.
-Языки: RU (русский) / KA (грузინский) / EN (английский) / KZ (казахский)
-
-Georgian strings are encoded directly in UTF-8 (mkhedruli script, Unicode
-block U+10D0–U+10FF). No transliteration — always use native script.
-
-Использование:
-    from i18n import t, set_lang
-    set_lang("ru")
-    print(t("m1"))   # "Список пациентов"
-    set_lang("ka")
-    print(t("m1"))   # "პაციენტების სია"
-    print(t("welcome"))
+AIM v7.0 — Интернационализация
+9 языков: RU / EN / FR / ES / AR / ZH / KA / KZ / DA
 """
 
-import os
-from typing import Dict, Optional
-from config import cfg
+from config import SUPPORTED_LANGS, DEFAULT_LANG
 
-# ============================================================================
-# Текущий язык
-# ============================================================================
+# ── Строки интерфейса ─────────────────────────────────────────────────────────
 
-_current_lang: str = cfg.DEFAULT_LANG
+STRINGS = {
 
-
-def set_lang(lang: str):
-    """Установить язык интерфейса"""
-    global _current_lang
-    if lang in cfg.SUPPORTED_LANGS:
-        _current_lang = lang
-    else:
-        raise ValueError(f"Неподдерживаемый язык: {lang}. Доступно: {cfg.SUPPORTED_LANGS}")
-
-
-def get_lang() -> str:
-    return _current_lang
-
-
-def t(key: str, lang: str = None, **kwargs) -> str:
-    """
-    Получить строку по ключу.
-    Если ключ не найден — возвращает ключ в скобках [key].
-
-    Args:
-        key:    Ключ строки
-        lang:   Язык (если None — использует текущий)
-        kwargs: Аргументы для форматирования (str.format(**kwargs))
-    """
-    lang = lang or _current_lang
-    lang_dict = STRINGS.get(lang, STRINGS["ru"])
-    result = lang_dict.get(key) or STRINGS["ru"].get(key) or f"[{key}]"
-    if kwargs:
-        try:
-            result = result.format(**kwargs)
-        except (KeyError, IndexError):
-            pass
-    return result
-
-
-# ============================================================================
-# Строки интерфейса
-# ============================================================================
-# Ключи меню: m1..m9, mw, mgui (дополнительные)
-# Ключи системы: welcome, loading, error, success, ...
-# ============================================================================
-
-STRINGS: Dict[str, Dict[str, str]] = {
-
-    # ========================================================================
-    # РУССКИЙ
-    # ========================================================================
-    "ru": {
-        # Главное меню
-        "m1": "Список пациентов",
-        "m2": "Новый пациент",
-        "m3": "Поиск пациента",
-        "m4": "AI-консультация",
-        "m5": "Анализ лабораторных данных",
-        "m6": "Байесовская диагностика",
-        "m7": "Протоколы лечения",
-        "m8": "Ze-статус / HRV",
-        "m9": "Отчёты и экспорт",
-        "mw": "Выход",
-        "mgui": "Настройки",
-
-        # Подменю пациента
-        "mp1": "Просмотр данных пациента",
-        "mp2": "Добавить анализ",
-        "mp3": "AI-анализ анализов",
-        "mp4": "История диагнозов",
-        "mp5": "Назначения и рецепты",
-        "mp6": "Записи на приём",
-        "mp7": "Ze/HRV данные",
-        "mpb": "Назад",
-
-        # Системные
-        "welcome": "Добро пожаловать в AIM v{version}",
-        "loading": "Загрузка...",
-        "processing": "Обработка...",
-        "error": "Ошибка: {message}",
-        "success": "Готово",
-        "confirm": "Подтвердить? (д/н): ",
-        "yes": "д",
-        "no": "н",
-        "back": "Назад",
-        "exit": "Выход",
-        "not_found": "Не найдено",
-        "saved": "Сохранено",
-        "cancelled": "Отменено",
-        "choose_lang": "Выберите язык / Choose language / აირჩიეთ ენა / Тілді таңдаңыз:",
-
-        # Пациенты
-        "patients_title": "=== ПАЦИЕНТЫ ===",
-        "patient_id": "ID",
-        "patient_name": "Имя",
-        "patient_age": "Возраст",
-        "patient_sex": "Пол",
-        "patient_ze": "Ze-статус",
-        "patient_bio_age": "Биол. возраст",
-        "no_patients": "Пациентов не найдено",
-        "patient_created": "Пациент создан: {name}",
-        "search_prompt": "Введите имя или фамилию для поиска: ",
-
-        # AI
-        "ai_thinking": "AI анализирует...",
-        "ai_title": "=== AI-КОНСУЛЬТАЦИЯ ===",
-        "ai_prompt": "Ваш вопрос (или Enter для выхода): ",
-        "ai_no_key": "DeepSeek API недоступен. Проверьте ~/.aim_env",
-
-        # Анализы
-        "lab_title": "=== ЛАБОРАТОРНЫЕ ДАННЫЕ ===",
-        "lab_input": "Введите или вставьте данные анализов: ",
-        "lab_analyzing": "Анализ лабораторных данных...",
-        "lab_no_data": "Лабораторных данных не найдено",
-
-        # Ze/HRV
-        "ze_title": "=== Ze-СТАТУС / HRV ===",
-        "ze_status_label": "Ze-статус",
-        "ze_high": "Высокий — отличный биологический резерв",
-        "ze_medium": "Средний — умеренный резерв, профилактика",
-        "ze_low": "Низкий — сниженный резерв, активное лечение",
-        "ze_critical": "Критический — минимальный резерв",
-
-        # Диагностика
-        "diag_title": "=== ДИФФЕРЕНЦИАЛЬНАЯ ДИАГНОСТИКА ===",
-        "diag_symptoms": "Введите симптомы (через запятую): ",
-        "diag_running": "Байесовский анализ...",
-
-        # Протоколы
-        "treatment_title": "=== ПРОТОКОЛЫ ЛЕЧЕНИЯ ===",
-
-        # Отчёты
-        "report_title": "=== ОТЧЁТЫ ===",
-        "report_generated": "Отчёт создан: {path}",
-
-        # Ошибки
-        "err_db": "Ошибка базы данных: {message}",
-        "err_llm": "LLM недоступен: {message}",
-        "err_file": "Ошибка файла: {message}",
-        "err_permission": "Нет прав доступа: {resource}",
-
-        # Версия/инфо
-        "version": "AIM v{version}",
-        "system_info": "Система: AIM v{version} | Пациентов: {patients} | Язык: {lang}",
-        "doctor": "Врач: Д-р Джаба Ткемаладзе",
+    # ── Главное меню ──────────────────────────────────────────────────────────
+    "menu_title": {
+        "ru": "AIM — Ассистент интегративной медицины",
+        "en": "AIM — Assistant of Integrative Medicine",
+        "fr": "AIM — Assistant de Médecine Intégrative",
+        "es": "AIM — Asistente de Medicina Integrativa",
+        "ar": "AIM — مساعد الطب التكاملي",
+        "zh": "AIM — 整合医学助手",
+        "ka": "AIM — ინტეგრაციული მედიცინის ასისტენტი",
+        "kz": "AIM — Интегративтік медицина көмекшісі",
+        "da": "AIM — Assistent for Integrativ Medicin",
+    },
+    "m1": {
+        "ru": "1. Новый пациент",
+        "en": "1. New patient",
+        "fr": "1. Nouveau patient",
+        "es": "1. Nuevo paciente",
+        "ar": "1. مريض جديد",
+        "zh": "1. 新患者",
+        "ka": "1. ახალი პაციენტი",
+        "kz": "1. Жаңа пациент",
+        "da": "1. Ny patient",
+    },
+    "m2": {
+        "ru": "2. Открыть пациента",
+        "en": "2. Open patient",
+        "fr": "2. Ouvrir un patient",
+        "es": "2. Abrir paciente",
+        "ar": "2. فتح ملف مريض",
+        "zh": "2. 打开患者",
+        "ka": "2. პაციენტის გახსნა",
+        "kz": "2. Пациентті ашу",
+        "da": "2. Åbn patient",
+    },
+    "m3": {
+        "ru": "3. Анализы (OCR/PDF)",
+        "en": "3. Lab results (OCR/PDF)",
+        "fr": "3. Analyses (OCR/PDF)",
+        "es": "3. Análisis (OCR/PDF)",
+        "ar": "3. نتائج المختبر (OCR/PDF)",
+        "zh": "3. 检验结果 (OCR/PDF)",
+        "ka": "3. ანალიზები (OCR/PDF)",
+        "kz": "3. Талдаулар (OCR/PDF)",
+        "da": "3. Laboratorieresultater (OCR/PDF)",
+    },
+    "m4": {
+        "ru": "4. Диагностика",
+        "en": "4. Diagnosis",
+        "fr": "4. Diagnostic",
+        "es": "4. Diagnóstico",
+        "ar": "4. التشخيص",
+        "zh": "4. 诊断",
+        "ka": "4. დიაგნოსტიკა",
+        "kz": "4. Диагностика",
+        "da": "4. Diagnose",
+    },
+    "m5": {
+        "ru": "5. Протокол лечения",
+        "en": "5. Treatment protocol",
+        "fr": "5. Protocole de traitement",
+        "es": "5. Protocolo de tratamiento",
+        "ar": "5. بروتوكول العلاج",
+        "zh": "5. 治疗方案",
+        "ka": "5. მკურნალობის პროტოკოლი",
+        "kz": "5. Емдеу хаттамасы",
+        "da": "5. Behandlingsprotokol",
+    },
+    "m6": {
+        "ru": "6. Перевести документ",
+        "en": "6. Translate document",
+        "fr": "6. Traduire un document",
+        "es": "6. Traducir documento",
+        "ar": "6. ترجمة مستند",
+        "zh": "6. 翻译文件",
+        "ka": "6. დოკუმენტის თარგმნა",
+        "kz": "6. Құжатты аудару",
+        "da": "6. Oversæt dokument",
+    },
+    "m7": {
+        "ru": "7. AI-консультация",
+        "en": "7. AI consultation",
+        "fr": "7. Consultation IA",
+        "es": "7. Consulta IA",
+        "ar": "7. استشارة ذكاء اصطناعي",
+        "zh": "7. AI 咨询",
+        "ka": "7. AI კონსულტაცია",
+        "kz": "7. AI кеңес",
+        "da": "7. AI-konsultation",
+    },
+    "m8": {
+        "ru": "8. Настройки",
+        "en": "8. Settings",
+        "fr": "8. Paramètres",
+        "es": "8. Configuración",
+        "ar": "8. الإعدادات",
+        "zh": "8. 设置",
+        "ka": "8. პარამეტრები",
+        "kz": "8. Параметрлер",
+        "da": "8. Indstillinger",
+    },
+    "mq": {
+        "ru": "0. Выход",
+        "en": "0. Exit",
+        "fr": "0. Quitter",
+        "es": "0. Salir",
+        "ar": "0. خروج",
+        "zh": "0. 退出",
+        "ka": "0. გასვლა",
+        "kz": "0. Шығу",
+        "da": "0. Afslut",
     },
 
-    # ========================================================================
-    # ГРУЗИНСКИЙ — Georgian (ქართული)
-    # All strings use mkhedruli script (Unicode U+10D0–U+10FF).
-    # ========================================================================
-    "ka": {
-        # მთავარი მენიუ — Main menu
-        "m1": "პაციენტების სია",
-        "m2": "ახალი პაციენტი",
-        "m3": "პაციენტის ძიება",
-        "m4": "AI-კონსულტაცია",
-        "m5": "ლაბორატორიული მონაცემების ანალიზი",
-        "m6": "ბაიესური დიაგნოსტიკა",
-        "m7": "მკურნალობის პროტოკოლები",
-        "m8": "Ze-სტატუსი / HRV",
-        "m9": "ანგარიშები და ექსპორტი",
-        "mw": "გასვლა",
-        "mgui": "პარამეტრები",
-
-        # პაციენტის ქვე-მენიუ — Patient sub-menu
-        "mp1": "პაციენტის მონაცემების ნახვა",
-        "mp2": "ანალიზის დამატება",
-        "mp3": "AI-ანალიზი",
-        "mp4": "დიაგნოზების ისტორია",
-        "mp5": "დანიშნულებები და რეცეპტები",
-        "mp6": "ვიზიტების ჩანაწერები",
-        "mp7": "Ze/HRV მონაცემები",
-        "mpb": "უკან",
-
-        # სისტემური — System
-        "welcome": "კეთილი იყოს თქვენი მობრძანება AIM v{version}-ში",
-        "loading": "იტვირთება...",
-        "processing": "მუშავდება...",
-        "error": "შეცდომა: {message}",
-        "success": "დასრულდა",
-        "confirm": "დაადასტურეთ? (დ/არ): ",
-        "yes": "დ",
-        "no": "არ",
-        "back": "უკან",
-        "exit": "გასვლა",
-        "not_found": "ვერ მოიძებნა",
-        "saved": "შენახულია",
-        "cancelled": "გაუქმდა",
-        "choose_lang": "Выберите язык / Choose language / აირჩიეთ ენა / Тілді таңдаңыз:",
-
-        # პაციენტები — Patients
-        "patients_title": "=== პაციენტები ===",
-        "no_patients": "პაციენტები ვერ მოიძებნა",
-        "patient_created": "პაციენტი შეიქმნა: {name}",
-        "search_prompt": "შეიყვანეთ სახელი ან გვარი საძიებლად: ",
-        "patient_id": "ID",
-        "patient_name": "სახელი",
-        "patient_age": "ასაკი",
-        "patient_sex": "სქესი",
-        "patient_ze": "Ze-სტატუსი",
-        "patient_bio_age": "ბიოლ. ასაკი",
-
-        # AI
-        "ai_thinking": "AI აანალიზებს...",
-        "ai_title": "=== AI-კონსულტაცია ===",
-        "ai_prompt": "თქვენი კითხვა (ან Enter გასვლისთვის): ",
-        "ai_no_key": "DeepSeek API მიუწვდომელია. შეამოწმეთ ~/.aim_env",
-
-        # ლაბორატორია — Lab
-        "lab_title": "=== ლაბორატორიული მონაცემები ===",
-        "lab_input": "შეიყვანეთ ან ჩასვით ანალიზების მონაცემები: ",
-        "lab_analyzing": "ლაბორატორიული მონაცემების ანალიზი...",
-        "lab_no_data": "ლაბორატორიული მონაცემები არ მოიძებნა",
-
-        # Ze/HRV
-        "ze_title": "=== Ze-სტატუსი / HRV ===",
-        "ze_status_label": "Ze-სტატუსი",
-        "ze_high": "მაღალი — შესანიშნავი ბიოლოგიური რეზერვი",
-        "ze_medium": "საშუალო — ზომიერი რეზერვი, პრევენცია",
-        "ze_low": "დაბალი — შემცირებული რეზერვი, აქტიური მკურნალობა",
-        "ze_critical": "კრიტიკული — მინიმალური რეზერვი",
-
-        # დიაგნოსტიკა — Diagnostics
-        "diag_title": "=== დიფერენციალური დიაგნოსტიკა ===",
-        "diag_symptoms": "შეიყვანეთ სიმპტომები (მძიმით გამოყოფილი): ",
-        "diag_running": "ბაიესური ანალიზი...",
-
-        # პროტოკოლები — Treatment
-        "treatment_title": "=== მკურნალობის პროტოკოლები ===",
-
-        # ანგარიშები — Reports
-        "report_title": "=== ანგარიშები ===",
-        "report_generated": "ანგარიში შეიქმნა: {path}",
-
-        # შეცდომები — Errors
-        "err_db": "მონაცემთა ბაზის შეცდომა: {message}",
-        "err_llm": "LLM მიუწვდომელია: {message}",
-        "err_file": "ფაილის შეცდომა: {message}",
-        "err_permission": "წვდომის უფლება არ არის: {resource}",
-
-        # ვერსია — Version/info
-        "version": "AIM v{version}",
-        "system_info": "სისტემა: AIM v{version} | პაციენტები: {patients} | ენა: {lang}",
-        "doctor": "ექიმი: დოქ. ჯაბა თქემალაძე",
+    # ── Статусы ───────────────────────────────────────────────────────────────
+    "thinking": {
+        "ru": "Думаю...",
+        "en": "Thinking...",
+        "fr": "Réflexion...",
+        "es": "Pensando...",
+        "ar": "أفكر...",
+        "zh": "思考中...",
+        "ka": "ვფიქრობ...",
+        "kz": "Ойлануда...",
+        "da": "Tænker...",
+    },
+    "error": {
+        "ru": "Ошибка",
+        "en": "Error",
+        "fr": "Erreur",
+        "es": "Error",
+        "ar": "خطأ",
+        "zh": "错误",
+        "ka": "შეცდომა",
+        "kz": "Қате",
+        "da": "Fejl",
+    },
+    "patient_not_found": {
+        "ru": "Пациент не найден",
+        "en": "Patient not found",
+        "fr": "Patient introuvable",
+        "es": "Paciente no encontrado",
+        "ar": "المريض غير موجود",
+        "zh": "未找到患者",
+        "ka": "პაციენტი ვერ მოიძებნა",
+        "kz": "Пациент табылмады",
+        "da": "Patient ikke fundet",
+    },
+    "providers_status": {
+        "ru": "Статус провайдеров",
+        "en": "Providers status",
+        "fr": "Statut des fournisseurs",
+        "es": "Estado de proveedores",
+        "ar": "حالة المزودين",
+        "zh": "提供商状态",
+        "ka": "პროვაიდერების სტატუსი",
+        "kz": "Провайдерлер күйі",
+        "da": "Udbyderstatus",
+    },
+    "lang_changed": {
+        "ru": "Язык изменён",
+        "en": "Language changed",
+        "fr": "Langue changée",
+        "es": "Idioma cambiado",
+        "ar": "تم تغيير اللغة",
+        "zh": "语言已更改",
+        "ka": "ენა შეიცვალა",
+        "kz": "Тіл өзгертілді",
+        "da": "Sprog ændret",
     },
 
-    # ========================================================================
-    # АНГЛИЙСКИЙ
-    # ========================================================================
-    "en": {
-        # Main menu
-        "m1": "Patient List",
-        "m2": "New Patient",
-        "m3": "Search Patient",
-        "m4": "AI Consultation",
-        "m5": "Lab Data Analysis",
-        "m6": "Bayesian Diagnostics",
-        "m7": "Treatment Protocols",
-        "m8": "Ze-Status / HRV",
-        "m9": "Reports & Export",
-        "mw": "Exit",
-        "mgui": "Settings",
-
-        # System
-        "welcome": "Welcome to AIM v{version}",
-        "loading": "Loading...",
-        "processing": "Processing...",
-        "error": "Error: {message}",
-        "success": "Done",
-        "confirm": "Confirm? (y/n): ",
-        "yes": "y",
-        "no": "n",
-        "back": "Back",
-        "exit": "Exit",
-        "not_found": "Not found",
-        "saved": "Saved",
-        "cancelled": "Cancelled",
-        "choose_lang": "Выберите язык / Choose language / აირჩიეთ ენა / Тілді таңдаңыз:",
-
-        # Patients
-        "patients_title": "=== PATIENTS ===",
-        "no_patients": "No patients found",
-        "patient_created": "Patient created: {name}",
-        "search_prompt": "Enter name to search: ",
-
-        # AI
-        "ai_thinking": "AI is analyzing...",
-        "ai_title": "=== AI CONSULTATION ===",
-        "ai_prompt": "Your question (or Enter to exit): ",
-        "ai_no_key": "DeepSeek API unavailable. Check ~/.aim_env",
-
-        # Ze/HRV
-        "ze_title": "=== Ze-STATUS / HRV ===",
-        "ze_high": "High — excellent biological reserve",
-        "ze_medium": "Medium — moderate reserve, prevention",
-        "ze_low": "Low — reduced reserve, active treatment",
-        "ze_critical": "Critical — minimal reserve",
-
-        # Diagnosis
-        "diag_title": "=== DIFFERENTIAL DIAGNOSIS ===",
-        "diag_symptoms": "Enter symptoms (comma-separated): ",
-        "diag_running": "Bayesian analysis...",
-
-        # Version
-        "version": "AIM v{version}",
-        "system_info": "System: AIM v{version} | Patients: {patients} | Lang: {lang}",
-        "doctor": "Physician: Dr. Jaba Tkemaladze",
+    # ── Системные промпты для LLM ─────────────────────────────────────────────
+    "system_doctor": {
+        "ru": "Ты — опытный врач-специалист по интегративной медицине. Отвечай на русском языке. Давай точные, клинически обоснованные ответы.",
+        "en": "You are an experienced integrative medicine specialist. Answer in English. Provide accurate, clinically grounded responses.",
+        "fr": "Vous êtes un spécialiste expérimenté en médecine intégrative. Répondez en français. Donnez des réponses précises et cliniquement fondées.",
+        "es": "Eres un especialista experimentado en medicina integrativa. Responde en español. Proporciona respuestas precisas y clínicamente fundamentadas.",
+        "ar": "أنت متخصص ذو خبرة في الطب التكاملي. أجب باللغة العربية. قدم إجابات دقيقة ومستندة سريريًا.",
+        "zh": "你是一位经验丰富的整合医学专家。用中文回答。提供准确、有临床依据的回答。",
+        "ka": "შენ ხარ გამოცდილი ინტეგრაციული მედიცინის სპეციალისტი. უპასუხე ქართულად. გაეცი ზუსტი, კლინიკურად დასაბუთებული პასუხები.",
+        "kz": "Сіз — интегративтік медицина саласындағы тәжірибелі маман. Қазақ тілінде жауап беріңіз. Дәл, клиникалық негізделген жауаптар беріңіз.",
+        "da": "Du er en erfaren specialist i integrativ medicin. Svar på dansk. Giv præcise, klinisk begrundede svar.",
     },
-
-    # ========================================================================
-    # КАЗАХСКИЙ
-    # ========================================================================
-    "kz": {
-        # Басты мәзір
-        "m1": "Пациенттер тізімі",
-        "m2": "Жаңа пациент",
-        "m3": "Пациентті іздеу",
-        "m4": "AI кеңесі",
-        "m5": "Зертханалық деректерді талдау",
-        "m6": "Байесиандық диагностика",
-        "m7": "Емдеу хаттамалары",
-        "m8": "Ze-мәртебесі / HRV",
-        "m9": "Есептер және экспорт",
-        "mw": "Шығу",
-        "mgui": "Параметрлер",
-
-        # Жүйелік
-        "welcome": "AIM v{version}-ге қош келдіңіз",
-        "loading": "Жүктелуде...",
-        "processing": "Өңделуде...",
-        "error": "Қате: {message}",
-        "success": "Дайын",
-        "confirm": "Растайсыз ба? (и/ж): ",
-        "yes": "и",
-        "no": "ж",
-        "back": "Артқа",
-        "exit": "Шығу",
-        "not_found": "Табылмады",
-        "saved": "Сақталды",
-        "cancelled": "Болдырылмады",
-        "choose_lang": "Выберите язык / Choose language / აირჩიეთ ენა / Тілді таңдаңыз:",
-
-        # Пациенттер
-        "patients_title": "=== ПАЦИЕНТТЕР ===",
-        "no_patients": "Пациенттер табылмады",
-
-        # AI
-        "ai_thinking": "AI талдауда...",
-        "ai_title": "=== AI КЕҢЕС ===",
-        "ai_prompt": "Сұрағыңыз (немесе шығу үшін Enter): ",
-
-        # Ze/HRV
-        "ze_title": "=== Ze-МӘРТЕБЕСІ / HRV ===",
-        "ze_high": "Жоғары — өте жақсы биологиялық резерв",
-        "ze_medium": "Орташа — қалыпты резерв, профилактика",
-        "ze_low": "Төмен — резерв азайған",
-        "ze_critical": "Критикалық — минималды резерв",
-
-        # Нұсқа
-        "version": "AIM v{version}",
-        "doctor": "Дәрігер: Д-р Джаба Ткемаладзе",
+    "system_translator": {
+        "ru": "Ты — профессиональный медицинский переводчик. Переводи точно, сохраняя медицинскую терминологию.",
+        "en": "You are a professional medical translator. Translate accurately, preserving medical terminology.",
+        "fr": "Vous êtes un traducteur médical professionnel. Traduisez avec précision en préservant la terminologie médicale.",
+        "es": "Eres un traductor médico profesional. Traduce con precisión, preservando la terminología médica.",
+        "ar": "أنت مترجم طبي محترف. ترجم بدقة مع الحفاظ على المصطلحات الطبية.",
+        "zh": "你是一位专业医学翻译。准确翻译，保留医学术语。",
+        "ka": "შენ ხარ პროფესიონალი სამედიცინო მთარგმნელი. თარგმნე ზუსტად, სამედიცინო ტერმინოლოგიის შენარჩუნებით.",
+        "kz": "Сіз — кәсіби медициналық аудармашысыз. Медициналық терминологияны сақтай отырып, дәл аударыңыз.",
+        "da": "Du er en professionel medicinsk oversætter. Oversæt nøjagtigt og bevar den medicinske terminologi.",
     },
 }
 
+# ── Функция доступа ───────────────────────────────────────────────────────────
 
-# ============================================================================
-# Выбор языка (интерактивный)
-# ============================================================================
-
-def choose_language_interactive() -> str:
-    """Интерактивный выбор языка при запуске"""
-    print("\n" + t("choose_lang", "ru"))
-    print("  1. Русский")
-    print("  2. ქართული")
-    print("  3. English")
-    print("  4. Қазақша")
-
-    choice = input("\nВыбор / Choice / არჩევანი / Таңдау [1-4, Enter=RU]: ").strip()
-
-    lang_map = {"1": "ru", "2": "ka", "3": "en", "4": "kz", "": "ru"}
-    selected = lang_map.get(choice, "ru")
-    set_lang(selected)
-    return selected
+def t(key: str, lang: str = DEFAULT_LANG) -> str:
+    """
+    Вернуть строку для ключа и языка.
+    Fallback: English → ключ.
+    """
+    entry = STRINGS.get(key, {})
+    return entry.get(lang) or entry.get("en") or key
 
 
-# ============================================================================
-# CLI тест
-# ============================================================================
+def lang_name(code: str) -> str:
+    """Вернуть читаемое название языка по коду."""
+    names = {
+        "ru": "Русский", "en": "English", "fr": "Français",
+        "es": "Español", "ar": "العربية", "zh": "中文",
+        "ka": "ქართული", "kz": "Қазақша", "da": "Dansk",
+    }
+    return names.get(code, code)
 
-if __name__ == "__main__":
-    for lang in cfg.SUPPORTED_LANGS:
-        set_lang(lang)
-        print(f"\n[{lang.upper()}]")
-        print(f"  welcome: {t('welcome', version='6.0')}")
-        print(f"  m1: {t('m1')}")
-        print(f"  m4: {t('m4')}")
-        print(f"  ze_high: {t('ze_high')}")
-    print("\ni18n.py — OK")
+
+def lang_menu() -> str:
+    """Список языков для меню выбора."""
+    lines = []
+    for i, code in enumerate(SUPPORTED_LANGS):
+        lines.append(f"  {i+1}. [{code}] {lang_name(code)}")
+    return "\n".join(lines)

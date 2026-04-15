@@ -1,95 +1,54 @@
-# AIM v6.0 — TODO
+# AIM v7.0 — TODO
 
-Обновлено: 2026-03-28
+Обновлено: 2026-04-15
 
 ---
 
-## Фаза 1: Ядро системы (текущая)
+## 🔴 СВЕРХСРОЧНО — P0
 
-- [x] CONCEPT.md v6.0 создан (peer-reviewed)
-- [x] README.md
-- [x] CLAUDE.md
-- [x] TODO.md
-- [x] PARAMETERS.md
-- [x] MAP.md
-- [x] MEMORY.md
-- [x] LINKS.md
-- [x] KNOWLEDGE.md
-- [x] config.py
-- [x] llm.py
-- [x] db.py
-- [x] i18n.py
-- [x] medical_system.py (главный CLI)
+- [ ] Добавить ключи в `~/.aim_env`: `KIMI_API_KEY`, `QWEN_API_KEY`, `GROQ_API_KEY`
+- [ ] Протестировать роутер: `python3 -c "from llm import providers_status; print(providers_status())"`
+
+---
+
+## Фаза 1: Ядро (текущая) ✅
+
+- [x] CONCEPT.md v7.0
+- [x] config.py — 4 провайдера, 9 языков
+- [x] llm.py — гибридный роутер
+- [x] i18n.py — 9 языков
+- [x] db.py — SQLite (пациенты, сессии, кэш)
+- [x] medical_system.py — agent loop, CLI
 - [x] requirements.txt
 - [x] start.sh
-
-## Фаза 2: RBAC и безопасность
-
-- [ ] `core/rbac.py` — полная реализация из CONCEPT.md
-- [ ] `core/tenant.py` — мульти-тенантность
-- [ ] JWT-аутентификация
-- [ ] Rate limiting middleware
-- [ ] Audit log (каждое действие логируется)
-- [ ] Шифрование чувствительных полей в БД (AES-256)
-
-## Фаза 3: Медицинские модули
-
-- [ ] `patient_intake.py` — полный pipeline OCR + PDF + AI
-- [ ] `ocr_engine.py` — Tesseract + RapidOCR fallback
-- [ ] `lab_parser.py` — парсинг лаб. значений из PDF/текста
-- [ ] `lab_reference.py` — база референсных значений
-- [ ] `diagnosis_engine.py` — байесовская дифференциальная диагностика
-- [ ] `treatment_recommender.py` — доказательные протоколы
-- [ ] `bayesian_medical.py` — байесовские сети на пациента
-- [ ] `whatsapp_importer.py` — импорт WhatsApp экспортов
-
-## Фаза 4: Ze-интеграция
-
-- [ ] Модуль Ze-HRV (интеграция с ZeAnastasis/BioSense)
-- [ ] Ze-теория в диагностическом движке
-- [ ] EEG-данные из `~/Desktop/BioSense/`
-- [ ] Связь с CDATA (клинические данные)
-
-## Фаза 5: GUI и API
-
-- [ ] `aim_gui.py` — GUI (паритет с medical_system.py)
-- [ ] REST API (FastAPI)
-- [ ] GraphQL endpoint
-- [ ] WebSocket (real-time уведомления)
-- [ ] Web Push / FCM уведомления [⏸ после Фазы 6]
-
-## Фаза 6: Мобильные приложения (Flutter)
-
-- [ ] Patient App (offline mode, biometric auth)
-- [ ] Doctor App (e-prescriptions, telemedicine)
-- [ ] Institution Portal (admin, analytics, billing)
-- [ ] Синхронизация офлайн-данных (SyncService)
-
-## Фаза 7: Интеграции
-
-- [ ] HL7/FHIR (лаборатории) [⏸ после Фазы 3 + партнёрские договорённости]
-- [ ] E-prescriptions (аптеки)
-- [ ] Страховые случаи
-- [ ] Stripe биллинг
-- [ ] Prometheus мониторинг
-- [ ] Sentry error tracking
-
-## Фаза 8: Деплой
-
-- [ ] Docker Compose (PostgreSQL + Redis + API + Flutter Web)
-- [ ] Nginx конфигурация
-- [ ] SSL-сертификаты (drjaba.com + субдомены)
-- [ ] CI/CD pipeline (GitHub Actions)
-- [ ] Бэкап стратегия (ежедневный бэкап пациентских данных)
+- [x] README.md
 
 ---
 
-## Входящие из экосистемы
+## Фаза 2: Агенты
 
-*(заполняется при сканировании TODO всех проектов)*
+- [ ] `agents/doctor.py` — диагностика + рекомендации
+- [ ] `agents/intake.py` — OCR + PDF + анализы
+- [ ] `agents/lang.py` — языковой агент + автодетект
 
 ---
 
-## Завершённые задачи
+## Фаза 3: Пациентский pipeline
 
-*(перемещать сюда при выполнении)*
+- [ ] OCR (tesseract / rapidocr)
+- [ ] PDF-парсер (pymupdf или pdfplumber)
+- [ ] Автоматический intake из `Patients/INBOX/`
+- [ ] Лаб. нормы (`lab_reference.py`)
+
+---
+
+## Фаза 4: Telegram-бот
+
+- [ ] `telegram_bot.py` — Telegram-интерфейс (уже есть TOKEN)
+- [ ] Мультиязычный + роутер
+
+---
+
+## Фаза 5: GUI
+
+- [ ] `aim_gui.py` — графический интерфейс (паритет с CLI)
