@@ -37,10 +37,12 @@ class Models:
     KIMI_32K    = "moonshot-v1-32k"
     KIMI_8K     = "moonshot-v1-8k"
 
-    # Qwen (Alibaba DashScope)
-    QWEN_TURBO  = "qwen-turbo"
-    QWEN_MAX    = "qwen-max"
-    QWEN_PLUS   = "qwen-plus"
+    # Qwen (Alibaba DashScope International)
+    QWEN_TURBO  = "qwen3.6-plus"           # основной (multimodal, 1M ctx)
+    QWEN_PLUS   = "qwen3.6-plus"           # то же
+    QWEN_MAX    = "qwen3.6-plus"           # то же
+    QWEN_MT     = "qwen-mt-plus"           # специализированный перевод
+    QWEN_VL_OCR = "qwen-vl-ocr-2025-11-20" # OCR
 
     # Groq (ultra-fast inference)
     GROQ_LLAMA  = "llama-3.3-70b-versatile"
@@ -52,7 +54,7 @@ class Models:
 class Endpoints:
     DEEPSEEK = "https://api.deepseek.com/v1"
     KIMI     = "https://api.moonshot.cn/v1"
-    QWEN     = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    QWEN     = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
     GROQ     = "https://api.groq.com/openai/v1"
 
 # ── Языки ─────────────────────────────────────────────────────────────────────

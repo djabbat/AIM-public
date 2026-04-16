@@ -17,6 +17,7 @@ from db import (list_patients, get_patient, upsert_patient,
                 new_session, save_message, get_history, search_patients)
 from agents import DoctorAgent, IntakeAgent, LangAgent
 from agents.lang import LANG_NAMES
+from lab_reference import evaluate, format_result, categories, list_analytes, LAB_RANGES
 
 log = logging.getLogger("aim.gui")
 
@@ -253,10 +254,25 @@ class AIMGui(ctk.CTk):
 
     def _lab_intake(self):
         self._clear()
-        self._print("── Анализы (OCR/PDF) ──")
-        self._print("Введите путь к файлу или 'inbox' для сканирования INBOX:")
-        def on_path(path_str):
-            if path_str.lower() == "inbox":
+        self._print("── Анализы ──")
+        self._print("1. Загрузить файл (PDF/фото)")
+        self._print("2. Сканировать INBOX")
+        self._print("3. Проверить нормы (ввести вручную)")
+        def on_choice(choice):
+            if choice == "1":
+                def on_path(path_str):
+                    path = Path(path_str)
+                    if not path.exists():
+                        self._print(f"Файл не найден: {path}")
+                        return
+                    def process():
+                        self._print(f"\n{t('thinking', self.lang)}")
+                        result = self.intake.process_file(path, lang=self.lang,
+                                                          session_id=self.session_id)
+                        self._print(result)
+                    self._run_async(process)
+                self._await_input("Путь к файлу:", on_path)
+            elif choice == "2":
                 def scan():
                     self._print(f"\n{t('thinking', self.lang)}")
                     items = self.intake.scan_inbox(lang=self.lang)
@@ -269,18 +285,51 @@ class AIMGui(ctk.CTk):
                                                           session_id=self.session_id)
                         self._print(result)
                 self._run_async(scan)
-            else:
-                path = Path(path_str)
-                if not path.exists():
-                    self._print(f"Файл не найден: {path}")
+            elif choice == "3":
+                self._lab_manual_check()
+        self._await_input("Выбор (1/2/3):", on_choice)
+
+    def _lab_manual_check(self):
+        """GUI-версия ручной проверки норм."""
+        self._clear()
+        self._print("── Проверка лабораторных норм ──")
+        cats = categories()
+        self._print("Категории: " + " | ".join(f"{i+1}.{c}" for i, c in enumerate(cats)))
+        self._print("Формат ввода: код_аналита значение (по одному на строку, пустая строка = конец)")
+        self._print("Пример: glucose 5.8")
+        self._print("")
+
+        entered_values: dict[str, float] = {}
+
+        def on_line(line):
+            if not line:
+                # Пустая строка — показать результат
+                if not entered_values:
+                    self._print("Нет данных.")
                     return
-                def process():
-                    self._print(f"\n{t('thinking', self.lang)}")
-                    result = self.intake.process_file(path, lang=self.lang,
-                                                      session_id=self.session_id)
-                    self._print(result)
-                self._run_async(process)
-        self._await_input("Путь к файлу / 'inbox':", on_path)
+                self._print("\n" + "─" * 50)
+                for code, val in entered_values.items():
+                    r = evaluate(code, val)
+                    self._print(format_result(r, lang=self.lang))
+                    self._print("")
+                return
+            parts = line.split()
+            if len(parts) == 2:
+                code, val_str = parts
+                if code not in LAB_RANGES:
+                    self._print(f"Неизвестный аналит: {code}")
+                else:
+                    try:
+                        entered_values[code] = float(val_str.replace(",", "."))
+                        self._print(f"  ✓ {code} = {entered_values[code]}")
+                    except ValueError:
+                        self._print(f"  Не число: {val_str}")
+            else:
+                self._print("  Формат: код значение")
+            # Продолжаем ввод
+            self._await_input("Аналит значение (Enter = конец):", on_line)
+
+        self._await_input("Аналит значение (Enter = конец):", on_line)
 
     def _diagnose(self):
         self._clear()

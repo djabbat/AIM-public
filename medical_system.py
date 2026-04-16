@@ -13,6 +13,7 @@ from i18n import t, lang_name, lang_menu
 from db import list_patients, get_patient, upsert_patient, new_session, save_message, get_history
 from agents import DoctorAgent, IntakeAgent, LangAgent
 from agents.lang import LANG_NAMES
+from lab_reference import evaluate, format_result, categories, list_analytes, LAB_RANGES
 
 # ── Логирование ───────────────────────────────────────────────────────────────
 
@@ -99,8 +100,11 @@ class AIM:
             print("Отмена.")
 
     def lab_intake(self):
-        print("\n── Анализы (OCR/PDF) ──")
-        print("1. Загрузить файл  2. Сканировать INBOX  0. Назад")
+        print("\n── Анализы ──")
+        print("1. Загрузить файл (PDF/фото)")
+        print("2. Сканировать INBOX")
+        print("3. Проверить нормы (ввести вручную)")
+        print("0. Назад")
         choice = self.input()
         if choice == "1":
             path_str = self.input("Путь к файлу (PDF/PNG/JPG/TXT): ")
@@ -123,6 +127,59 @@ class AIM:
                 result = self.intake.analyze_labs(item["text"], lang=self.lang,
                                                   session_id=self.session_id)
                 print(f"{result}\n")
+        elif choice == "3":
+            self._lab_manual_check()
+
+    def _lab_manual_check(self):
+        """Ручная проверка лабораторных норм."""
+        print("\n── Проверка лабораторных норм ──")
+        cats = categories()
+        for i, c in enumerate(cats, 1):
+            print(f"  {i}. {c}")
+        print("  0. Ввести код аналита напрямую")
+        cat_choice = self.input("Категория: ")
+        if cat_choice == "0":
+            analytes_list = list(LAB_RANGES.keys())
+        else:
+            try:
+                cat = cats[int(cat_choice) - 1]
+                analytes_list = list_analytes(cat)
+                print(f"\nАналиты в категории «{cat}»:")
+                for i, a in enumerate(analytes_list, 1):
+                    print(f"  {i:2}. {a:25} — {LAB_RANGES[a]['display']}")
+            except (ValueError, IndexError):
+                print("Отмена.")
+                return
+
+        values: dict[str, float] = {}
+        print("\nВводите: код_аналита значение (Enter без значения — конец)")
+        print("Пример: glucose 5.8")
+        while True:
+            line = self.input("  > ")
+            if not line:
+                break
+            parts = line.split()
+            if len(parts) != 2:
+                print("  Формат: код значение")
+                continue
+            code, val_str = parts
+            if code not in LAB_RANGES:
+                print(f"  Неизвестный аналит: {code}")
+                continue
+            try:
+                values[code] = float(val_str.replace(",", "."))
+            except ValueError:
+                print(f"  Не число: {val_str}")
+
+        if not values:
+            print("Нет данных.")
+            return
+
+        print("\n" + "─" * 50)
+        for code, val in values.items():
+            r = evaluate(code, val)
+            print(format_result(r, lang=self.lang))
+            print()
 
     def diagnose(self):
         print("\n── Диагностика ──")

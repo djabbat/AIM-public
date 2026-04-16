@@ -6,7 +6,13 @@
 
 ## 🔴 СВЕРХСРОЧНО — P0
 
-- [ ] Добавить ключи в `~/.aim_env`: `KIMI_API_KEY`, `QWEN_API_KEY`, `GROQ_API_KEY`
+- [x] Добавить ключи в `~/.aim_env`: `KIMI_API_KEY`, `QWEN_API_KEY`, `GROQ_API_KEY`
+- [x] GROQ ✅ работает
+- [ ] **KIMI** ⚠️ ключ есть, нет баланса → пополнить счёт на moonshot.cn
+- [ ] **Qwen** ⚠️ ключ есть (Alibaba Bailian WS), 403 AccessDenied.Unpurchased → активировать модели в Singapore-регионе Model Studio (принять ToS, подписаться на нужные модели)
+  - Endpoint: `https://dashscope-intl.aliyuncs.com/compatible-mode/v1`
+  - Текущий ключ: `sk-fcd49c2ee5044c459dff68e58eaf73de`
+  - После активации протестировать: `python3 -c "from llm import ask_multilang; print(ask_multilang('გამარჯობა', lang='ka'))"`
 - [ ] Протестировать роутер: `python3 -c "from llm import providers_status; print(providers_status())"`
 
 ---
@@ -38,7 +44,7 @@
 - [x] OCR (tesseract / rapidocr)
 - [x] PDF-парсер (pymupdf + pdfplumber)
 - [x] Автоматический intake из `Patients/INBOX/`
-- [ ] Лаб. нормы (`lab_reference.py`) — следующий шаг
+- [x] Лаб. нормы (`lab_reference.py`) ✅ 2026-04-16
 
 ---
 
