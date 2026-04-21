@@ -53,7 +53,7 @@ class AIM:
         print("═" * 50)
 
     def menu(self):
-        keys = ["m1","m2","m3","m4","m5","m6","m7","m8","mq"]
+        keys = ["m1","m2","m3","m4","m5","m6","m7","m8","m9","mq"]
         for k in keys:
             print(f"  {t(k, self.lang)}")
         print()
@@ -239,6 +239,25 @@ class AIM:
                                       lang=self.lang, session_id=self.session_id)
             print(f"\nAIM: {result}\n")
 
+    def drug_interactions(self):
+        """Menu m9 — manual drug-interaction check (v1 hybrid mode).
+        v1 scope: manual input only. Future (P1 TODO): auto-fetch from
+        patient.medications SQLite column when schema migration is complete.
+        """
+        from agents.interactions import check_regimen, format_regimen_report
+        print(f"\n── {t('m9', self.lang)} ──")
+        print(t('m9_prompt', self.lang))
+        raw = self.input("> ")
+        if not raw.strip():
+            print("(пусто — отмена)")
+            return
+        drugs = [d.strip() for d in raw.replace(";", ",").split(",") if d.strip()]
+        if len(drugs) < 2:
+            print("Нужно минимум 2 препарата для проверки взаимодействий.")
+            return
+        results = check_regimen(drugs)
+        print(format_regimen_report(results, lang=self.lang))
+
     def settings(self):
         print("\n── Настройки ──")
         print("1. Сменить язык")
@@ -274,6 +293,7 @@ class AIM:
             elif choice == "6": self.translate()
             elif choice == "7": self.consult()
             elif choice == "8": self.settings()
+            elif choice == "9": self.drug_interactions()
             elif choice == "0":
                 print("Bye.")
                 break

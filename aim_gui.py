@@ -97,6 +97,7 @@ class AIMGui(ctk.CTk):
             ("m6", self._translate),
             ("m7", self._consult),
             ("m8", self._settings),
+            ("m9", self._drug_interactions),
         ]
         self.menu_btns = {}
         for key, cmd in menu_buttons:
@@ -412,6 +413,30 @@ class AIMGui(ctk.CTk):
                 self._await_input("Вы:", on_message)
             self._run_async(run)
         self._await_input("Вы:", on_message)
+
+    def _drug_interactions(self):
+        """Menu m9 — GUI drug-interaction check (manual mode; v1 hybrid).
+        Future P1: add "From patient record" option once patient.medications column exists.
+        """
+        from agents.interactions import check_regimen, format_regimen_report
+        self._clear()
+        self._print(f"── {t('m9', self.lang)} ──")
+        self._print(t('m9_prompt', self.lang))
+
+        def on_input(raw):
+            if not raw or not raw.strip():
+                self._print("(пусто — отмена)")
+                return
+            drugs = [d.strip() for d in raw.replace(";", ",").split(",") if d.strip()]
+            if len(drugs) < 2:
+                self._print("Нужно минимум 2 препарата для проверки взаимодействий.")
+                return
+            def run():
+                self._print(f"\n{t('thinking', self.lang)}")
+                results = check_regimen(drugs)
+                self._print("\n" + format_regimen_report(results, lang=self.lang))
+            self._run_async(run)
+        self._await_input("Препараты через запятую:", on_input)
 
     def _settings(self):
         self._clear()

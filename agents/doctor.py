@@ -9,6 +9,11 @@ from typing import Optional
 from llm import ask, ask_deep
 from db import save_message, get_history, cache_get, cache_set
 from i18n import t
+from agents.interactions import (
+    check_regimen,
+    format_regimen_report,
+    Interaction,
+)
 
 log = logging.getLogger("aim.doctor")
 
@@ -204,6 +209,43 @@ class DoctorAgent:
             save_message(session_id, "assistant", result)
 
         return result
+
+    def check_patient_regimen(
+        self,
+        patient_meds: list[str],
+        lang: str = "ru",
+        session_id: Optional[int] = None,
+        include_no_known: bool = False,
+    ) -> str:
+        """
+        Проверка лекарственного режима пациента на взаимодействия.
+
+        Использует локальную статическую таблицу AIM (stub, ~30 пар).
+        Возвращает отформатированный отчёт c дисклеймером.
+        """
+        if not patient_meds:
+            return t("error", lang)
+
+        log.info(
+            f"DoctorAgent.check_patient_regimen: lang={lang}, "
+            f"n_drugs={len(patient_meds)}"
+        )
+
+        results: list[Interaction] = check_regimen(patient_meds)
+        report = format_regimen_report(
+            results, lang=lang, include_no_known=include_no_known
+        )
+        report = _ensure_disclaimer(report, lang)
+
+        if session_id:
+            save_message(
+                session_id, "user",
+                f"[Regimen check] {', '.join(patient_meds)}",
+                provider="user",
+            )
+            save_message(session_id, "assistant", report)
+
+        return report
 
     def chat(
         self,

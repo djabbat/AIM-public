@@ -14,11 +14,19 @@ AIM v7.0 — гибридный LLM-роутер. Ядро:
 
 | Файл | Роль |
 |------|------|
-| `medical_system.py` | Точка входа, agent loop |
-| `llm.py` | Роутер: Groq → DeepSeek → KIMI → Qwen |
+| `medical_system.py` | Точка входа (CLI), agent loop |
+| `aim_gui.py` | GUI (customtkinter), паритет с CLI |
+| `telegram_bot.py` | Telegram-бот (python-telegram-bot) |
+| `llm.py` | Роутер: Groq → DeepSeek → KIMI → Qwen (роутинг в `_route()`) |
 | `config.py` | Ключи, модели, пути, языки |
 | `i18n.py` | 9 языков (ООН-6 + KA + KZ + DA) |
 | `db.py` | SQLite: пациенты, сессии, кэш |
+| `lab_reference.py` | База лабораторных норм (59 аналитов) |
+| `agents/doctor.py` | Диагностика, лечение, интерпретация анализов, чат, `check_patient_regimen` |
+| `agents/intake.py` | OCR (tesseract/rapidocr), PDF (pymupdf/pdfplumber), WhatsApp, INBOX |
+| `agents/lang.py` | Перевод 4 типов, detect, explain_term, simplify |
+| `agents/interactions.py` | Drug-drug interaction checker (v0.1 stub, ~30 pairs; P0 audit 2026-04-21). PMID-verified; `check_interaction`, `check_regimen`, `format_regimen_report`. TODO: RxNav/DrugBank integration |
+| `tests/test_interactions.py` | Unit tests для `agents/interactions.py` (16 cases) |
 
 ---
 
@@ -73,5 +81,5 @@ DEEPSEEK_API_KEY   KIMI_API_KEY   QWEN_API_KEY   GROQ_API_KEY
 
 ## При добавлении пункта меню
 
-Изменить **оба** файла: `medical_system.py` + `aim_gui.py` (когда будет создан).
-Источник истины — ключи в `i18n.py`.
+Изменить **оба** файла: `medical_system.py` + `aim_gui.py` (уже существует).
+Источник истины — ключи в `i18n.py` (m1..m8, mq и т.д.).

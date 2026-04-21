@@ -120,15 +120,19 @@ DeepSeek недоступен → Qwen-turbo
 
 | Файл | Назначение |
 |------|-----------|
-| `medical_system.py` | Точка входа, agent loop, CLI |
-| `llm.py` | Гибридный роутер: KIMI + Qwen + DeepSeek |
-| `config.py` | Конфигурация, ключи, пути, модели |
-| `db.py` | SQLite: пациенты, сессии, кэш |
+| `medical_system.py` | Точка входа (CLI), agent loop |
+| `aim_gui.py` | GUI (customtkinter), паритет с CLI |
+| `telegram_bot.py` | Telegram-бот (python-telegram-bot) |
+| `llm.py` | Гибридный роутер (Groq + DeepSeek + KIMI + Qwen); функции `_route()`, `_detect_lang()`, `ask()`, `ask_deep()`, `ask_long()`, `ask_multilang()`, `ask_fast()` |
+| `config.py` | Конфигурация, ключи, пути, модели, пороги роутинга |
+| `db.py` | SQLite: пациенты, сессии, сообщения, LLM-кэш |
 | `i18n.py` | 9 языков: строки UI + системные промпты |
-| `router.py` | Логика выбора модели, task classifier |
-| `agents/doctor.py` | Агент врача: диагностика, назначения |
-| `agents/intake.py` | Агент ввода: OCR, PDF, анализы |
-| `agents/lang.py` | Языковой агент: детектор + переводчик |
+| `lab_reference.py` | База лабораторных норм (59 аналитов, SI-единицы) |
+| `agents/doctor.py` | Агент врача: диагностика, назначения, интерпретация анализов, чат |
+| `agents/intake.py` | Агент ввода: OCR (tesseract/rapidocr), PDF (pymupdf/pdfplumber), INBOX, WhatsApp |
+| `agents/lang.py` | Языковой агент: детектор + переводчик (medical/scientific/patient/general) |
+
+**Примечание.** Логика роутера живёт внутри `llm.py` (функция `_route()`), отдельного `router.py` нет.
 
 ---
 
@@ -195,10 +199,13 @@ TELEGRAM_ALLOWED_ID=...     # есть
 | Этап | Задача | Статус |
 |------|--------|--------|
 | 1 | CONCEPT.md | ✅ |
-| 2 | config.py + llm.py (роутер) | 🔄 |
-| 3 | i18n.py (9 языков) | ⏳ |
-| 4 | db.py | ⏳ |
-| 5 | agents/ | ⏳ |
-| 6 | medical_system.py | ⏳ |
-| 7 | Тестирование роутера | ⏳ |
-| 8 | OCR + PDF pipeline | ⏳ |
+| 2 | config.py + llm.py (роутер) | ✅ 2026-04-16 |
+| 3 | i18n.py (9 языков) | ✅ 2026-04-16 |
+| 4 | db.py | ✅ 2026-04-16 |
+| 5 | agents/ (doctor, intake, lang) | ✅ 2026-04-16 |
+| 6 | medical_system.py | ✅ 2026-04-16 |
+| 7 | OCR + PDF pipeline | ✅ 2026-04-16 |
+| 8 | lab_reference.py | ✅ 2026-04-16 |
+| 9 | telegram_bot.py | ✅ 2026-04-16 |
+| 10 | aim_gui.py | ✅ 2026-04-16 |
+| 11 | Тестирование роутера (KIMI/Qwen) | ⏳ ждём пополнения/активации — см. UPGRADE.md |
