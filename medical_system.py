@@ -56,6 +56,7 @@ class AIM:
         keys = ["m1","m2","m3","m4","m5","m6","m7","m8","m9","mq"]
         for k in keys:
             print(f"  {t(k, self.lang)}")
+        print(f"  T. Triage (kernel: Asimov + Ze Theory) — experimental")
         print()
 
     def input(self, prompt: str = "> ") -> str:
@@ -192,6 +193,49 @@ class AIM:
                                       lang=self.lang, session_id=self.session_id)
         print(f"\n{result}\n")
 
+    def triage(self):
+        """Kernel-powered diagnostic triage (Asimov 4 Laws + Ze Theory utility)."""
+        print("\n── Triage (kernel-powered) ──")
+        complaint = self.input("Жалобы / симптомы: ")
+        if not complaint:
+            return
+
+        # Load patient memory или создать placeholder если нет
+        from agents.patient_memory import load_or_create
+        patient_id = (self.patient.get("id") if self.patient
+                      else "ANONYMOUS_" + __import__("time").strftime("%Y%m%d_%H%M%S"))
+        mem = load_or_create(patient_id,
+                             demographics={"age": self.patient.get("age") if self.patient else None,
+                                            "sex": self.patient.get("sex") if self.patient else None})
+        patient_dict = mem.to_kernel_dict()
+
+        verbose = self.input("Verbose reasoning? [y/N]: ").lower().startswith("y")
+
+        print(f"\n{t('thinking', self.lang)}")
+        result = self.doctor.triage(complaint, patient_dict,
+                                     lang=self.lang, session_id=self.session_id,
+                                     verbose=verbose)
+
+        status = result.get("status", "?")
+        print(f"\n[status: {status}] (𝓘 impedance: {result.get('impedance', 0):.2f})\n")
+
+        if status == "clarify":
+            print("AIM хочет уточнить перед решением:\n")
+            print(result["output"])
+            # Second round after user answers
+            answers = self.input("\nДополнительная информация: ")
+            if answers:
+                print(f"\n{t('thinking', self.lang)}")
+                result2 = self.doctor.triage(complaint + "\n\nДополнительно: " + answers,
+                                              patient_dict, lang=self.lang,
+                                              session_id=self.session_id, verbose=verbose)
+                print(f"\n{result2.get('output', '')}\n")
+        elif status == "blocked":
+            print("⚠️ All alternatives blocked by Laws:\n")
+            print(result.get("output", "-"))
+        else:
+            print(result.get("output", "-"))
+
     def treatment(self):
         print("\n── Протокол лечения ──")
         diagnosis = self.input("Диагноз: ")
@@ -294,6 +338,7 @@ class AIM:
             elif choice == "7": self.consult()
             elif choice == "8": self.settings()
             elif choice == "9": self.drug_interactions()
+            elif choice == "t" or choice == "T": self.triage()  # kernel-powered triage
             elif choice == "0":
                 print("Bye.")
                 break

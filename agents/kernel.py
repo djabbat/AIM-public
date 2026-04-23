@@ -240,13 +240,41 @@ def impedance_checklist(patient: dict, context: dict) -> float:
 def impedance_llm_delta(patient: dict, context: dict, llm_caller: Callable | None) -> float:
     """Nuance delta [0, 0.2] через LLM-as-judge для edge cases.
 
-    llm_caller: callable(prompt) → str. Если None — возвращает 0 (skip LLM).
+    llm_caller: callable(prompt) → str. Если None — fallback через llm.ask_deep.
+    Отключается для speed при AIM_KERNEL_LLM_DELTA=0 в env.
     """
-    if llm_caller is None:
+    import os
+    if os.getenv("AIM_KERNEL_LLM_DELTA", "1") == "0":
         return 0.0
-    # В v1 — skip LLM вызов, пока не реализован в doctor.triage integration.
-    # TODO Phase 1b: интегрировать с llm.ask_deep.
-    return 0.0
+    if llm_caller is None:
+        try:
+            from llm import ask_fast  # Use fast model (Groq llama) for cheap nuance
+            llm_caller = lambda p: ask_fast(p, lang="en")
+        except Exception:
+            return 0.0
+
+    prompt = (
+        "Patient state snapshot (JSON):\n"
+        f"{json.dumps(patient, ensure_ascii=False, default=str)[:1500]}\n\n"
+        f"Context: {json.dumps(context, ensure_ascii=False, default=str)[:500]}\n\n"
+        "Rate additional medical uncertainty NOT captured by standard checklist "
+        "(missing labs / contradictions / unexplained symptoms already counted). "
+        "Consider: nuance of symptom timeline, unusual combinations, atypical presentations, "
+        "psychosocial complexity, medication-symptom ambiguity.\n\n"
+        "Return ONLY a number 0.0-0.2 (float). No words, no JSON, just the number."
+    )
+    try:
+        raw = llm_caller(prompt)
+        # Extract first float from response
+        import re
+        match = re.search(r"\d+\.?\d*", raw)
+        if not match:
+            return 0.0
+        val = float(match.group())
+        return max(0.0, min(val, 0.2))
+    except Exception as e:
+        log.warning(f"LLM delta failed: {e}")
+        return 0.0
 
 
 def impedance(patient: dict, context: dict, llm_caller: Callable | None = None) -> float:
