@@ -84,6 +84,39 @@ LLM_TEMPERATURE = 0.3
 LLM_MAX_TOKENS  = 4096
 LLM_TIMEOUT     = 60   # секунд
 
+# ── Decision kernel (Asimov Three Laws + Ze Theory consciousness) ──────────────
+
+class KernelWeights:
+    """Utility weights: U(D) = ALPHA·𝒞 + BETA·Φ_Ze + GAMMA·Ethics.
+
+    Ethics сам составной: 0.4·Ze_learning_cheating + 4×0.15·bioethics_principle.
+
+    Config via ~/.aim_env:
+      AIM_KERNEL_ALPHA=0.2  (instant consciousness 𝒞 = −d𝓘/dt)
+      AIM_KERNEL_BETA=0.4   (integrated Φ_Ze = ∫𝓘 dt)
+      AIM_KERNEL_GAMMA=0.4  (Ethics)
+    """
+    ALPHA = float(os.getenv("AIM_KERNEL_ALPHA", "0.2"))   # instant 𝒞
+    BETA  = float(os.getenv("AIM_KERNEL_BETA",  "0.4"))   # integrated Φ_Ze
+    GAMMA = float(os.getenv("AIM_KERNEL_GAMMA", "0.4"))   # Ethics
+
+    # Ethics sub-weights (sum to 1 inside Ethics score)
+    ETHICS_ZE       = 0.40   # Ze learning/cheating ratio
+    ETHICS_AUTO     = 0.15   # Autonomy
+    ETHICS_BENEF    = 0.15   # Beneficence
+    ETHICS_NONMAL   = 0.15   # Non-maleficence
+    ETHICS_JUSTICE  = 0.15   # Justice
+
+    # Clarifying-question threshold: если 𝓘 > этого порога, агент сперва спрашивает
+    CLARIFY_IMPEDANCE_THRESHOLD = 0.7
+
+    # Presets (for quick switching)
+    PRESETS = {
+        "conservative": (0.1, 0.3, 0.6),   # ethics-heavy
+        "balanced":     (0.2, 0.4, 0.4),   # default per Q4
+        "aggressive":   (0.3, 0.6, 0.1),   # Phi-heavy, ethics minimal (не рекомендуется)
+    }
+
 # ── Версия ────────────────────────────────────────────────────────────────────
 
 VERSION = "7.0.0"
