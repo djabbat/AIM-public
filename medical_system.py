@@ -56,7 +56,7 @@ class AIM:
         keys = ["m1","m2","m3","m4","m5","m6","m7","m8","m9","mq"]
         for k in keys:
             print(f"  {t(k, self.lang)}")
-        print(f"  T. Triage (kernel: Asimov + Ze Theory) — experimental")
+        print(f"  T. Triage (kernel)  ·  L. Labs (kernel)  ·  X. Treatment (kernel)  ·  C. Chat (kernel)")
         print()
 
     def input(self, prompt: str = "> ") -> str:
@@ -236,6 +236,74 @@ class AIM:
         else:
             print(result.get("output", "-"))
 
+    def kernel_labs(self):
+        """Kernel-powered lab panel interpretation."""
+        from agents.labs import LabAgent
+        from agents.patient_memory import load_or_create
+        print("\n── Labs (kernel) ──")
+        print("Enter analytes as: hemoglobin_m=150, glucose=5.5, potassium=4.2, ...")
+        raw = self.input("> ")
+        if not raw.strip():
+            return
+        values = {}
+        for pair in raw.replace(";", ",").split(","):
+            if "=" in pair:
+                k, v = pair.split("=", 1)
+                try:
+                    values[k.strip()] = float(v.strip())
+                except ValueError:
+                    pass
+        if not values:
+            print("Nothing to interpret.")
+            return
+
+        patient_id = (self.patient.get("id") if self.patient
+                      else "ANONYMOUS_" + __import__("time").strftime("%Y%m%d_%H%M%S"))
+        mem = load_or_create(patient_id)
+        verbose = self.input("Verbose? [y/N]: ").lower().startswith("y")
+
+        print(f"\n{t('thinking', self.lang)}\n")
+        result = LabAgent().interpret(values, mem.to_kernel_dict(),
+                                       lang=self.lang, verbose=verbose)
+        print(result.get("output", "-"))
+
+    def kernel_treatment(self):
+        """Kernel-powered treatment planning (w/ auto interaction check)."""
+        from agents.patient_memory import load_or_create
+        print("\n── Treatment (kernel) ──")
+        dx = self.input("Diagnosis: ")
+        if not dx:
+            return
+        patient_id = (self.patient.get("id") if self.patient
+                      else "ANONYMOUS_" + __import__("time").strftime("%Y%m%d_%H%M%S"))
+        mem = load_or_create(patient_id)
+        verbose = self.input("Verbose? [y/N]: ").lower().startswith("y")
+
+        print(f"\n{t('thinking', self.lang)}\n")
+        result = self.doctor.treatment(dx, mem.to_kernel_dict(),
+                                        lang=self.lang, session_id=self.session_id,
+                                        verbose=verbose)
+        print(result.get("output", "-"))
+
+    def kernel_chat(self):
+        """Multilingual kernel-powered dialogue."""
+        from agents.chat import ChatAgent
+        print("\n── Chat (kernel) — q to quit ──")
+        agent = ChatAgent()
+        patient_ctx = None
+        if self.patient:
+            from agents.patient_memory import load_or_create
+            mem = load_or_create(self.patient.get("id", "ANON"))
+            patient_ctx = mem.to_kernel_dict()
+        while True:
+            msg = self.input("you> ")
+            if not msg or msg.lower() == "q":
+                break
+            print(f"\n{t('thinking', self.lang)}")
+            r = agent.respond(msg, patient=patient_ctx,
+                               session_id=self.session_id)
+            print(f"\nAIM ({r.get('intent', '?')}, {r.get('detected_lang', '?')})>\n{r.get('output', '-')}\n")
+
     def treatment(self):
         print("\n── Протокол лечения ──")
         diagnosis = self.input("Диагноз: ")
@@ -338,7 +406,10 @@ class AIM:
             elif choice == "7": self.consult()
             elif choice == "8": self.settings()
             elif choice == "9": self.drug_interactions()
-            elif choice == "t" or choice == "T": self.triage()  # kernel-powered triage
+            elif choice == "t" or choice == "T": self.triage()
+            elif choice == "l" or choice == "L": self.kernel_labs()
+            elif choice == "x" or choice == "X": self.kernel_treatment()
+            elif choice == "c" or choice == "C": self.kernel_chat()
             elif choice == "0":
                 print("Bye.")
                 break
