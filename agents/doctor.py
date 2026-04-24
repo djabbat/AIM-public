@@ -327,6 +327,138 @@ class DoctorAgent:
                     questions.append(q)
         return questions
 
+    def treatment(
+        self,
+        diagnosis: str,
+        patient: dict,
+        lang: str = "ru",
+        session_id: Optional[int] = None,
+        verbose: bool = False,
+        override=None,
+    ) -> dict:
+        """Kernel-powered treatment planning (Phase 3, Q7 case C).
+
+        Отличается от treatment_plan():
+        - Интегрирована с kernel.decide() (L0-L3 + utility ranking)
+        - Автоматический drug-interaction check через agents/interactions.check_regimen
+        - Каждая альтернатива оценивается по Ze ethics (учение vs маскировка),
+          bioethics (non-maleficence особенно важно), utility
+        - Возвращает structured dict с полным breakdown
+
+        Args:
+            diagnosis: confirmed diagnosis
+            patient: dict с id, allergies, medications, age, sex, red_flags, ...
+            lang: output language
+            verbose: full reasoning breakdown
+            override: soft/hard override
+
+        Returns:
+            dict: {status, output, scored, interactions, error?}
+        """
+        from agents import kernel
+        from agents.interactions import check_regimen
+
+        if not diagnosis.strip():
+            return {"status": "blocked", "output": t("error", lang),
+                    "error": "empty_diagnosis"}
+
+        # Patient has confirmed diagnosis now — lower impedance
+        p = dict(patient)
+        p["has_confirmed_dx"] = True
+        p["primary_complaint_undiagnosed"] = False
+
+        # 1. LLM generates treatment alternatives как JSON
+        system = _get_system("treatment", lang)
+        patient_ctx = self._format_patient(patient)
+        prompt = (
+            f"Пациент: {patient_ctx}\n"
+            f"Диагноз: {diagnosis}\n\n"
+            "Предложи 3-5 вариантов лечения (first-line, second-line, альтернативные,"
+            " non-pharmacological если применимо). "
+            "Каждый как JSON объект со следующими полями:\n"
+            '{"id": "unique_id", "action_type": "treatment",'
+            ' "description": "human-readable описание с дозировкой",\n'
+            ' "payload": {\n'
+            '   "drug": "generic name lowercase (или pathway name для non-pharm)",\n'
+            '   "dose": "e.g. 500 mg",\n'
+            '   "frequency": "e.g. 3x/day",\n'
+            '   "duration": "e.g. 7 days",\n'
+            '   "line": 1 или 2 или 3,\n'
+            '   "guideline_based": true если соответствует major guideline,\n'
+            '   "indication": "brief justification"\n'
+            " }}\n\n"
+            "Верни JSON array без текста вокруг."
+        )
+        raw_alts = ask_deep(prompt, system=system, lang=lang)
+        try:
+            alternatives = self._parse_alternatives(raw_alts)
+        except Exception as e:
+            log.warning(f"treatment: parse failed: {e}")
+            return {"status": "blocked", "output": raw_alts,
+                    "error": f"parse_failed: {e}"}
+
+        # 2. Drug interaction check for each alternative against patient's current meds
+        current_meds = [m.get("name", "") for m in patient.get("medications", [])]
+        interaction_map = {}  # id -> list of Interaction
+        for alt in alternatives:
+            drug = alt.payload.get("drug", "")
+            if not drug or not current_meds:
+                continue
+            regimen = current_meds + [drug]
+            ints = check_regimen(regimen)
+            # Фильтруем только те что касаются нашей новой drug
+            relevant = [i for i in ints if drug in (i.drug_a, i.drug_b)]
+            if relevant:
+                interaction_map[alt.id] = relevant
+                # Добавляем в payload для L1 check
+                alt.payload["interactions"] = [
+                    {"severity": i.severity, "summary": f"{i.drug_a} + {i.drug_b}: {i.mechanism}"}
+                    for i in relevant
+                ]
+
+        # 3. Kernel decide
+        try:
+            scored = kernel.decide(
+                alternatives, p,
+                context={"source": "treatment", "diagnosis": diagnosis},
+                override=override or kernel.OverrideContext(),
+                agent="doctor.treatment",
+                patient_id=patient.get("id", ""),
+                session_id=str(session_id) if session_id else None,
+                decision_type="treatment",
+            )
+        except kernel.KernelViolation as e:
+            return {
+                "status": "blocked",
+                "output": f"Все {len(alternatives)} вариантов лечения blocked by Laws.\n{e}",
+                "error": "all_blocked",
+                "alternatives": [{"id": a.id, "desc": a.description} for a in alternatives],
+                "interactions": {k: [i.to_dict() for i in v] for k, v in interaction_map.items()},
+            }
+
+        # 4. Format output
+        output = (kernel.format_verbose(scored, lang) if verbose
+                  else kernel.format_compact(scored, lang))
+        # Add interaction warnings if any (even for chosen)
+        if scored.decision.id in interaction_map:
+            output += "\n\n⚠️ " + ("Взаимодействия с текущими препаратами:" if lang == "ru"
+                                   else "Interactions with current meds:")
+            for i in interaction_map[scored.decision.id]:
+                output += f"\n- {i.drug_a} + {i.drug_b} ({i.severity}): {i.recommendation}"
+
+        output = _ensure_disclaimer(output, lang)
+
+        if session_id:
+            save_message(session_id, "user", f"[Treatment] {diagnosis}", provider="user")
+            save_message(session_id, "assistant", output)
+
+        return {
+            "status": "decided",
+            "output": output,
+            "scored": scored,
+            "interactions": {k: [i.to_dict() for i in v] for k, v in interaction_map.items()},
+        }
+
     def treatment_plan(
         self,
         diagnosis: str,
