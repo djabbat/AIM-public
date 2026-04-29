@@ -44,13 +44,13 @@
 
 | Проект | Путь | Роль |
 |--------|------|------|
-| CommonHealth | `~/Desktop/CommonHealth/` | Umbrella (EIC Pathfinder) |
-| CDATA | `~/Desktop/CommonHealth/CDATA/` | Биологический возраст |
-| HAP | `~/Desktop/CommonHealth/HAP/` | Гепато-аффективная теория |
-| MCOA | `~/Desktop/CommonHealth/MCOA/` | Мульти-счётчиковая архитектура |
-| Ze | `~/Desktop/CommonHealth/Ze/` | Нейрофизика сознания |
-| BioSense | `~/Desktop/CommonHealth/BioSense/` | EEG χ_Ze |
-| FCLC | `~/Desktop/CommonHealth/FCLC/` | Federated learning |
+| CommonHealth | `~/Desktop/LongevityCommon/` | Umbrella (EIC Pathfinder) |
+| CDATA | `~/Desktop/LongevityCommon/CDATA/` | Биологический возраст |
+| HAP | `~/Desktop/LongevityCommon/HAP/` | Гепато-аффективная теория |
+| MCOA | `~/Desktop/LongevityCommon/MCOA/` | Мульти-счётчиковая архитектура |
+| Ze | `~/Desktop/LongevityCommon/Ze/` | Нейрофизика сознания |
+| BioSense | `~/Desktop/LongevityCommon/BioSense/` | EEG χ_Ze |
+| FCLC | `~/Desktop/LongevityCommon/FCLC/` | Federated learning |
 | Regenesis | `~/Desktop/Regenesis/` | Фитотерапевтические протоколы |
 | kSystem | `~/Desktop/kSystem/` | 8-язычный лексикон |
 | DrJaba | `~/Desktop/DrJaba/` | Сайт клиники |
@@ -59,7 +59,7 @@
 ## Grants / funding
 
 - EIC Pathfinder 2026: https://eic.ec.europa.eu/eic-funding-opportunities/eic-pathfinder_en
-- Дедлайн подачи: **2026-05-12** (see `~/Desktop/CommonHealth/EIC/`)
+- Дедлайн подачи: **2026-05-12** (see `~/Desktop/LongevityCommon/EIC/`)
 
 ## Научные базы
 

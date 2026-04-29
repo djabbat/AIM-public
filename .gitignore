@@ -65,3 +65,8 @@ reports/
 aim.db
 aim_tenant_*.db
 media/
+
+# ── USER layer (персональные данные врача, не для public репо) ──
+USER/
+!USER/README.md
+!USER/.gitkeep

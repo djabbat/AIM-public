@@ -1,6 +1,80 @@
 # AIM v7.0 — TODO
 
-Обновлено: 2026-04-21
+Обновлено: 2026-04-26
+
+---
+
+## 2026-04-26 — Patients/ structural cleanup
+
+- [x] **Test isolation** — `tests/conftest.py`: PATIENTS_DIR → `tests/_runtime_fixtures/`
+  во время pytest. Тесты больше не создают S01/T01/LAB_*/etc в Patients/.
+- [x] **48 leftover fixture-папок удалены** из Patients/ (S01-S20, T01-T12, C1-C4,
+  LAB_1-8, TEST_*, LIVE*, anonymous). Было 54 → стало 6 реальных + INBOX + README.
+- [x] **MEMORY.md создан** для всех 6 реальных пациентов через
+  `agents.patient_memory.write_memory()`.
+- [x] **6 no-ext файлов переименованы → .txt** (UTF-8 text content; имена совпадали с
+  именем папки = вероятно артефакт intake pipeline).
+- [x] **INBOX/КАК_ИМПОРТИРОВАТЬ.txt → Patients/README.md** (документация, не intake-файл).
+- [x] **CLAUDE.md naming convention уточнён** — YYYY_MM_DD = дата рождения; `_` =
+  AI-generated file prefix; обязательный MEMORY.md.
+
+### Pending — требует решения врача
+
+- [x] **`Badriashvili_Vladimeri_/` → `Badriashvili_Vladimeri_2000_01_01/`** (2026-04-26)
+  с placeholder ДР. По правилу: ДР неизвестна → `2000_01_01` как sentinel
+  (легко найти, заведомо не настоящая, требует уточнения). Узнать настоящую ДР
+  у врача и переименовать.
+- [x] **`Robakidze_Nino_2026_03_14/` → `Robakidze_Nino_2000_01_01/`** (2026-04-26).
+  Дата папки была сомнительная (2026 = ребёнок 0 лет, файл внутри 2001). По
+  правилу: сомнительная дата → placeholder `2000_01_01`. Узнать настоящую ДР.
+- [x] **Bug fix: `date.today()` вместо ДР** (2026-04-26). Найдено в 3 местах
+  (`medical_system.py:76`, `aim_gui.py:222`, `agents/intake.py:248`). Все папки
+  пациентов создавались с датой создания вместо ДР. Введён helper
+  `db.format_patient_folder(name, dob)` с placeholder fallback. CLI/GUI теперь
+  спрашивают ДР; intake (WhatsApp) использует placeholder. Tests:
+  `tests/test_patient_folder.py` (7).
+- [x] **MEMORY.md заполнен для 6 пациентов** (2026-04-26) через DeepSeek-парсинг
+  существующих `_ai_analysis.txt` + OCR. Установлен `json-repair` для robust
+  парсинга LLM-выдачи. Все поля: demographics, medications, conditions, history,
+  known_unknowns. Размер файлов: 40-67 строк.
+
+---
+
+## 2026-04-26 — PAI-inspired infrastructure (Miessler analysis)
+
+После анализа https://github.com/danielmiessler/Personal_AI_Infrastructure
+извлечены 3 паттерна. Реализованы:
+
+- [x] **Memory tiering (hot/warm/cold)** — `db.py`: `ai_events_archive` table,
+  `get_hot_events` / `get_warm_events` / `get_cold_events` / `archive_old_events`
+  / `tier_stats`. HOT=7d, WARM=7-90d, COLD=archive >90d. Закрывает TODO из
+  `README_AI_KERNEL.md` §12 "ai_events retention policy не определена".
+  Tests: `tests/test_memory_tier.py` (5).
+- [x] **Hooks system** — `agents/hooks.py`: registry на 5 событий
+  (on_lab_critical, on_kernel_decision, on_session_end, on_intake_pdf,
+  on_pre_commit). Idempotent register, exception-safe fire chain.
+  Tests: `tests/test_hooks.py` (10).
+- [x] **USER/SYSTEM separation skeleton** — `USER/` каталог с
+  `doctor_profile.md`, `preferences/`, `custom_protocols/`. Gitignored
+  (кроме README). Полная интеграция (auto-load `preferences/kernel.env` в
+  `config.py`, auto-discovery `custom_protocols/` в DoctorAgent) — pending.
+
+### Pending (follow-up интеграция hook handlers)
+
+- [ ] Подключить `fire(HOOK_LAB_CRITICAL, ...)` в `agents/labs.py` при
+  detection critical values (K+>6.5, glucose>20, и т.д.)
+- [ ] Подключить `fire(HOOK_KERNEL_DECISION, ...)` в `agents/kernel.py:log_decision()`
+  после INSERT в ai_events
+- [ ] Подключить `fire(HOOK_SESSION_END, ...)` в `db.close_session()` →
+  handler автоматически вызывает `archive_old_events()` раз в день
+- [ ] Подключить `fire(HOOK_INTAKE_PDF, ...)` в `agents/intake.py` после
+  обработки нового файла
+- [ ] Cron / pre-commit: `python -c "from db import archive_old_events;
+  print(archive_old_events())"` — еженедельно
+- [ ] `config.py`: загрузка `USER/preferences/kernel.env` через `load_dotenv`
+  ПОСЛЕ `~/.aim_env` (USER override > глобальный)
+- [ ] `agents/doctor.py`: при инициализации читать `USER/custom_protocols/*.md`
+  как добавочный system prompt
 
 ---
 

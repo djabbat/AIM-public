@@ -17,7 +17,7 @@ AIM v7.0 — гибридный LLM-роутер. Ядро:
 | `medical_system.py` | Точка входа (CLI), agent loop |
 | `aim_gui.py` | GUI (customtkinter), паритет с CLI |
 | `telegram_bot.py` | Telegram-бот (python-telegram-bot) |
-| `llm.py` | Роутер: Groq → DeepSeek → KIMI → Qwen (роутинг в `_route()`) |
+| `llm.py` | Роутер: DeepSeek (chat/reasoner) + Groq (fast); KIMI/Qwen удалены 2026-04-28 |
 | `config.py` | Ключи, модели, пути, языки |
 | `i18n.py` | 9 языков (ООН-6 + KA + KZ + DA) |
 | `db.py` | SQLite: пациенты, сессии, кэш |
@@ -57,7 +57,20 @@ print(t("menu_title", lang))
 
 - `Patients/` — **НИКОГДА** не читать, не изменять, не коммитить без явной команды
 - Новые файлы → `Patients/INBOX/`
-- Формат папок: `SURNAME_NAME_YYYY_MM_DD/`
+- **Формат папок:** `SURNAME_NAME_YYYY_MM_DD/` где `YYYY_MM_DD` = **дата рождения** пациента
+  (определяется auto из анализов через intake pipeline)
+- **Если ДР неизвестна ИЛИ сомнительна** → placeholder `2000_01_01` (sentinel: легко
+  увидеть в выборках, заведомо не настоящая ДР, требует уточнения у врача).
+  Сомнительная = противоречит другим источникам (например, папка датирована визитом
+  2026, а в файле внутри ДР 2001) — лучше явный placeholder, чем неверная конкретика.
+  Никогда НЕ оставлять без даты (`SURNAME_NAME_/` нарушает naming + ломает intake
+  auto-detection)
+- **Префикс `_` для AI-сгенерированных файлов:** `_ai_analysis.txt`, `_report_*.pdf`
+  (отличает их от исходников: jpeg/pdf от пациента, `*_ocr.txt`/`*_text.txt` — извлечения)
+- **Каждая папка должна содержать:** `MEMORY.md` (canonical state, см. `agents/patient_memory.py`)
+  + опционально `AI_LOG.md` (создаётся kernel.py при первом decision)
+- **Тесты НЕ создают артефакты в `Patients/`** — см. `tests/conftest.py` (PATIENTS_DIR
+  изолирован в `tests/_runtime_fixtures/`)
 
 ---
 
@@ -66,7 +79,7 @@ print(t("menu_title", lang))
 Только в `~/.aim_env`. Никогда в коде.
 
 ```
-DEEPSEEK_API_KEY   KIMI_API_KEY   QWEN_API_KEY   GROQ_API_KEY
+DEEPSEEK_API_KEY   GROQ_API_KEY
 ```
 
 ---

@@ -21,28 +21,20 @@ ENV_FILE    = Path.home() / ".aim_env"
 load_dotenv(ENV_FILE)
 
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
-KIMI_API_KEY     = os.getenv("KIMI_API_KEY", "")
-QWEN_API_KEY     = os.getenv("QWEN_API_KEY", "")
 GROQ_API_KEY     = os.getenv("GROQ_API_KEY", "")
 
 # ── Модели ────────────────────────────────────────────────────────────────────
 
 class Models:
-    # DeepSeek
-    DS_CHAT     = "deepseek-chat"
-    DS_REASONER = "deepseek-reasoner"
-
-    # KIMI (Moonshot)
-    KIMI_128K   = "moonshot-v1-128k"
-    KIMI_32K    = "moonshot-v1-32k"
-    KIMI_8K     = "moonshot-v1-8k"
-
-    # Qwen (Alibaba DashScope International)
-    QWEN_TURBO  = "qwen3.6-plus"           # основной (multimodal, 1M ctx)
-    QWEN_PLUS   = "qwen3.6-plus"           # то же
-    QWEN_MAX    = "qwen3.6-plus"           # то же
-    QWEN_MT     = "qwen-mt-plus"           # специализированный перевод
-    QWEN_VL_OCR = "qwen-vl-ocr-2025-11-20" # OCR
+    # DeepSeek (V4 series, released 2026-04; old IDs deepseek-chat/deepseek-reasoner
+    # remain valid as aliases per https://api-docs.deepseek.com/quick_start/pricing).
+    # Capabilities: 1M-token context, 384K max output, JSON/tool/FIM support.
+    # v4-pro on 75% promo discount until 2026-05-31.
+    DS_CHAT     = os.getenv("AIM_DS_CHAT_MODEL",     "deepseek-v4-flash")
+    DS_REASONER = os.getenv("AIM_DS_REASONER_MODEL", "deepseek-v4-pro")
+    # Legacy IDs kept available for log/test pinning if needed
+    DS_CHAT_LEGACY     = "deepseek-chat"
+    DS_REASONER_LEGACY = "deepseek-reasoner"
 
     # Groq (ultra-fast inference)
     GROQ_LLAMA  = "llama-3.3-70b-versatile"
@@ -53,25 +45,16 @@ class Models:
 
 class Endpoints:
     DEEPSEEK = "https://api.deepseek.com/v1"
-    KIMI     = "https://api.moonshot.cn/v1"
-    QWEN     = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
     GROQ     = "https://api.groq.com/openai/v1"
 
 # ── Языки ─────────────────────────────────────────────────────────────────────
 
 SUPPORTED_LANGS = ["ru", "en", "fr", "es", "ar", "zh", "ka", "kz", "da"]
 
-# Языки, которые идут через Qwen
-QWEN_LANGS = {"ar", "zh", "ka", "kz", "da"}
-
-# Языки, которые идут через DeepSeek по умолчанию
-DS_LANGS = {"ru", "en", "fr", "es"}
-
 DEFAULT_LANG = "ru"
 
 # ── Роутер: пороги ────────────────────────────────────────────────────────────
 
-LONG_CONTEXT_THRESHOLD = 12_000   # токенов — отправить в KIMI
 REASONING_KEYWORDS = [
     "диагноз", "diagnosis", "дифференциальный", "differential",
     "анализ", "analysis", "причина", "cause", "почему", "why",
@@ -81,8 +64,14 @@ REASONING_KEYWORDS = [
 # ── Параметры LLM ─────────────────────────────────────────────────────────────
 
 LLM_TEMPERATURE = 0.3
-LLM_MAX_TOKENS  = 4096
-LLM_TIMEOUT     = 60   # секунд
+# DeepSeek V4 caps: input ≤ 1M tokens, output ≤ 384K. Default raised 4096 → 16384
+# to match v4 capabilities; per-call override via max_tokens kwarg or AIM_LLM_MAX_TOKENS env.
+# For long-form generation (full-document audits, book-chunk synthesis) use ask_long
+# which raises the cap to LLM_MAX_TOKENS_LONG.
+LLM_MAX_TOKENS      = int(os.getenv("AIM_LLM_MAX_TOKENS",      "16384"))
+LLM_MAX_TOKENS_LONG = int(os.getenv("AIM_LLM_MAX_TOKENS_LONG", "131072"))
+LLM_TIMEOUT         = float(os.getenv("AIM_LLM_TIMEOUT",         "180"))  # raised для long-context
+LLM_CONNECT_TIMEOUT = float(os.getenv("AIM_LLM_CONNECT_TIMEOUT", "10"))
 
 # ── Decision kernel (Asimov Three Laws + Ze Theory consciousness) ──────────────
 

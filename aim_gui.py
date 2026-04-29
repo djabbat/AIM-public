@@ -218,15 +218,19 @@ class AIMGui(ctk.CTk):
         def on_name(name):
             if not name:
                 return
-            from datetime import date
-            folder = name.upper().replace(" ", "_") + "_" + date.today().strftime("%Y_%m_%d")
-            patient_dir = PATIENTS_DIR / folder
-            patient_dir.mkdir(parents=True, exist_ok=True)
-            pid = upsert_patient(folder, name, self.lang)
-            self.patient = get_patient(folder)
-            self.session_id = new_session(pid, self.lang)
-            self._print(f"✓ Пациент создан: {folder}", C_GREEN)
-            self._update_status_bar()
+            def on_dob(dob):
+                from db import format_patient_folder
+                folder = format_patient_folder(name, dob or None)
+                patient_dir = PATIENTS_DIR / folder
+                patient_dir.mkdir(parents=True, exist_ok=True)
+                pid = upsert_patient(folder, name, self.lang)
+                self.patient = get_patient(folder)
+                self.session_id = new_session(pid, self.lang)
+                self._print(f"✓ Пациент создан: {folder}", C_GREEN)
+                if "2000_01_01" in folder and not dob:
+                    self._print("  ⚠ ДР placeholder — узнать и переименовать", C_YELLOW)
+                self._update_status_bar()
+            self._await_input("ДР (YYYY-MM-DD, Enter если неизвестна):", on_dob)
         self._await_input("Имя (Фамилия Имя):", on_name)
 
     def _open_patient(self):

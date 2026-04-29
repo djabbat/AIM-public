@@ -1,0 +1,558 @@
+"""
+agents/graph.py — LangGraph-orchestrated multi-step agent.
+
+Uses AIM's `llm.py` smart router (DeepSeek + Groq) as the underlying LLM,
+adds LangGraph state machine for multi-step reasoning.
+
+Three nodes:
+  1. PLANNER (deepseek-reasoner) — breaks task into sub-steps
+  2. EXECUTOR (deepseek-chat or appropriate via llm.ask) — runs each sub-step
+  3. REVIEWER (deepseek-reasoner) — checks the final result, requests retry if weak
+
+Optional Aider tool: each EXECUTOR step can spawn Aider as subprocess for file edits.
+
+Usage:
+    from agents.graph import run_agent
+    result = run_agent("Прочитай ~/Desktop/article.md и проведи peer review")
+"""
+
+from __future__ import annotations
+
+import logging
+import operator
+import subprocess
+from pathlib import Path
+from typing import Annotated, Any, TypedDict
+
+from langgraph.graph import END, START, StateGraph
+
+from llm import ask, ask_deep
+
+log = logging.getLogger("aim.graph")
+
+
+# ─── Russian-language system prompt (injected into every LLM call) ──────────
+SYSTEM_PROMPT_RU = """ТЫ — РУССКОЯЗЫЧНЫЙ АГЕНТ. ЭТО НЕИЗМЕННО.
+
+ПРАВИЛО 1: ВСЕГДА ПОНИМАЙ РУССКИЙ ЯЗЫК
+- Ты полностью понимаешь русский язык (разговорный, письменный, технический, сленг)
+- Не требуй переключения на английский
+- Определяй язык ввода автоматически (русский/английский/смешанный)
+
+ПРАВИЛО 2: ОТВЕЧАЙ НА ТОМ ЖЕ ЯЗЫКЕ
+- Если пользователь пишет по-русски → отвечай по-русски
+- Если пользователь пишет по-английски → отвечай по-английски
+- Если смешанный ввод → отвечай преимущественно на русском (если есть русские слова)
+
+ПРАВИЛО 3: ТЕХНИЧЕСКАЯ ЛЕКСИКА
+- Код, команды, имена переменных, идентификаторы — на английском
+- Комментарии к коду можно на русском
+- Объяснения — на русском
+- Термины LangGraph, DeepSeek, Aider, ORCID, DOI, PMID и т.п. — НЕ переводи
+
+ПРАВИЛО 4: ТРАНСЛИТЕРАЦИЯ — ОБРАБОТКА ЛЮБОГО ВВОДА
+Ты понимаешь следующие варианты записи русских слов:
+А) Кириллица: «привет как дела»
+Б) Транслит латиницей: «privet kak dela» → привет как дела; «pochemu ne rabotaet» → почему не работает
+В) Нестандартный транслит: «4to eto» → что это; «v smisle» → в смысле; «tak skazat'» → так сказать
+Г) Смешанный: «напиши код kotoriy delaet X» → напиши код который делает X
+
+Перед обработкой любого ввода:
+1. Если видишь латиницу — проверь, не является ли она транслитом русского
+2. Транслит → внутренне преобразуй в кириллицу
+3. Обрабатывай как обычный русский текст
+
+ПРАВИЛО 5: НЕ ПЕРЕСПРАШИВАЙ
+ЗАПРЕЩЕНО:
+× «I don't understand Russian, please use English»
+× «Please write in English»
+× «Do you mean...?» (когда смысл понятен)
+ВМЕСТО ЭТОГО:
+✓ Сразу отвечай по сути на русском
+
+ПРАВИЛО 6: ИСКЛЮЧЕНИЯ
+- Команды :no-mem, :aider, :clear-aider, :help — латиница, это управление
+- Технические логи и stack traces — английский, но объяснение к ним — русское
+
+ПРАВИЛО 7: ПРИМЕРЫ
+ВХОД: «zagruzhi file i sdelay parse»  → понимание: загрузи файл и сделай парсинг
+ВХОД: «4to za oshibka? deepseek ne otvechaet»  → что за ошибка? deepseek не отвечает
+ВХОД: «kak dobavit' memory v claude»  → как добавить память в claude
+ВХОД: «pochemu planner ne vypolnyaet shagi»  → почему planner не выполняет шаги
+"""
+
+
+def _looks_like_translit(text: str) -> bool:
+    """Heuristic: text is Latin-only and contains common Russian translit patterns."""
+    if not text or any('Ѐ' <= ch <= 'ӿ' for ch in text):
+        return False
+    sample = text.lower()
+    cues = ('ya ', 'iy ', 'oye ', 'sh', 'ch', 'zh', 'kh', 'shch',
+            ' kak ', ' chto ', ' eto ', ' ne ', ' ya ', ' ty ',
+            'ovat\'', 'tsya', 'pochemu', 'ozhalui', 'pozhalu',
+            'sdelay', 'sdelai', 'napishi', 'proverit', 'zagruzh')
+    return any(cue in sample for cue in cues)
+
+
+def _wrap_task_for_llm(task: str) -> str:
+    """If the task looks like Russian translit, prepend a hint so the model
+    decodes it before processing. Cyrillic / English pass through unchanged."""
+    if _looks_like_translit(task):
+        return ("ВНИМАНИЕ: следующий текст написан транслитом — это русский язык "
+                "латинскими буквами. Сначала мысленно преобразуй его в кириллицу, "
+                "затем обрабатывай как обычный русский текст.\n\n" + task)
+    return task
+
+
+# ─── State shape ─────────────────────────────────────────────────────────────
+
+
+class AgentState(TypedDict, total=False):
+    """State passed between nodes; LangGraph reducers merge updates."""
+    task: str
+    plan: list[str]
+    step_results: Annotated[list[str], operator.add]
+    final: str
+    review: str
+    iteration: int
+    use_aider: bool
+    aider_files: list[str]
+    # — interactive controls —
+    interactive_review: bool       # if True, ask user for ПРИНЯТЬ/ПЕРЕДЕЛАТЬ at end
+    user_feedback: str             # free-form text from user during HITL
+
+
+# ─── Plan-size heuristic ────────────────────────────────────────────────────
+
+
+def _suggest_plan_size(task: str) -> int:
+    """Pick a target plan-size based on task complexity. Short tasks → 1-2 steps."""
+    sample = task.lower()
+    n_chars = len(task)
+    reasoning_cues = ("докажи", "проанализируй", "проведи", "разбери", "сравни",
+                      "почему", "как именно", "обоснуй", "оптимизируй", "разработай",
+                      "prove", "analyse", "analyze", "compare", "design", "audit")
+    has_reasoning = any(cue in sample for cue in reasoning_cues)
+
+    if n_chars < 120 and not has_reasoning:
+        return 1
+    if n_chars < 350 and not has_reasoning:
+        return 2
+    if n_chars < 1200:
+        return 3 if not has_reasoning else 4
+    return 5
+
+
+# ─── Nodes ───────────────────────────────────────────────────────────────────
+
+
+def _planner(state: AgentState) -> dict[str, Any]:
+    """Break task into N ordered sub-steps. N is heuristic-sized (1-5).
+
+    Optimised for DeepSeek-reasoner: terse instruction, explicit format spec,
+    no chain-of-thought leak in output.
+    """
+    task = _wrap_task_for_llm(state["task"])
+    n = _suggest_plan_size(state["task"])
+    if n == 1:
+        # Trivial task — skip planner LLM call entirely
+        log.info("[planner] task is short → 1-step plan, skipping LLM call")
+        return {"plan": [state["task"]], "step_results": [], "iteration": 0}
+
+    # Order: cacheable prefix (task + memory) FIRST, variable instructions LAST.
+    # DeepSeek prefix-cache will hit on subsequent executor/reviewer calls within
+    # the same graph run because the leading {task} block is identical.
+    prompt = (
+        f"ЗАДАЧА:\n{task}\n\n"
+        f"━━━ ИНСТРУКЦИЯ ДЛЯ ЭТОГО ВЫЗОВА (PLANNER) ━━━\n"
+        f"РОЛЬ: ты планировщик многошаговой задачи.\n"
+        f"ВЫХОД: ровно {n} строк, каждая = одна подзадача в повелительном наклонении, ≤120 символов.\n"
+        f"ФОРМАТ: без нумерации, без маркеров, без префиксов «Шаг N:», без пояснений до или после.\n"
+        f"ОТКАЗ: если задача тривиальна — верни одну строку, точно повторяющую её формулировку."
+    )
+    response = ask_deep(prompt, system=SYSTEM_PROMPT_RU, lang="ru")
+    plan = [line.strip("-•* \t").strip() for line in response.splitlines() if line.strip()]
+    plan = [p for p in plan if len(p) > 5][:n]
+    if not plan:
+        plan = [state["task"]]
+    log.info(f"[planner] {len(plan)} steps planned (target={n})")
+    return {"plan": plan, "step_results": [], "iteration": 0}
+
+
+def _executor(state: AgentState) -> dict[str, Any]:
+    """Run all planned steps. Single-step plans are executed without inter-step context."""
+    results = []
+    plan = state.get("plan", [])
+    single_step = len(plan) == 1
+    task = _wrap_task_for_llm(state["task"])
+
+    for i, step in enumerate(plan, 1):
+        if single_step:
+            prompt = task   # for trivial tasks, ask the model directly
+        else:
+            context = "\n\n".join(state.get("step_results", []) + results)
+            # Cacheable prefix (identical across executor steps + reviewer): {task}
+            # Variable suffix: current sub-task + accumulated previous-step results
+            prompt = (
+                f"ЗАДАЧА:\n{task}\n\n"
+                f"━━━ ИНСТРУКЦИЯ ДЛЯ ЭТОГО ВЫЗОВА (EXECUTOR step {i}/{len(plan)}) ━━━\n"
+                f"ТЕКУЩАЯ ПОДЗАДАЧА: {step}\n"
+                + (f"\nПРЕДЫДУЩИЕ РЕЗУЛЬТАТЫ:\n{context}\n" if context else "")
+                + f"\nВыполни текущую подзадачу. Верни конкретный результат без преамбул, "
+                f"без повторения формулировки задачи, без размышлений вслух."
+            )
+        result = ask(prompt, system=SYSTEM_PROMPT_RU, lang="ru")
+
+        if state.get("use_aider") and state.get("aider_files"):
+            result = _maybe_run_aider(step, state["aider_files"], result)
+
+        if single_step:
+            results.append(result)
+        else:
+            results.append(f"## Подзадача {i}: {step}\n\n{result}")
+    return {"step_results": results}
+
+
+def _reviewer(state: AgentState) -> dict[str, Any]:
+    """Check final assembled result. Two modes:
+
+    interactive_review=False (default): LLM reviewer (DeepSeek-reasoner) returns
+        ПРИНЯТЬ/ПЕРЕДЕЛАТЬ on first line.
+    interactive_review=True: prints final result to stdout and asks user via input()
+        to confirm. Falls back to LLM reviewer if stdin is not a TTY.
+    """
+    final = "\n\n".join(state.get("step_results", []))
+    iteration = state.get("iteration", 0) + 1
+
+    if state.get("interactive_review"):
+        review = _human_in_the_loop_review(state["task"], final, iteration)
+        return {"final": final, "review": review, "iteration": iteration}
+
+    # Same caching strategy: task block first (matches planner/executor cache),
+    # variable suffix (review instructions + solution) at the end.
+    prompt = (
+        f"ЗАДАЧА:\n{_wrap_task_for_llm(state['task'])}\n\n"
+        f"━━━ ИНСТРУКЦИЯ ДЛЯ ЭТОГО ВЫЗОВА (REVIEWER) ━━━\n"
+        f"РОЛЬ: внутренний рецензент.\n"
+        f"ВЫХОД: первая строка = ровно одно слово ПРИНЯТЬ или ПЕРЕДЕЛАТЬ. "
+        f"Вторая строка и далее — обоснование (≤3 предложений).\n"
+        f"КРИТЕРИЙ: ПЕРЕДЕЛАТЬ только если решение фактически неверное, неполное "
+        f"или противоречит задаче. ПРИНЯТЬ если задача решена адекватно, даже если "
+        f"стиль не идеален.\n\n"
+        f"РЕШЕНИЕ:\n{final}"
+    )
+    review = ask_deep(prompt, system=SYSTEM_PROMPT_RU, lang="ru")
+    return {"final": final, "review": review, "iteration": iteration}
+
+
+def _human_in_the_loop_review(task: str, final: str, iteration: int) -> str:
+    """Print result + ask user to confirm. Returns standard ПРИНЯТЬ/ПЕРЕДЕЛАТЬ format."""
+    import sys
+    if not sys.stdin.isatty():
+        # Cannot prompt — fall back to LLM reviewer below
+        log.warning("[reviewer/HITL] stdin is not a TTY, falling back to LLM reviewer")
+        prompt = (
+            f"РОЛЬ: внутренний рецензент.\nВЫХОД: первая строка = ПРИНЯТЬ или ПЕРЕДЕЛАТЬ.\n\n"
+            f"ЗАДАЧА:\n{_wrap_task_for_llm(task)}\n\nРЕШЕНИЕ:\n{final}"
+        )
+        return ask_deep(prompt, system=SYSTEM_PROMPT_RU, lang="ru")
+
+    print()
+    print("━━━ HUMAN-IN-THE-LOOP REVIEW (итерация {}) ━━━".format(iteration), file=sys.stderr)
+    print(final, file=sys.stderr)
+    print("━━━ конец решения ━━━", file=sys.stderr)
+    print(file=sys.stderr)
+    print("Подтверди решение:", file=sys.stderr)
+    print("  [Enter] / 'y' / 'да'   → ПРИНЯТЬ (закончить)", file=sys.stderr)
+    print("  'r' / 'нет' / комментарий → ПЕРЕДЕЛАТЬ (вернуться к planner)", file=sys.stderr)
+    if iteration >= 2:
+        print("  ⚠ это уже {}-я итерация; ПРИНЯТЬ закроет цикл".format(iteration), file=sys.stderr)
+    print(file=sys.stderr)
+    try:
+        ans = input("review> ").strip()
+    except (EOFError, KeyboardInterrupt):
+        ans = ""
+
+    decision_lower = ans.lower()
+    if decision_lower in ("", "y", "yes", "да", "ok", "ок", "+", "принять", "accept"):
+        return "ПРИНЯТЬ\nОдобрено пользователем."
+    if decision_lower in ("r", "n", "no", "нет", "redo", "переделать", "-"):
+        return "ПЕРЕДЕЛАТЬ\nОтклонено пользователем без комментария."
+    # any other text — treat as ПЕРЕДЕЛАТЬ with the user's feedback as guidance
+    return f"ПЕРЕДЕЛАТЬ\nОбратная связь от пользователя: {ans}"
+
+
+def _route_after_review(state: AgentState) -> str:
+    """Decide whether to retry (planner again) or finish."""
+    review_first_line = (state.get("review") or "").strip().splitlines()[:1]
+    decision = (review_first_line[0] if review_first_line else "").upper()
+    if "ПЕРЕДЕЛАТЬ" in decision and state.get("iteration", 0) < 2:
+        log.info("[reviewer] requested retry")
+        return "planner"
+    return END
+
+
+def _maybe_run_aider(step: str, files: list[str], current_result: str) -> str:
+    """If a step requires file edits, dispatch to Aider as subprocess."""
+    edit_keywords = ("исправ", "редакт", "правк", "измен", "edit", "modif", "rewrite")
+    if not any(k in step.lower() for k in edit_keywords):
+        return current_result
+
+    try:
+        cmd = [
+            "/home/oem/.local/bin/aider",
+            "--model", "deepseek/deepseek-chat",
+            "--no-git", "--yes-always",
+            "--message", step,
+            *files,
+        ]
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        return f"{current_result}\n\n[aider output]\n{proc.stdout[-2000:]}"
+    except Exception as e:
+        return f"{current_result}\n\n[aider failed: {e}]"
+
+
+# ─── Graph compilation ───────────────────────────────────────────────────────
+
+
+def _make_checkpointer():
+    """SQLite-backed checkpointer at ~/.claude/aim_graph_state.db.
+
+    Persists every node transition so HITL pauses survive process restart and
+    new sessions can `resume` an in-flight task by thread_id.
+
+    Falls back to MemorySaver if langgraph-checkpoint-sqlite is not installed.
+    """
+    db_path = Path.home() / ".claude" / "aim_graph_state.db"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        from langgraph.checkpoint.sqlite import SqliteSaver
+        import sqlite3
+        conn = sqlite3.connect(str(db_path), check_same_thread=False)
+        return SqliteSaver(conn)
+    except Exception as e:
+        log.info(f"[checkpointer] SqliteSaver unavailable ({e}); using in-memory MemorySaver")
+        from langgraph.checkpoint.memory import MemorySaver
+        return MemorySaver()
+
+
+def _compile_graph():
+    builder = StateGraph(AgentState)
+    builder.add_node("planner", _planner)
+    builder.add_node("executor", _executor)
+    builder.add_node("reviewer", _reviewer)
+    builder.add_edge(START, "planner")
+    builder.add_edge("planner", "executor")
+    builder.add_edge("executor", "reviewer")
+    builder.add_conditional_edges("reviewer", _route_after_review, {"planner": "planner", END: END})
+    return builder.compile(checkpointer=_make_checkpointer())
+
+
+_GRAPH = None
+
+
+def get_graph():
+    global _GRAPH
+    if _GRAPH is None:
+        _GRAPH = _compile_graph()
+    return _GRAPH
+
+
+# ─── Public entry point ──────────────────────────────────────────────────────
+
+
+def _load_claude_memory(task: str | None = None, k: int = 12) -> str:
+    """Load Claude Code's persistent memory; ranked by relevance to `task` if given.
+
+    Three modes (preferred → fallback):
+      1. task given AND ~/.claude/memory_index/ exists → SEMANTIC retrieval via
+         sentence-transformers + LanceDB (top-k chunks by cosine similarity)
+      2. task given, no index → LEXICAL retrieval (token-overlap scoring)
+      3. task is None → load EVERYTHING (~250KB, slow but complete)
+
+    To enable semantic mode, run once: `aim-memory-index reindex`
+    """
+    # ── Mode 1: semantic via embedding index, if available ──────────────────
+    if task is not None:
+        try:
+            from agents.memory_index import retrieve as _semantic_retrieve  # local
+            hits = _semantic_retrieve(task, k=k)
+            if hits:
+                base = Path.home() / ".claude" / "projects" / "-home-oem" / "memory"
+                chunks: list[str] = []
+                index = base / "MEMORY.md"
+                if index.exists():
+                    chunks.append(f"# MEMORY INDEX\n\n{index.read_text(encoding='utf-8')}")
+                # group hits by file → emit each file once with a brief score note
+                seen: dict[str, list[dict]] = {}
+                for h in hits:
+                    seen.setdefault(h["file"], []).append(h)
+                for fname, hs in seen.items():
+                    body = "\n\n…\n\n".join(h["text"] for h in hs)
+                    best = min((h["_distance"] for h in hs), default=1.0)
+                    chunks.append(f"# {Path(fname).stem}  [semantic distance={best:.3f}]\n\n{body}")
+                log.info(f"[memory] semantic retrieval: {len(seen)} files / {len(hits)} chunks")
+                return "\n\n---\n\n".join(chunks)
+        except Exception as e:
+            log.info(f"[memory] semantic retrieval unavailable ({e}); falling back to lexical")
+            # fall through to lexical mode
+    base = Path.home() / ".claude" / "projects" / "-home-oem" / "memory"
+    if not base.exists():
+        return ""
+
+    files = [f for f in sorted(base.glob("*.md")) if f.name != "MEMORY.md"]
+
+    if task is None:
+        # Legacy: load everything
+        chunks: list[str] = []
+        index = base / "MEMORY.md"
+        if index.exists():
+            chunks.append(f"# MEMORY INDEX\n\n{index.read_text(encoding='utf-8')}")
+        for f in files:
+            try:
+                chunks.append(f"# {f.stem}\n\n{f.read_text(encoding='utf-8')}")
+            except Exception:
+                continue
+        return "\n\n---\n\n".join(chunks)
+
+    # ── Relevance-ranked load ─────────────────────────────────────────────────
+    import re as _re
+
+    # Tokenise task into Cyrillic + Latin word stems (≥3 chars)
+    raw_tokens = _re.findall(r"[A-Za-zА-Яа-яЁё0-9]{3,}", task.lower())
+    stop = {"что", "как", "это", "для", "что-то", "etc", "the", "and", "for"}
+    tokens = {t for t in raw_tokens if t not in stop}
+
+    scored: list[tuple[float, Path, str]] = []
+    for f in files:
+        try:
+            content = f.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        lc = content.lower()
+        # 3× weight for filename matches, 2× for frontmatter description
+        fname_score = sum(3 for t in tokens if t in f.stem.lower())
+        # crude description region: between first '---' pair
+        desc_match = _re.search(r"---(.*?)---", content, _re.DOTALL)
+        desc = desc_match.group(1).lower() if desc_match else ""
+        desc_score = sum(2 for t in tokens if t in desc)
+        body_score = sum(1 for t in tokens if t in lc)
+        score = fname_score + desc_score + body_score
+        if score > 0:
+            scored.append((score, f, content))
+
+    scored.sort(key=lambda r: -r[0])
+    selected = scored[:k]
+
+    chunks: list[str] = []
+    index = base / "MEMORY.md"
+    if index.exists():
+        # Always include the index — it's the table of contents
+        chunks.append(f"# MEMORY INDEX\n\n{index.read_text(encoding='utf-8')}")
+    for score, f, content in selected:
+        chunks.append(f"# {f.stem}  [relevance={score}]\n\n{content}")
+
+    log.info(
+        f"[memory] semantic-lite load: {len(selected)}/{len(files)} files chosen "
+        f"(top score {selected[0][0] if selected else 0})"
+    )
+    return "\n\n---\n\n".join(chunks)
+
+
+def run_agent(
+    task: str,
+    use_aider: bool = False,
+    files: list[str] | None = None,
+    use_memory: bool = False,
+    full_memory: bool = False,
+    interactive_review: bool = False,
+) -> dict[str, Any]:
+    """Run the LangGraph agent on a task. Returns final state dict.
+
+    Args:
+        task: the user task in Russian / English / translit.
+        use_aider: if True, executor steps containing edit-keywords spawn Aider.
+        files: list of file paths to expose to Aider when use_aider=True.
+        use_memory: if True, inject memory relevant to the task (top-k by lexical
+                    score; ~30-60KB instead of full 250KB).
+        full_memory: if True (and use_memory=True), inject ALL memory files
+                     unfiltered — slower but covers edge cases.
+        interactive_review: if True, the reviewer node prompts the user via
+                            stdin to confirm the result.
+    """
+    full_task = task
+    if use_memory:
+        memory_blob = _load_claude_memory(task=None if full_memory else task)
+        if memory_blob:
+            full_task = (
+                f"━━━ ДОЛГОСРОЧНАЯ ПАМЯТЬ "
+                f"({'полная' if full_memory else 'релевантные ' + 'файлы'}) ━━━\n\n"
+                f"{memory_blob}\n\n"
+                f"━━━ КОНЕЦ ПАМЯТИ ━━━\n\n"
+                f"━━━ ТЕКУЩАЯ ЗАДАЧА ━━━\n\n{task}"
+            )
+    # thread_id is required for the checkpointer — derive a stable hash from the
+    # ORIGINAL task (not the memory-augmented version) so the same conceptual
+    # task resumes the same checkpoint across sessions. Override via env if needed.
+    import hashlib, os
+    thread_id = os.environ.get("AIM_THREAD_ID") or hashlib.sha1(task.encode("utf-8")).hexdigest()[:16]
+    config = {"configurable": {"thread_id": thread_id}}
+
+    initial: AgentState = {
+        "task": full_task,
+        "interactive_review": interactive_review,
+        "use_aider": use_aider,
+        "aider_files": files or [],
+    }
+    return get_graph().invoke(initial, config=config)
+
+
+# ─── CLI ─────────────────────────────────────────────────────────────────────
+
+
+def _main():
+    import argparse
+    p = argparse.ArgumentParser(description="AIM LangGraph multi-step agent (DeepSeek-driven)")
+    p.add_argument("task", nargs="?", help="The task to solve. If omitted, reads from stdin.")
+    p.add_argument("--aider", action="store_true", help="Allow Aider to make file edits during executor steps")
+    p.add_argument("--file", action="append", default=[], help="File(s) to make available to Aider (-file repeatable)")
+    p.add_argument("--memory", action="store_true", help="Inject Claude memory relevant to the task (top-k by lexical score)")
+    p.add_argument("--full-memory", action="store_true", help="Force full memory load (slow, ~250KB)")
+    p.add_argument("--review", action="store_true", help="Human-in-the-loop reviewer: ask user to confirm result via stdin")
+    args = p.parse_args()
+
+    import sys
+    task = args.task or sys.stdin.read().strip()
+    if not task:
+        sys.exit("aim-graph: empty task")
+
+    print(f"━━━ TASK ━━━\n{task}\n")
+    if args.memory:
+        print(f"[memory] loading Claude auto-memory ({'full' if args.full_memory else 'task-relevant subset'})…")
+    if args.review:
+        print("[reviewer] human-in-the-loop mode — you will be asked to confirm")
+    result = run_agent(
+        task,
+        use_aider=args.aider,
+        files=args.file,
+        use_memory=args.memory,
+        full_memory=args.full_memory,
+        interactive_review=args.review,
+    )
+
+    print("━━━ PLAN ━━━")
+    for i, step in enumerate(result.get("plan", []), 1):
+        print(f"  {i}. {step}")
+
+    print("\n━━━ EXECUTION ━━━")
+    for chunk in result.get("step_results", []):
+        print(chunk)
+        print()
+
+    print("━━━ INTERNAL REVIEW ━━━")
+    print(result.get("review", "(no review)"))
+    print(f"\n[iterations: {result.get('iteration', 0)}]")
+
+
+if __name__ == "__main__":
+    _main()

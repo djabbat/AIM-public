@@ -1,0 +1,22 @@
+AIM — Claude memory audit (2026-04-29T00:15:07)
+  source:        /home/oem/.claude/projects/-home-oem/memory
+  files:         119
+  size:          350.1 KB
+  frontmatter:   118 of 119
+
+  by category (filename prefix):
+    project      56
+    feedback     45
+    user         7
+    contact      3
+    reference    3
+    other        2
+    index        1
+    fact         1
+    pubmed       1
+
+  by type (frontmatter):
+    project      54
+    feedback     47
+    reference    10
+    user         7

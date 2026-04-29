@@ -20,3 +20,4 @@ customtkinter>=5.2.0
 
 # Утилиты
 httpx>=0.25.0
+json-repair>=0.59.0   # robust JSON парсинг LLM-выдачи (intake, MEMORY.md fill)

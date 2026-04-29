@@ -1,6 +1,6 @@
 """
 AIM v7.0 — Точка входа
-Гибридный медицинский ассистент: Groq · DeepSeek · KIMI · Qwen
+Медицинский ассистент: DeepSeek (chat/reasoner) + Groq (fast).
 """
 
 import sys
@@ -14,6 +14,11 @@ from db import list_patients, get_patient, upsert_patient, new_session, save_mes
 from agents import DoctorAgent, IntakeAgent, LangAgent
 from agents.lang import LANG_NAMES
 from lab_reference import evaluate, format_result, categories, list_analytes, LAB_RANGES
+from agents.ui_theme import ui, install_global_console
+
+# Switch entire AIM CLI session to themed Rich console (cool/cyan, inverted
+# Claude Code palette). Disable via AIM_NO_RICH=1.
+install_global_console()
 
 # ── Логирование ───────────────────────────────────────────────────────────────
 
@@ -41,23 +46,25 @@ class AIM:
     # ── Утилиты ───────────────────────────────────────────────────────────────
 
     def print_header(self):
-        print("\n" + "═" * 50)
-        print(f"  {t('menu_title', self.lang)}")
-        print(f"  v{VERSION}  |  {lang_name(self.lang)}")
+        from agents.ui_theme import ui
         status = providers_status()
         icons = {k: "✓" if v else "✗" for k, v in status.items()}
-        print(f"  LLM: Groq{icons['groq']} DS{icons['deepseek']} "
-              f"KIMI{icons['kimi']} Qwen{icons['qwen']}")
+        kv = {
+            "Version":  f"v{VERSION}",
+            "Lang":     lang_name(self.lang),
+            "LLM":      f"DeepSeek{icons['deepseek']}  Groq{icons['groq']}",
+        }
         if self.patient:
-            print(f"  Пациент: {self.patient['name']}")
-        print("═" * 50)
+            kv["Patient"] = self.patient['name']
+        ui.banner(t('menu_title', self.lang), subtitle="Assistant of Integrative Medicine")
+        ui.kv(kv)
 
     def menu(self):
+        from agents.ui_theme import ui
         keys = ["m1","m2","m3","m4","m5","m6","m7","m8","m9","mq"]
-        for k in keys:
-            print(f"  {t(k, self.lang)}")
-        print(f"  T. Triage (kernel)  ·  L. Labs (kernel)  ·  X. Treatment (kernel)  ·  C. Chat (kernel)")
-        print()
+        rows = [(t(k, self.lang),) for k in keys]
+        rows.append(("T. Triage (kernel)  ·  L. Labs (kernel)  ·  X. Treatment (kernel)  ·  C. Chat (kernel)",))
+        ui.table(["Действие"], rows)
 
     def input(self, prompt: str = "> ") -> str:
         try:
@@ -68,37 +75,42 @@ class AIM:
     # ── Пункты меню ───────────────────────────────────────────────────────────
 
     def new_patient(self):
-        print("\n── Новый пациент ──")
+        from agents.ui_theme import ui
+        ui.divider("Новый пациент")
         name = self.input("Имя (Фамилия Имя): ")
         if not name:
             return
-        from datetime import date
-        folder = name.upper().replace(" ", "_") + "_" + date.today().strftime("%Y_%m_%d")
+        dob = self.input("Дата рождения (YYYY-MM-DD, Enter если неизвестна): ")
+        from db import format_patient_folder
+        folder = format_patient_folder(name, dob or None)
         patient_dir = PATIENTS_DIR / folder
         patient_dir.mkdir(parents=True, exist_ok=True)
         pid = upsert_patient(folder, name, self.lang)
         self.patient = get_patient(folder)
         self.session_id = new_session(pid, self.lang)
-        print(f"✓ Пациент создан: {folder}")
+        ui.success(f"Пациент создан: {folder}")
+        if "2000_01_01" in folder and not dob:
+            ui.warning("ДР неизвестна — placeholder. Узнать у врача и переименовать папку.")
 
     def open_patient(self):
-        print("\n── Открыть пациента ──")
+        from agents.ui_theme import ui
+        ui.divider("Открыть пациента")
         query = self.input("Поиск (имя/папка): ")
         from db import search_patients
         results = search_patients(query)
         if not results:
-            print(t("patient_not_found", self.lang))
+            ui.warning(t("patient_not_found", self.lang))
             return
-        for i, p in enumerate(results[:10]):
-            print(f"  {i+1}. {p['name']}  [{p['folder']}]")
+        ui.table(["#", "Имя", "Папка"],
+                 [(i+1, p['name'], p['folder']) for i, p in enumerate(results[:10])])
         choice = self.input("Выбор: ")
         try:
             idx = int(choice) - 1
             self.patient = results[idx]
             self.session_id = new_session(self.patient["id"], self.lang)
-            print(f"✓ Открыт: {self.patient['name']}")
+            ui.success(f"Открыт: {self.patient['name']}")
         except (ValueError, IndexError):
-            print("Отмена.")
+            ui.system("Отмена.")
 
     def lab_intake(self):
         print("\n── Анализы ──")

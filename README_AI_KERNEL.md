@@ -306,7 +306,7 @@ export AIM_KERNEL_LLM_DELTA=0      # skip LLM nuance for speed
 
 ## 11. References
 
-- **Ze Theory:** `~/Desktop/CommonHealth/Ze/CONCEPT.md` (Tkemaladze 2026)
+- **Ze Theory:** `~/Desktop/LongevityCommon/Ze/CONCEPT.md` (Tkemaladze 2026)
 - **Asimov 1942:** "Runaround" (первые три закона); **1985** "Robots and Empire" (L0)
 - **Beauchamp & Childress 1979:** "Principles of Biomedical Ethics" (4 principles)
 - **Friston 2019:** Free Energy Principle (active inference analogy)
