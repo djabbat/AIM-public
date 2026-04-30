@@ -140,9 +140,11 @@ class DoctorAgent:
         prompt_parts.append(f"Жалобы и симптомы:\n{symptoms}")
         prompt = "\n".join(prompt_parts)
 
-        # Кэш — диагностика детерминирована при одинаковом вводе
-        cache_key = f"dx:{lang}:{hash(prompt)}"
-        cached = cache_get(cache_key)
+        # Кэш — диагностика детерминирована при одинаковом вводе.
+        # `cache_get/set(prompt, model)` хэширует пару, поэтому передаём
+        # `dx:<lang>` как model-tag и весь prompt отдельно.
+        cache_model = f"dx:{lang}"
+        cached = cache_get(prompt, cache_model)
         if cached:
             log.info("DoctorAgent.diagnose: cache hit")
             return cached
@@ -151,7 +153,7 @@ class DoctorAgent:
         result = ask_deep(prompt, system=system, lang=lang)
         result = _ensure_disclaimer(result, lang)
 
-        cache_set(cache_key, result)
+        cache_set(prompt, cache_model, result)
 
         if session_id:
             save_message(session_id, "user", f"[Диагностика] {symptoms}", provider="user")
