@@ -57,9 +57,14 @@ class Models:
     CLAUDE_SONNET  = os.getenv("AIM_CLAUDE_SONNET_MODEL",  "claude-sonnet-4-6")
     CLAUDE_HAIKU   = os.getenv("AIM_CLAUDE_HAIKU_MODEL",   "claude-haiku-4-5-20251001")
 
-    # Google Gemini 2.5 Pro — frontier reasoning, 1M context, free tier 50 req/day.
-    GEMINI_PRO     = os.getenv("AIM_GEMINI_PRO_MODEL",     "gemini-2.5-pro")
-    GEMINI_FLASH   = os.getenv("AIM_GEMINI_FLASH_MODEL",   "gemini-2.5-flash")
+    # Google Gemini — free tier as of mid-2026:
+    #   gemini-2.5-pro       → paid only / invite-only on free keys (limit:0)
+    #   gemini-2.5-flash     → 503 high-demand on free keys
+    #   gemini-2.5-flash-lite → ✅ actually free, 1500 req/day
+    # We try pro→flash-lite at runtime; lite is the realistic free-tier model.
+    GEMINI_PRO       = os.getenv("AIM_GEMINI_PRO_MODEL",       "gemini-2.5-pro")
+    GEMINI_FLASH     = os.getenv("AIM_GEMINI_FLASH_MODEL",     "gemini-2.5-flash")
+    GEMINI_FLASH_LITE = os.getenv("AIM_GEMINI_FLASH_LITE_MODEL", "gemini-2.5-flash-lite")
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 

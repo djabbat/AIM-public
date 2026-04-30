@@ -226,6 +226,9 @@ def ollama_force_reprobe() -> bool:
 
 
 _GEMINI_DISABLED_THIS_SESSION = False
+# Cached "best working model" for this Gemini key. Auto-discovered at first
+# call: pro → flash → flash-lite. Once a model returns content we stick to it.
+_GEMINI_WORKING_MODEL: Optional[str] = None
 
 
 def gemini_available() -> bool:
@@ -239,10 +242,42 @@ def _gemini() -> OpenAI:
     return _client(Endpoints.GEMINI, GEMINI_API_KEY)
 
 
+def _gemini_call_one(model: str, msgs: list[dict],
+                     temperature: float, max_tokens: int) -> tuple[str, str]:
+    """Single Gemini call. Returns (content, status_tag).
+    status_tag ∈ {'ok', 'limit0', 'high-demand', 'empty', 'other'}."""
+    try:
+        resp = _gemini().chat.completions.create(
+            model=model, messages=msgs,
+            temperature=temperature, max_tokens=max_tokens,
+        )
+    except Exception as e:
+        emsg = str(e)
+        if "RESOURCE_EXHAUSTED" in emsg and "limit: 0" in emsg:
+            return "", "limit0"
+        if "503" in emsg and "high demand" in emsg.lower():
+            return "", "high-demand"
+        log.debug(f"Gemini[{model}] error: {emsg[:120]}")
+        return "", "other"
+    if not resp.choices:
+        return "", "empty"
+    content = getattr(resp.choices[0].message, "content", None)
+    if content is None or content == "":
+        return "", "empty"
+    return content.strip(), "ok"
+
+
 def _gemini_chat(prompt: str, *, system: str = "", model: Optional[str] = None,
                  temperature: float = LLM_TEMPERATURE,
                  max_tokens: int = LLM_MAX_TOKENS) -> str:
-    """Minimal Gemini wrapper. Returns "" on failure (caller falls through)."""
+    """Minimal Gemini wrapper with auto-degradation chain.
+
+    Tries (in order): explicit model OR working-cached → pro → flash → flash-lite.
+    Caches the first model that returns content for this session, so subsequent
+    calls go straight to the working model with no probing latency.
+
+    Returns "" on total failure (caller falls through to next tier).
+    """
     if not gemini_available():
         return ""
     _breaker_for("gemini").before_call()
@@ -251,33 +286,46 @@ def _gemini_chat(prompt: str, *, system: str = "", model: Optional[str] = None,
     if system:
         msgs.append({"role": "system", "content": system})
     msgs.append({"role": "user", "content": prompt})
-    try:
-        resp = _gemini().chat.completions.create(
-            model=model or Models.GEMINI_PRO,
-            messages=msgs,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
-        _breaker_for("gemini").on_success()
-        return resp.choices[0].message.content.strip()
-    except Exception as e:
-        _breaker_for("gemini").on_failure()
-        _record_llm_error("gemini", e)
-        emsg = str(e)
-        # Detect "free tier not activated" — 429 RESOURCE_EXHAUSTED with limit: 0
-        # means Google Cloud project hasn't enabled Gemini API free quota yet.
-        # No point retrying this session; mark provider down so the tier-chain
-        # fallbacks fire instantly instead of paying ~3s latency per call.
-        if "RESOURCE_EXHAUSTED" in emsg and "limit: 0" in emsg:
-            global _GEMINI_DISABLED_THIS_SESSION
-            _GEMINI_DISABLED_THIS_SESSION = True
-            log.warning("Gemini free tier not activated for this API key. "
-                        "Visit https://aistudio.google.com and run any prompt "
-                        "in the playground once to activate quota. Disabling "
-                        "Gemini for this session.")
-        else:
-            log.warning(f"Gemini call failed: {emsg[:200]}")
-        return ""
+
+    global _GEMINI_WORKING_MODEL, _GEMINI_DISABLED_THIS_SESSION
+
+    # Build candidate list: cached working model first, then explicit, then chain
+    chain: list[str] = []
+    if _GEMINI_WORKING_MODEL:
+        chain.append(_GEMINI_WORKING_MODEL)
+    if model and model not in chain:
+        chain.append(model)
+    for m in (Models.GEMINI_PRO, Models.GEMINI_FLASH, Models.GEMINI_FLASH_LITE):
+        if m not in chain:
+            chain.append(m)
+
+    last_status = "other"
+    for m in chain:
+        content, status = _gemini_call_one(m, msgs, temperature, max_tokens)
+        last_status = status
+        if status == "ok":
+            _breaker_for("gemini").on_success()
+            if _GEMINI_WORKING_MODEL != m:
+                log.info(f"Gemini: using {m} (free-tier discovered)")
+                _GEMINI_WORKING_MODEL = m
+            return content
+        # On `limit0`/`empty`/`high-demand`, try next model in chain.
+
+    # All Gemini variants failed — disable for session, surface hint once.
+    _breaker_for("gemini").on_failure()
+    _record_llm_error("gemini", RuntimeError(f"all variants {last_status}"))
+    if last_status == "limit0":
+        _GEMINI_DISABLED_THIS_SESSION = True
+        log.warning("Gemini: all variants returned `limit: 0`. Free tier "
+                    "may not be active on this Google Cloud project. "
+                    "Visit https://aistudio.google.com → run any prompt in "
+                    "the playground once. Disabling Gemini for this session.")
+    elif last_status == "high-demand":
+        log.warning("Gemini: high demand across all flash variants; "
+                    "falling back to next provider tier.")
+    else:
+        log.warning(f"Gemini: all variants failed ({last_status})")
+    return ""
 
 
 # ── Anthropic (Claude) — premium tier for critical reasoning + native vision ──
