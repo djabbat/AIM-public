@@ -211,6 +211,26 @@ if AIM_ROLE == "hub":
     async def auth_me(user: dict = Depends(require_user)):
         return {"user": user}
 
+    class _ConsumePairBody(BaseModel):
+        code: str
+        node_id: Optional[str] = None
+        host: Optional[str] = None
+        version: Optional[str] = None
+
+    @app.post("/api/auth/consume-pair-code")
+    async def consume_pair_code(body: _ConsumePairBody):
+        """Public endpoint — node calls this with the 6-digit code that
+        the hub admin printed on their console. Returns AIM_USER_TOKEN
+        bound to the user the code was issued for. The code is the secret;
+        single-use, 10-minute TTL by default."""
+        from agents import pairing
+        result = pairing.consume_pair_code(
+            body.code, node_id=body.node_id or "",
+            host=body.host or "", version=body.version or "")
+        if result is None:
+            raise HTTPException(400, "invalid or expired pairing code")
+        return {"ok": True, **result}
+
     @app.post("/api/auth/validate-token")
     async def validate_token(body: TokenValidateRequest, request: Request):
         """Called by node hub_client on startup. Returns the user the token

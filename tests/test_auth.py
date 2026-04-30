@@ -21,10 +21,19 @@ def fresh_hub(monkeypatch, tmp_path):
     """Spin up a clean hub DB in a tmpdir for each test."""
     db = tmp_path / "hub.db"
     monkeypatch.setenv("AIM_HUB_DB", str(db))
-    # Force reimport so HUB_DB_PATH binds to the tmp path
-    if "agents.auth" in sys.modules:
-        del sys.modules["agents.auth"]
-    from agents import auth as _a
+    # Force reimport so HUB_DB_PATH binds to the tmp path. importlib.reload
+    # is needed because `agents` package keeps `auth` as an attribute that
+    # survives sys.modules.pop and pins the old HUB_DB_PATH otherwise.
+    import importlib
+    import agents
+    if hasattr(agents, "auth"):
+        importlib.reload(agents.auth)
+    else:
+        from agents import auth      # noqa: F401
+        agents.auth = sys.modules["agents.auth"]
+    if hasattr(agents, "pairing"):
+        importlib.reload(agents.pairing)
+    _a = agents.auth
     _a.init_hub_db()
     return _a
 

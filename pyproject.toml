@@ -1,0 +1,84 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aim-generalist"
+version = "7.1.0"
+description = "Assistant of Integrative Medicine — local-first tool-using agent (DeepSeek / Claude / Gemini / Ollama)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Jaba Tkemaladze", email = "jaba@longevity.ge" }
+]
+keywords = ["llm", "agent", "medical", "tool-use", "react", "deepseek", "claude", "gemini", "ollama"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Healthcare Industry",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+]
+dependencies = [
+    "openai>=1.30.0",
+    "anthropic>=0.40.0",
+    "python-dotenv>=1.0.0",
+    "httpx>=0.25.0",
+    "json-repair>=0.59.0",
+    "pytesseract>=0.3.10",
+    "Pillow>=10.0.0",
+    "pymupdf>=1.23.0",
+    "pdfplumber>=0.10.0",
+    "python-telegram-bot>=21.0.0",
+    "customtkinter>=5.2.0",
+    "fastapi>=0.110.0",
+    "uvicorn>=0.27.0",
+    "pydantic>=2.5.0",
+    "argon2-cffi>=23.1.0",
+    "tiktoken>=0.7.0",
+]
+
+[project.optional-dependencies]
+rapidocr = ["rapidocr-onnxruntime>=1.3.0"]
+gmail = [
+    "google-api-python-client>=2.0",
+    "google-auth-httplib2>=0.2",
+    "google-auth-oauthlib>=1.2",
+]
+dev = ["pytest>=7.0", "pytest-subtests>=0.10"]
+
+[project.urls]
+Homepage = "https://github.com/djabbat/AIM-public"
+Source = "https://github.com/djabbat/AIM-public"
+Issues = "https://github.com/djabbat/AIM-public/issues"
+
+[project.scripts]
+aim       = "cli.__main__:main"
+aim-hub   = "cli.__main__:main_hub"
+aim-node  = "cli.__main__:main_node"
+aim-ai    = "cli.__main__:main_ai"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["agents*", "tools*", "web*", "cli*", "scripts*", "migrations*"]
+exclude = ["tests*", "Patients*", "USER*", "venv*", "media*", "logs*",
+            "experiments*", "reports*", "patches*", "fonts*", "docs*",
+            "DiffDiagnosis*", "SSA*", "agents.bak.*", "Books*", "JabaEkimi*"]
+
+[tool.setuptools.package-data]
+"web" = ["templates/*", "static/*"]
+"scripts" = ["desktop/icons/*", "desktop/*.sh", "desktop/*.ps1", "desktop/*.py"]
+
+[tool.pytest.ini_options]
+markers = [
+    "network: tests that hit live APIs (PubMed, Crossref, etc.)",
+]
+testpaths = ["tests"]

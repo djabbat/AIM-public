@@ -1,5 +1,40 @@
 # AIM — Installation Guide
 
+## TL;DR (v7.1, 2026-05-01)
+
+```bash
+# 1. Install the CLI (one line, all platforms)
+pipx install aim-generalist
+
+# 2. First-time setup (5 questions; press Enter to skip)
+aim init
+
+# 3. Use it
+aim ai          # free-form ReAct AI assistant
+aim cli         # full medical menu
+aim doctor      # sanity check — providers, tools, paths
+```
+
+## Multi-user (Hub + Node)
+
+```bash
+# On the shared server (one time)
+pipx install aim-generalist
+aim hub pair alice --create        # creates user + prints 6-digit code
+aim hub start                      # listens on 0.0.0.0:8000
+
+# On each user's laptop / desktop
+pipx install aim-generalist
+aim node setup                     # asks for hub URL + the 6-digit code
+aim ai                             # done — authenticated
+```
+
+That's the whole story. Read on for details.
+
+---
+
+
+
 AIM v7.0 runs as a distributed system:
 
 - **Hub** — one shared server. Manages users, tokens, audit log. *Does not run AI.*
