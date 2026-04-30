@@ -163,6 +163,80 @@ start.bat cli
 start.bat telegram
 ```
 
+### Desktop launcher icons
+
+To get **two clickable icons on your Desktop** — one for the full AIM menu
+and one for the free-form AIM AI assistant (ReAct loop with tools) — run the
+platform installer once. It generates the icons (multi-resolution PNG/ICO/ICNS)
+and registers the launchers.
+
+#### Linux (Cinnamon / GNOME / KDE / XFCE / MATE)
+
+```bash
+cd AIM
+bash scripts/desktop/install_icons.sh
+```
+
+You'll see two new icons on your Desktop:
+- **AIM** — opens the full medical menu in a terminal
+- **AIM AI** — opens the free-form ReAct AI assistant directly
+
+If Cinnamon/GNOME shows them with a generic gear icon at first, right-click
+each → Properties → tick **Allow launching** (or *Make Trusted*); after that
+they'll show the proper coloured icon.
+
+The same launchers also appear under **Applications → Education / Science**.
+
+#### macOS
+
+```bash
+cd AIM
+bash scripts/desktop/install_icons_mac.sh
+```
+
+This generates two `.app` bundles on your Desktop:
+- `AIM.app`
+- `AIM AI.app`
+
+Each bundle has a Retina-quality `.icns` icon and opens Terminal.app on
+double-click. The first time you launch one, **macOS Gatekeeper** may say
+*"AIM cannot be opened because the developer cannot be verified"* — that's
+normal for unsigned local apps. To bypass it:
+
+1. **Right-click** the app on the Desktop → **Open** → **Open** again. The
+   one-time bypass is remembered for that bundle.
+2. Or: System Settings → Privacy & Security → scroll to "Security" →
+   click **Open Anyway** next to AIM.
+
+#### Windows 10 / 11
+
+In PowerShell from the AIM folder:
+
+```powershell
+.\scripts\desktop\install_icons.ps1
+```
+
+If PowerShell blocks the script:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\desktop\install_icons.ps1
+```
+
+You'll get:
+- **AIM.lnk** and **AIM AI.lnk** on your Desktop
+- A **Start Menu → AIM** folder with the same two shortcuts (skip with
+  `-NoStartMenu`)
+
+Each shortcut points at `cmd.exe /k start.bat ...` with a multi-resolution
+`.ico` icon, so it shows correctly in Explorer and the taskbar.
+
+#### Re-running
+
+You can re-run any of these installers any time — they overwrite the icons
+and shortcuts in place, picking up any updates to the AIM repo (e.g. after
+`git pull`). The same goes for moving AIM to a different directory: re-run
+the installer and the launchers will point at the new location.
+
 ### Linking your Telegram account
 
 If you want to use AIM via Telegram:

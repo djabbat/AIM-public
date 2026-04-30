@@ -39,6 +39,21 @@ EMBED_MODEL = "sentence-transformers/all-MiniLM-L6-v2"   # 384-dim, ~80MB, fast 
 CHUNK_CHARS = 1500
 CHUNK_OVERLAP = 200
 
+# Cross-project ingestion (added 2026-04-30): index core .md files from
+# user's Desktop project tree. Toggle via env to keep indexer fast in tests.
+DESKTOP_DIR = Path.home() / "Desktop"
+CORE_MD_NAMES = (
+    "CONCEPT.md", "STATE.md", "THEORY.md", "DESIGN.md",
+    "EVIDENCE.md", "PARAMETERS.md", "OPEN_PROBLEMS.md",
+    "MEMORY.md", "README.md",
+)
+DESKTOP_PROJECT_GLOB = (
+    "LongevityCommon/**/", "FCLC/**/", "MCOA/**/", "Ze/**/",
+    "BioSense/**/", "CDATA/**/", "AIM/**/", "Annals/**/",
+    "PhD/**/", "Books/**/", "GLA/**/",
+)
+INDEX_DESKTOP = os.getenv("AIM_INDEX_DESKTOP_PROJECTS", "1") == "1"
+
 
 def _split_chunks(text: str) -> list[str]:
     """Window the text into overlapping chunks. Crude but adequate for short memory files."""
@@ -86,33 +101,62 @@ def _open_db():
 
 
 def _enumerate_records() -> Iterable[dict]:
-    """Yield {file, chunk_id, text, mtime} for every chunk of every memory file."""
-    if not MEMORY_DIR.exists():
-        return
-    for f in sorted(MEMORY_DIR.glob("*.md")):
+    """Yield {file, chunk_id, text, mtime} for every chunk of every memory file.
+
+    Sources:
+      1. ~/.claude/projects/-home-oem/memory/*.md   (auto-memory)
+      2. ~/Desktop/<project>/{CONCEPT,STATE,THEORY,…}.md  (cross-project core)
+         — only when AIM_INDEX_DESKTOP_PROJECTS=1 (default).
+    """
+    seen: set[Path] = set()
+
+    def _emit(f: Path, label: str):
+        if f in seen or not f.exists():
+            return
+        seen.add(f)
         try:
             content = f.read_text(encoding="utf-8")
         except Exception as e:
             log.warning(f"skip {f}: {e}")
-            continue
+            return
+        if not content.strip():
+            return
         mtime = datetime.fromtimestamp(f.stat().st_mtime).isoformat()
         for i, chunk in enumerate(_split_chunks(content)):
             yield {
-                "file": f.name,
+                "file":     label,
                 "chunk_id": i,
-                "text": chunk,
-                "mtime": mtime,
+                "text":     chunk,
+                "mtime":    mtime,
             }
+
+    if MEMORY_DIR.exists():
+        for f in sorted(MEMORY_DIR.glob("*.md")):
+            yield from _emit(f, f.name)
+
+    if INDEX_DESKTOP and DESKTOP_DIR.exists():
+        for project in sorted(p for p in DESKTOP_DIR.iterdir()
+                              if p.is_dir() and not p.name.startswith(".")):
+            for name in CORE_MD_NAMES:
+                f = project / name
+                yield from _emit(f, f"{project.name}/{name}")
 
 
 def _file_state() -> dict[str, tuple]:
-    """(mtime, size) for every memory file — used for incremental reindex."""
+    """(mtime, size) for every indexed file — used for incremental reindex."""
     state: dict[str, tuple] = {}
-    if not MEMORY_DIR.exists():
-        return state
-    for f in MEMORY_DIR.glob("*.md"):
-        st = f.stat()
-        state[f.name] = (st.st_mtime, st.st_size)
+    if MEMORY_DIR.exists():
+        for f in MEMORY_DIR.glob("*.md"):
+            st = f.stat()
+            state[f.name] = (st.st_mtime, st.st_size)
+    if INDEX_DESKTOP and DESKTOP_DIR.exists():
+        for project in (p for p in DESKTOP_DIR.iterdir()
+                        if p.is_dir() and not p.name.startswith(".")):
+            for name in CORE_MD_NAMES:
+                f = project / name
+                if f.exists():
+                    st = f.stat()
+                    state[f"{project.name}/{name}"] = (st.st_mtime, st.st_size)
     return state
 
 

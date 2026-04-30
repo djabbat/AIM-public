@@ -46,3 +46,15 @@
 - 𝓘: 0.00 → 0.00 (expected)
 
 ---
+
+## 2026-04-30 15:30:54 — triage by test
+
+**Alternatives considered:** 2
+
+-    `warfarin` (treatment): U=0.712 (𝒞=0.00, Φ_Ze=1.00, Ethics=0.78) — Варфарин
+- ⭐ `apixaban` (treatment): U=0.730 (𝒞=0.00, Φ_Ze=1.00, Ethics=0.82) — Апиксабан (DOAC)
+
+**Decision:** `apixaban` — Апиксабан (DOAC)
+- 𝓘: 0.00 → 0.00 (expected)
+
+---

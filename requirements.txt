@@ -27,3 +27,4 @@ fastapi>=0.110.0
 uvicorn>=0.27.0
 pydantic>=2.5.0
 argon2-cffi>=23.1.0   # password hashing on the hub
+anthropic>=0.40.0     # Claude API (premium tier + native vision)

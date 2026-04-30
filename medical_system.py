@@ -5,6 +5,7 @@ AIM v7.0 — Точка входа
 
 import sys
 import logging
+import json
 from pathlib import Path
 
 from config import VERSION, APP_NAME, DEFAULT_LANG, SUPPORTED_LANGS, PATIENTS_DIR
@@ -64,7 +65,91 @@ class AIM:
         keys = ["m1","m2","m3","m4","m5","m6","m7","m8","m9","mq"]
         rows = [(t(k, self.lang),) for k in keys]
         rows.append(("T. Triage (kernel)  ·  L. Labs (kernel)  ·  X. Treatment (kernel)  ·  C. Chat (kernel)",))
+        rows.append(("A. AI assistant (free-form, ReAct loop with tools)",))
+        rows.append(("R. Resume previous session",))
         ui.table(["Действие"], rows)
+
+    def ai_assistant(self):
+        """Free-form ReAct-style entry: hand the user prompt to the generalist."""
+        from agents.ui_theme import ui
+        from agents import generalist as G
+        from agents import session_manager as S
+        ui.divider("AI assistant (free-form, streaming)")
+        ui.system("Type your task. The generalist will call tools as needed.\n"
+                  "Empty line returns to the menu.")
+        if self.session_id is None:
+            self.session_id = new_session(
+                self.patient["id"] if self.patient else None, self.lang)
+        while True:
+            try:
+                task = input("you> ").strip()
+            except (KeyboardInterrupt, EOFError):
+                break
+            if not task:
+                break
+            S.on_turn_end(self.session_id, "user", task)
+            answer = ""
+            tools_used: list[str] = []
+            try:
+                for ev in G.run_streaming(task, max_iters=12):
+                    et = ev.get("type")
+                    if et == "start":
+                        flag = "  [critical]" if ev.get("critical") else ""
+                        ui.system(f"thinking…{flag}")
+                    elif et == "tool_call":
+                        kind = "‖" if ev.get("parallel") else "→"
+                        args_repr = json.dumps(ev.get("args") or {},
+                                                ensure_ascii=False)[:80]
+                        ui.system(f"  {kind} {ev['tool']}({args_repr})")
+                    elif et == "tool_result":
+                        tools_used.append(ev["tool"])
+                        flag = "✓" if ev.get("ok") else "✗"
+                        cached = " (cached)" if ev.get("cached") else ""
+                        ui.system(f"    {flag} {ev['tool']}{cached}: "
+                                  f"{ev.get('result_preview', '')[:120]}")
+                    elif et == "self_critique_start":
+                        ui.system("  · self-critique…")
+                    elif et == "self_critique_failed":
+                        ui.warning(f"  ✗ critique surfaced flaws — regenerating")
+                    elif et == "self_critique_passed":
+                        ui.system("  ✓ critique passed")
+                    elif et == "final":
+                        answer = ev.get("answer", "")
+                    elif et == "error":
+                        ui.warning(f"error: {ev.get('error')}")
+            except Exception as e:
+                ui.warning(f"generalist error: {e}")
+                continue
+            print()
+            print(answer)
+            print()
+            S.on_turn_end(self.session_id, "assistant", answer,
+                          model="generalist")
+
+    def resume_session(self):
+        """Pick a previous session from the DB and restore its history."""
+        from agents.ui_theme import ui
+        from agents import session_manager as S
+        recent = S.list_recent(n=5)
+        if not recent:
+            ui.warning("No previous sessions.")
+            return
+        ui.table(["#", "Started", "Msgs", "Summary"],
+                 [(i + 1, r["started_at"][:16].replace("T", " "),
+                   r["n_msg"], (r.get("summary") or "")[:60])
+                  for i, r in enumerate(recent)])
+        choice = self.input("Resume #: ")
+        try:
+            idx = int(choice) - 1
+            if 0 <= idx < len(recent):
+                self.session_id = recent[idx]["id"]
+                hist = S.resume(self.session_id, limit=10)
+                ui.success(f"Resumed session {self.session_id} "
+                           f"({len(hist)} messages loaded)")
+                for m in hist[-5:]:
+                    print(f"  [{m['role']}] {m['content'][:160]}")
+        except (ValueError, IndexError):
+            ui.system("Отмена.")
 
     def input(self, prompt: str = "> ") -> str:
         try:
@@ -422,6 +507,8 @@ class AIM:
             elif choice == "l" or choice == "L": self.kernel_labs()
             elif choice == "x" or choice == "X": self.kernel_treatment()
             elif choice == "c" or choice == "C": self.kernel_chat()
+            elif choice == "a" or choice == "A": self.ai_assistant()
+            elif choice == "r" or choice == "R": self.resume_session()
             elif choice == "0":
                 print("Bye.")
                 break

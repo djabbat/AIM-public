@@ -13,7 +13,7 @@ from typing import Optional
 from openai import OpenAI, APITimeoutError
 
 from config import (
-    DEEPSEEK_API_KEY, GROQ_API_KEY,
+    DEEPSEEK_API_KEY, GROQ_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY,
     Models, Endpoints,
     REASONING_KEYWORDS,
     LLM_TEMPERATURE, LLM_MAX_TOKENS, LLM_MAX_TOKENS_LONG, LLM_TIMEOUT, LLM_CONNECT_TIMEOUT,
@@ -79,6 +79,16 @@ else:
 
 # Ollama is local — no remote rate limit. Use a generous bucket so it never blocks.
 _OLLAMA_LIMITER = TokenBucket(rate_per_minute=10000, capacity=1000)
+# Anthropic — conservative; tier 1 is 50 RPM. Adaptive via env.
+_ANTHROPIC_LIMITER = TokenBucket(
+    rate_per_minute=int(os.getenv("AIM_ANTHROPIC_RATE_RPM", "50")),
+    capacity=int(os.getenv("AIM_ANTHROPIC_RATE_BURST", "20")),
+)
+# Gemini free tier — 50 RPD on gemini-2.5-pro. Conservative RPM.
+_GEMINI_LIMITER = TokenBucket(
+    rate_per_minute=int(os.getenv("AIM_GEMINI_RATE_RPM", "10")),
+    capacity=int(os.getenv("AIM_GEMINI_RATE_BURST", "5")),
+)
 
 
 def _limiter_for(provider: str) -> TokenBucket:
@@ -86,6 +96,10 @@ def _limiter_for(provider: str) -> TokenBucket:
         return _DS_LIMITER
     if provider == "ollama":
         return _OLLAMA_LIMITER
+    if provider == "anthropic":
+        return _ANTHROPIC_LIMITER
+    if provider == "gemini":
+        return _GEMINI_LIMITER
     return _GROQ_LIMITER
 
 
@@ -144,6 +158,8 @@ _GROQ_BREAKER = CircuitBreaker(
 )
 # Ollama is local; once it's up it rarely fails — small breaker.
 _OLLAMA_BREAKER = CircuitBreaker(threshold=2, recovery=15.0)
+_ANTHROPIC_BREAKER = CircuitBreaker(threshold=3, recovery=60.0)
+_GEMINI_BREAKER = CircuitBreaker(threshold=3, recovery=120.0)
 
 
 def _breaker_for(provider: str) -> CircuitBreaker:
@@ -151,6 +167,10 @@ def _breaker_for(provider: str) -> CircuitBreaker:
         return _DS_BREAKER
     if provider == "ollama":
         return _OLLAMA_BREAKER
+    if provider == "anthropic":
+        return _ANTHROPIC_BREAKER
+    if provider == "gemini":
+        return _GEMINI_BREAKER
     return _GROQ_BREAKER
 
 # ── Клиенты (OpenAI-совместимый интерфейс) ───────────────────────────────────
@@ -201,6 +221,111 @@ def ollama_force_reprobe() -> bool:
     _OLLAMA_PROBE_AT = 0.0
     return ollama_available()
 
+
+# ── Gemini (Google AI Studio) — free tier 50 req/day on 2.5-pro ────────────
+
+
+def gemini_available() -> bool:
+    return bool(GEMINI_API_KEY)
+
+
+def _gemini() -> OpenAI:
+    """Gemini exposes an OpenAI-compatible /v1beta/openai surface — same client."""
+    return _client(Endpoints.GEMINI, GEMINI_API_KEY)
+
+
+def _gemini_chat(prompt: str, *, system: str = "", model: Optional[str] = None,
+                 temperature: float = LLM_TEMPERATURE,
+                 max_tokens: int = LLM_MAX_TOKENS) -> str:
+    """Minimal Gemini wrapper. Returns "" on failure (caller falls through)."""
+    if not gemini_available():
+        return ""
+    _breaker_for("gemini").before_call()
+    _limiter_for("gemini").acquire()
+    msgs = []
+    if system:
+        msgs.append({"role": "system", "content": system})
+    msgs.append({"role": "user", "content": prompt})
+    try:
+        resp = _gemini().chat.completions.create(
+            model=model or Models.GEMINI_PRO,
+            messages=msgs,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        _breaker_for("gemini").on_success()
+        return resp.choices[0].message.content.strip()
+    except Exception as e:
+        _breaker_for("gemini").on_failure()
+        _record_llm_error("gemini", e)
+        log.warning(f"Gemini call failed: {e}")
+        return ""
+
+
+# ── Anthropic (Claude) — premium tier for critical reasoning + native vision ──
+#
+# Used by ask_critical(), ensemble adjudication, and tools/vision.see().
+# Native messages API (not OpenAI-compatible). Falls through to ds-v4-pro
+# when ANTHROPIC_API_KEY is missing.
+
+_ANTHROPIC_CLIENT = None
+
+
+def anthropic_available() -> bool:
+    return bool(ANTHROPIC_API_KEY)
+
+
+def _anthropic():
+    global _ANTHROPIC_CLIENT
+    if _ANTHROPIC_CLIENT is not None:
+        return _ANTHROPIC_CLIENT
+    try:
+        from anthropic import Anthropic
+    except ImportError:
+        log.warning("anthropic SDK not installed; pip install anthropic")
+        return None
+    _ANTHROPIC_CLIENT = Anthropic(
+        api_key=ANTHROPIC_API_KEY,
+        timeout=httpx.Timeout(LLM_TIMEOUT, connect=LLM_CONNECT_TIMEOUT),
+    )
+    return _ANTHROPIC_CLIENT
+
+
+def _claude_chat(prompt: str, *, system: str = "", model: Optional[str] = None,
+                 temperature: float = LLM_TEMPERATURE,
+                 max_tokens: int = LLM_MAX_TOKENS,
+                 images: Optional[list[dict]] = None) -> str:
+    """Minimal Claude wrapper. `images` = list of {'type','source':{'data':b64,'media_type':...}}."""
+    client = _anthropic()
+    if client is None:
+        return ""
+    _breaker_for("anthropic").before_call()
+    _limiter_for("anthropic").acquire()
+    try:
+        # Build content blocks (text + optional images)
+        content: list[dict] = []
+        if images:
+            content.extend(images)
+        content.append({"type": "text", "text": prompt})
+        kwargs = {
+            "model": model or Models.CLAUDE_OPUS,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "messages": [{"role": "user", "content": content}],
+        }
+        if system:
+            kwargs["system"] = system
+        resp = client.messages.create(**kwargs)
+        _breaker_for("anthropic").on_success()
+        # Extract text from response content blocks
+        out = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
+        return out.strip()
+    except Exception as e:
+        _breaker_for("anthropic").on_failure()
+        _record_llm_error("anthropic", e)
+        log.warning(f"Claude call failed: {e}")
+        return ""
+
 # ── Утилиты ───────────────────────────────────────────────────────────────────
 
 def _count_tokens(text: str) -> int:
@@ -228,12 +353,14 @@ def _route(prompt: str, lang: Optional[str], system: str) -> tuple[str, str, Ope
     """
     Возвращает (model_name, provider_name, client).
 
-    Routing policy (local-first):
-      1. Reasoning task   → DeepSeek-V4-pro (cloud) if key present, else Ollama deepseek-r1
-      2. Long-context     → DeepSeek-V4-flash (1M ctx) if key present, else Ollama (truncation)
-      3. Default chat     → Ollama qwen2.5:7b (local, 0 cost) if running
-                            else Groq fast (cloud) → DeepSeek-V4-flash
-      4. Smart routing override (AIM_SMART_ROUTING=1) takes precedence.
+    Routing policy (cloud-first, per user 2026-04-30):
+      1. Reasoning task   → DeepSeek-V4-pro (cloud)
+      2. Long-context     → DeepSeek-V4-flash (1M ctx)
+      3. Default chat     → DeepSeek-V4-flash (cloud)
+      4. Fallback when DeepSeek unreachable / key missing:
+         a. Groq (if key + short prompt)
+         b. Ollama qwen2.5:7b (if running locally)
+      5. Smart routing override (AIM_SMART_ROUTING=1) takes precedence.
     """
     # Smart routing override (opt-in)
     if os.getenv("AIM_SMART_ROUTING", "").lower() in ("1", "true", "yes"):
@@ -247,7 +374,7 @@ def _route(prompt: str, lang: Optional[str], system: str) -> tuple[str, str, Ope
             if model.startswith("llama-") and GROQ_API_KEY:
                 log.info(f"SmartRouter → {model} (tier={r['tier']})")
                 return model, "groq", _groq()
-            if model.startswith("qwen") or model.startswith("llama3") and ollama_available():
+            if (model.startswith("qwen") or model.startswith("llama3")) and ollama_available():
                 log.info(f"SmartRouter → ollama:{model}")
                 return model, "ollama", _ollama()
         except Exception as e:
@@ -257,37 +384,32 @@ def _route(prompt: str, lang: Optional[str], system: str) -> tuple[str, str, Ope
     is_reasoning = _is_reasoning_task(prompt)
     is_long = total_tokens > 30_000
 
-    # 1. Reasoning → DeepSeek if key, else local deepseek-r1
-    if is_reasoning:
-        if DEEPSEEK_API_KEY:
+    # PRIMARY PATH — DeepSeek-V4 cloud (chosen as default 2026-04-30).
+    if DEEPSEEK_API_KEY:
+        if is_reasoning:
             log.info("Router → DeepSeek-V4-pro (reasoner)")
             return Models.DS_REASONER, "deepseek", _deepseek()
-        if ollama_available():
-            log.info("Router → Ollama deepseek-r1 (local reasoner)")
-            return Models.OLLAMA_REASONER, "ollama", _ollama()
-
-    # 2. Long context → DeepSeek (1M) preferred; Ollama can't fit it, so cloud is required
-    if is_long and DEEPSEEK_API_KEY:
-        log.info("Router → DeepSeek-V4-flash (long-ctx)")
+        if is_long:
+            log.info("Router → DeepSeek-V4-flash (long-ctx 1M)")
+            return Models.DS_CHAT, "deepseek", _deepseek()
+        log.info("Router → DeepSeek-V4-flash (default)")
         return Models.DS_CHAT, "deepseek", _deepseek()
 
-    # 3. Default chat → local Ollama first
-    if ollama_available():
-        log.info("Router → Ollama qwen2.5:7b (local default)")
-        return Models.OLLAMA_CHAT, "ollama", _ollama()
-
-    # 4. Cloud fallbacks
-    if GROQ_API_KEY and total_tokens < 3_000:
-        log.info("Router → Groq (fast cloud fallback)")
+    # FALLBACKS — only when DeepSeek key is missing or breaker is open.
+    if GROQ_API_KEY and total_tokens < 3_000 and not is_reasoning:
+        log.info("Router → Groq (no DS key — cloud fallback)")
         return Models.GROQ_LLAMA, "groq", _groq()
 
-    if DEEPSEEK_API_KEY:
-        log.info("Router → DeepSeek-V4-flash (cloud fallback)")
-        return Models.DS_CHAT, "deepseek", _deepseek()
+    if ollama_available():
+        if is_reasoning:
+            log.info("Router → Ollama deepseek-r1 (offline reasoner)")
+            return Models.OLLAMA_REASONER, "ollama", _ollama()
+        log.info("Router → Ollama qwen2.5:7b (offline fallback)")
+        return Models.OLLAMA_CHAT, "ollama", _ollama()
 
     raise RuntimeError(
-        "No LLM provider available. Install Ollama locally "
-        "(https://ollama.com) or set DEEPSEEK_API_KEY/GROQ_API_KEY in ~/.aim_env."
+        "No LLM provider available. Set DEEPSEEK_API_KEY in ~/.aim_env "
+        "(primary) or run Ollama locally as offline fallback."
     )
 
 # ── Основной вызов ────────────────────────────────────────────────────────────
@@ -441,13 +563,13 @@ def _fallback(prompt: str, system: str, failed_provider: str, err: Exception) ->
         log.warning(f"smart_fallback exhausted: {sf_err}; falling back to legacy chain")
 
     chain = []
-    # Prefer local Ollama as the first fallback — free, fast, offline.
-    if failed_provider != "ollama" and ollama_available():
-        chain.append((Models.OLLAMA_CHAT, _ollama()))
+    # Cloud-first per user 2026-04-30: DeepSeek primary, Groq next, Ollama last.
     if failed_provider != "deepseek" and DEEPSEEK_API_KEY:
         chain.append((Models.DS_CHAT, _deepseek()))
     if failed_provider != "groq" and GROQ_API_KEY:
         chain.append((Models.GROQ_LLAMA, _groq()))
+    if failed_provider != "ollama" and ollama_available():
+        chain.append((Models.OLLAMA_CHAT, _ollama()))
 
     messages = [
         {"role": "system", "content": system},
@@ -472,8 +594,56 @@ def _fallback(prompt: str, system: str, failed_provider: str, err: Exception) ->
 
 # ── Удобные алиасы ────────────────────────────────────────────────────────────
 
+def ask_critical(prompt: str, system: str = "", lang: str = None,
+                 max_tokens: int = LLM_MAX_TOKENS) -> str:
+    """Critical-tier reasoning. Priority chain (per user 2026-04-30):
+        Claude Opus 4.7 → Gemini 2.5 Pro (free) → DeepSeek-V4-pro → Ollama r1.
+
+    Use for: high-stakes decisions, ensemble adjudication, peer-review
+    synthesis, manuscript critique, grant strategy. Highest quality, lowest
+    hallucination rate available given configured keys.
+    """
+    if anthropic_available():
+        out = _claude_chat(prompt, system=system, model=Models.CLAUDE_OPUS,
+                           max_tokens=max_tokens, temperature=0)
+        if out:
+            return out
+        log.warning("ask_critical: Claude unavailable, trying Gemini 2.5 Pro")
+    if gemini_available():
+        out = _gemini_chat(prompt, system=system, model=Models.GEMINI_PRO,
+                           max_tokens=max_tokens, temperature=0)
+        if out:
+            return out
+        log.warning("ask_critical: Gemini unavailable, falling back to DS-V4-pro")
+    if DEEPSEEK_API_KEY:
+        return ask_deep(prompt, system=system, lang=lang)
+    return ask(prompt, system=system, lang=lang, max_tokens=max_tokens)
+
+
 def ask_fast(prompt: str, lang: str = None) -> str:
-    """Быстрый ответ. Приоритет: Ollama qwen2.5:3b (local, instant) → Groq → DeepSeek."""
+    """Быстрый ответ. Приоритет (cloud-first per user 2026-04-30):
+       Groq → DeepSeek-V4-flash → Ollama qwen2.5:3b (offline)."""
+    # Groq is fastest for short prompts on cloud
+    if GROQ_API_KEY and _count_tokens(prompt) < 3_000:
+        try:
+            _breaker_for("groq").before_call()
+            _limiter_for("groq").acquire()
+            resp = _groq().chat.completions.create(
+                model=Models.GROQ_LLAMA_FAST,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.2,
+                max_tokens=LLM_MAX_TOKENS,
+            )
+            _breaker_for("groq").on_success()
+            return resp.choices[0].message.content.strip()
+        except Exception as e:
+            _breaker_for("groq").on_failure()
+            log.warning(f"ask_fast: groq failed: {e}; trying DeepSeek")
+
+    if DEEPSEEK_API_KEY:
+        return ask(prompt, lang=lang, temperature=0.2)
+
+    # Offline fallback
     if ollama_available():
         try:
             _breaker_for("ollama").before_call()
@@ -488,7 +658,7 @@ def ask_fast(prompt: str, lang: str = None) -> str:
             return resp.choices[0].message.content.strip()
         except Exception as e:
             _breaker_for("ollama").on_failure()
-            log.warning(f"ask_fast: ollama failed: {e}; falling back to router")
+            log.warning(f"ask_fast: ollama also failed: {e}")
     return ask(prompt, lang=lang, temperature=0.2)
 
 _LAST_REASONING: Optional[str] = None
@@ -663,14 +833,33 @@ def warmup_deepseek_cache(prefix: str, max_tokens: int = 4) -> bool:
 
 def providers_status() -> dict:
     """Какие LLM-провайдеры доступны."""
+    has_claude  = anthropic_available()
+    has_gemini  = gemini_available()
+    has_ds      = bool(DEEPSEEK_API_KEY)
+    has_ollama  = ollama_available()
+    has_groq    = bool(GROQ_API_KEY)
     return {
-        "deepseek": bool(DEEPSEEK_API_KEY),
-        "groq":     bool(GROQ_API_KEY),
-        "ollama":   ollama_available(),
+        "anthropic": has_claude,
+        "gemini":    has_gemini,
+        "deepseek":  has_ds,
+        "groq":      has_groq,
+        "ollama":    has_ollama,
         "ollama_url": Endpoints.OLLAMA,
-        "models": {
-            "default_chat":     Models.OLLAMA_CHAT if ollama_available() else Models.DS_CHAT,
-            "default_fast":     Models.OLLAMA_FAST if ollama_available() else Models.GROQ_LLAMA_FAST,
-            "default_reasoner": Models.DS_REASONER if DEEPSEEK_API_KEY else Models.OLLAMA_REASONER,
+        "tier_chain": {
+            "critical":   ("claude-opus-4-7"     if has_claude
+                           else Models.GEMINI_PRO if has_gemini
+                           else Models.DS_REASONER if has_ds
+                           else Models.OLLAMA_REASONER),
+            "reasoning":  (Models.DS_REASONER    if has_ds
+                           else "claude-opus-4-7" if has_claude
+                           else Models.GEMINI_PRO if has_gemini
+                           else Models.OLLAMA_REASONER),
+            "default":    (Models.DS_CHAT        if has_ds
+                           else Models.GEMINI_FLASH if has_gemini
+                           else Models.OLLAMA_CHAT if has_ollama
+                           else Models.GROQ_LLAMA),
+            "fast":       (Models.GROQ_LLAMA_FAST if has_groq
+                           else Models.OLLAMA_FAST if has_ollama
+                           else Models.DS_CHAT),
         },
     }

@@ -34,3 +34,12 @@
 - ❌ `ampi` (treatment): Laws FAIL (L1 block: ampicillin в семействе аллергии 'penicillin') — Ампициллин
 
 ---
+
+## 2026-04-30 15:31:05 — triage by test
+
+**Alternatives considered:** 2
+
+- ❌ `amoxi` (treatment): Laws FAIL (L1 block: amoxicillin в семействе аллергии 'penicillin') — Амоксициллин
+- ❌ `ampi` (treatment): Laws FAIL (L1 block: ampicillin в семействе аллергии 'penicillin') — Ампициллин
+
+---

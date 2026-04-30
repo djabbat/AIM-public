@@ -46,3 +46,15 @@
 - 𝓘: 0.00 → 0.00 (expected)
 
 ---
+
+## 2026-04-30 15:31:05 — triage by test
+
+**Alternatives considered:** 2
+
+-    `morphine` (treatment): U=0.706 (𝒞=0.00, Φ_Ze=1.00, Ethics=0.76) — Морфин 10 мг в/м
+- ⭐ `paracetamol` (treatment): U=0.730 (𝒞=0.00, Φ_Ze=1.00, Ethics=0.82) — Парацетамол 1 г ×3
+
+**Decision:** `paracetamol` — Парацетамол 1 г ×3
+- 𝓘: 0.00 → 0.00 (expected)
+
+---

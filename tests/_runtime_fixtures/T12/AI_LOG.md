@@ -46,3 +46,15 @@
 - 𝓘: 0.00 → 0.00 (expected)
 
 ---
+
+## 2026-04-30 15:31:52 — triage by test
+
+**Alternatives considered:** 2
+
+- ❌ `vanco` (treatment): Laws FAIL (L0 risk: broad-spectrum ABx for likely viral — resistance pressure) — Ванкомицин IV empirically for ОРВИ
+- ⭐ `supportive` (treatment): U=0.730 (𝒞=0.00, Φ_Ze=1.00, Ethics=0.82) — Supportive therapy: rest, fluids, paracetamol
+
+**Decision:** `supportive` — Supportive therapy: rest, fluids, paracetamol
+- 𝓘: 0.00 → 0.00 (expected)
+
+---

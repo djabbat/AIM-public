@@ -20,8 +20,12 @@ ENV_FILE    = Path.home() / ".aim_env"
 
 load_dotenv(ENV_FILE)
 
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
-GROQ_API_KEY     = os.getenv("GROQ_API_KEY", "")
+DEEPSEEK_API_KEY  = os.getenv("DEEPSEEK_API_KEY", "")
+GROQ_API_KEY      = os.getenv("GROQ_API_KEY", "")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+# Google AI Studio — free tier 50 req/day on gemini-2.5-pro, 1M context.
+# Get key at https://aistudio.google.com/apikey (no credit card).
+GEMINI_API_KEY    = os.getenv("GEMINI_API_KEY", "")
 
 # ── Модели ────────────────────────────────────────────────────────────────────
 
@@ -47,13 +51,27 @@ class Models:
     OLLAMA_FAST     = os.getenv("AIM_OLLAMA_FAST_MODEL",     "qwen2.5:3b-instruct")
     OLLAMA_REASONER = os.getenv("AIM_OLLAMA_REASONER_MODEL", "deepseek-r1:7b")
 
+    # Anthropic Claude — premium tier for critical reasoning + native vision.
+    # Used by ask_critical() and ensemble adjudication.
+    CLAUDE_OPUS    = os.getenv("AIM_CLAUDE_OPUS_MODEL",    "claude-opus-4-7")
+    CLAUDE_SONNET  = os.getenv("AIM_CLAUDE_SONNET_MODEL",  "claude-sonnet-4-6")
+    CLAUDE_HAIKU   = os.getenv("AIM_CLAUDE_HAIKU_MODEL",   "claude-haiku-4-5-20251001")
+
+    # Google Gemini 2.5 Pro — frontier reasoning, 1M context, free tier 50 req/day.
+    GEMINI_PRO     = os.getenv("AIM_GEMINI_PRO_MODEL",     "gemini-2.5-pro")
+    GEMINI_FLASH   = os.getenv("AIM_GEMINI_FLASH_MODEL",   "gemini-2.5-flash")
+
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 class Endpoints:
-    DEEPSEEK = "https://api.deepseek.com/v1"
-    GROQ     = "https://api.groq.com/openai/v1"
+    DEEPSEEK  = "https://api.deepseek.com/v1"
+    GROQ      = "https://api.groq.com/openai/v1"
     # Ollama exposes an OpenAI-compatible /v1 surface since 0.1.27 — same client.
-    OLLAMA   = os.getenv("AIM_OLLAMA_URL", "http://127.0.0.1:11434/v1")
+    OLLAMA    = os.getenv("AIM_OLLAMA_URL", "http://127.0.0.1:11434/v1")
+    # Anthropic uses native messages API (not OpenAI-compatible).
+    ANTHROPIC = "https://api.anthropic.com/v1"
+    # Google Gemini exposes an OpenAI-compatible /v1beta/openai surface.
+    GEMINI    = "https://generativelanguage.googleapis.com/v1beta/openai"
 
 # ── Языки ─────────────────────────────────────────────────────────────────────
 

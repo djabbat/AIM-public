@@ -200,6 +200,128 @@ def evaluate_laws(decision: Decision, patient: dict, context: dict) -> LawsResul
 
 
 # ═════════════════════════════════════════════════════════════════════════════
+# 2.5  Extended laws (non-clinical scope, added 2026-04-30)
+# ═════════════════════════════════════════════════════════════════════════════
+#
+# These supplement L0–L3 for actions that are NOT diagnostic triage:
+#   L_PRIVACY        — patient/personal data must not leak off-machine
+#   L_CONSENT        — actions visible to others (email send, git push public,
+#                      Telegram broadcast, Slack post) require explicit user OK
+#   L_VERIFIABILITY  — emitted scientific citations (PMID/DOI) must resolve
+#
+# Each returns (ok: bool, reason: str). Callers (writer/email/researcher
+# agents, generalist tool-loop) wrap their actions in evaluate_extended()
+# before performing the side-effect.
+
+
+def evaluate_l_privacy(decision: Decision, patient: dict, context: dict) -> tuple[bool, str]:
+    """L_PRIVACY — block off-machine egress of patient/personal data.
+
+    Triggered when:
+      - action_type ∈ {email_send, web_post, git_push_public, upload_external}
+      - payload contains a Patients/ folder reference OR personal identifier
+        (name + DoB pattern, phone, full ID, raw lab values)
+    """
+    sensitive_actions = {"email_send", "web_post", "git_push_public",
+                         "upload_external", "telegram_broadcast",
+                         "external_api_call_with_data"}
+    if decision.action_type not in sensitive_actions:
+        return True, "L_PRIVACY n/a"
+
+    blob = json.dumps(decision.payload, ensure_ascii=False).lower()
+    flags = []
+    if "patients/" in blob or "/patients/" in blob:
+        flags.append("Patients/ path in payload")
+    # crude phone pattern (E.164-ish)
+    import re as _re
+    if _re.search(r"\+?\d[\d\s().-]{8,}\d", blob):
+        flags.append("phone-like number in payload")
+    # birthdate in payload
+    if _re.search(r"\b(19|20)\d{2}[-_/](0?[1-9]|1[0-2])[-_/](0?[1-9]|[12]\d|3[01])\b", blob):
+        flags.append("birthdate-like pattern in payload")
+    # MRN/passport-like
+    if _re.search(r"\b(?:passport|mrn|медкарт)[:#\s]+\S+", blob):
+        flags.append("medical record / passport identifier")
+
+    if flags and not context.get("privacy_consent"):
+        return False, "L_PRIVACY: " + "; ".join(flags) + " (require privacy_consent=True)"
+    return True, "L_PRIVACY ok"
+
+
+def evaluate_l_consent(decision: Decision, patient: dict, context: dict) -> tuple[bool, str]:
+    """L_CONSENT — actions with public/social blast radius need explicit OK.
+
+    Triggered when action is irreversible-from-the-user's-side OR visible to
+    third parties: send email, post to Telegram channel, push to public git,
+    submit form, publish on web. The scoring rubric mirrors host-tool
+    confirmations: if context['user_confirmed']=True, pass; otherwise block.
+    """
+    public_actions = {"email_send", "git_push_public", "telegram_broadcast",
+                      "slack_post", "web_publish", "submit_form",
+                      "delete_persistent", "irreversible_external"}
+    if decision.action_type not in public_actions:
+        return True, "L_CONSENT n/a"
+    if context.get("user_confirmed") is True:
+        return True, "L_CONSENT confirmed by user"
+    return False, (f"L_CONSENT: action='{decision.action_type}' has external "
+                   "blast radius and requires explicit user confirmation")
+
+
+def evaluate_l_verifiability(decision: Decision, patient: dict, context: dict) -> tuple[bool, str]:
+    """L_VERIFIABILITY — every cited PMID/DOI must resolve at the source.
+
+    Triggered when decision.action_type ∈ {emit_text, write_manuscript,
+    send_letter, generate_citations} AND payload contains scientific claims.
+    Uses tools.literature.enforce_citations(strict). If any citation does
+    NOT resolve, the law fails.
+
+    Per memory `feedback_deepseek_no_citations`: LLMs fabricate DOIs.
+    """
+    citation_actions = {"emit_text", "write_manuscript", "send_letter",
+                        "generate_citations", "peer_review_emit",
+                        "grant_letter"}
+    if decision.action_type not in citation_actions:
+        return True, "L_VERIFIABILITY n/a"
+    text = decision.payload.get("text") or decision.payload.get("body") or ""
+    if not text:
+        return True, "L_VERIFIABILITY: no text to verify"
+    try:
+        from tools.literature import enforce_citations
+        rep = enforce_citations(text, mode="annotate")
+        if rep.rejected:
+            details = ", ".join(f"{r['kind']}:{r['value']}" for r in rep.rejected)
+            return False, f"L_VERIFIABILITY: {len(rep.rejected)} unverified citation(s) — {details}"
+    except Exception as e:
+        log.warning(f"L_VERIFIABILITY check error: {e}; failing closed")
+        return False, f"L_VERIFIABILITY check raised: {e}"
+    return True, "L_VERIFIABILITY ok"
+
+
+@dataclass
+class ExtendedLawsResult:
+    privacy:       bool
+    consent:       bool
+    verifiability: bool
+    reasons:       list[str] = field(default_factory=list)
+
+    @property
+    def passed(self) -> bool:
+        return self.privacy and self.consent and self.verifiability
+
+
+def evaluate_extended(decision: Decision, patient: dict | None = None,
+                      context: dict | None = None) -> ExtendedLawsResult:
+    """Run L_PRIVACY + L_CONSENT + L_VERIFIABILITY. Used by non-clinical agents."""
+    patient = patient or {}
+    context = context or {}
+    p_ok, p_r = evaluate_l_privacy(decision, patient, context)
+    c_ok, c_r = evaluate_l_consent(decision, patient, context)
+    v_ok, v_r = evaluate_l_verifiability(decision, patient, context)
+    return ExtendedLawsResult(privacy=p_ok, consent=c_ok, verifiability=v_ok,
+                              reasons=[p_r, c_r, v_r])
+
+
+# ═════════════════════════════════════════════════════════════════════════════
 # 3. Impedance 𝓘 — checklist-core + LLM-delta
 # ═════════════════════════════════════════════════════════════════════════════
 
