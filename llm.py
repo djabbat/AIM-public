@@ -225,7 +225,12 @@ def ollama_force_reprobe() -> bool:
 # ── Gemini (Google AI Studio) — free tier 50 req/day on 2.5-pro ────────────
 
 
+_GEMINI_DISABLED_THIS_SESSION = False
+
+
 def gemini_available() -> bool:
+    if _GEMINI_DISABLED_THIS_SESSION:
+        return False
     return bool(GEMINI_API_KEY)
 
 
@@ -258,7 +263,20 @@ def _gemini_chat(prompt: str, *, system: str = "", model: Optional[str] = None,
     except Exception as e:
         _breaker_for("gemini").on_failure()
         _record_llm_error("gemini", e)
-        log.warning(f"Gemini call failed: {e}")
+        emsg = str(e)
+        # Detect "free tier not activated" — 429 RESOURCE_EXHAUSTED with limit: 0
+        # means Google Cloud project hasn't enabled Gemini API free quota yet.
+        # No point retrying this session; mark provider down so the tier-chain
+        # fallbacks fire instantly instead of paying ~3s latency per call.
+        if "RESOURCE_EXHAUSTED" in emsg and "limit: 0" in emsg:
+            global _GEMINI_DISABLED_THIS_SESSION
+            _GEMINI_DISABLED_THIS_SESSION = True
+            log.warning("Gemini free tier not activated for this API key. "
+                        "Visit https://aistudio.google.com and run any prompt "
+                        "in the playground once to activate quota. Disabling "
+                        "Gemini for this session.")
+        else:
+            log.warning(f"Gemini call failed: {emsg[:200]}")
         return ""
 
 
