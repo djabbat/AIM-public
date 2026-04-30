@@ -63,3 +63,16 @@
 - 𝓘: 0.41 → 0.25 (expected)
 
 ---
+
+## 2026-04-30 21:39:48 — triage by scenario
+
+**Alternatives considered:** 3
+
+- ❌ `wait` (wait): Laws FAIL (L1 inaction harm: impedance=0.50, red_flags=['chest pain radiating to jaw, diaphoresis']) — Наблюдение дома 24ч
+- ⭐ `ecg_tropo` (test): U=0.778 (𝒞=0.07, Φ_Ze=0.99, Ethics=0.92) — ECG + троптин
+-    `aspirin_empiric` (treatment): U=0.615 (𝒞=0.02, Φ_Ze=0.94, Ethics=0.59) — ASA 325 mg empirically
+
+**Decision:** `ecg_tropo` — ECG + троптин
+- 𝓘: 0.36 → 0.22 (expected)
+
+---

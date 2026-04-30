@@ -294,8 +294,14 @@ def _anthropic():
 def _claude_chat(prompt: str, *, system: str = "", model: Optional[str] = None,
                  temperature: float = LLM_TEMPERATURE,
                  max_tokens: int = LLM_MAX_TOKENS,
-                 images: Optional[list[dict]] = None) -> str:
-    """Minimal Claude wrapper. `images` = list of {'type','source':{'data':b64,'media_type':...}}."""
+                 images: Optional[list[dict]] = None,
+                 cache_system: bool = True) -> str:
+    """Minimal Claude wrapper. `images` = list of {'type','source':{'data':b64,'media_type':...}}.
+
+    If `cache_system=True` and the system prompt is long (>1024 tokens),
+    the LAST chunk of the system block is marked with `cache_control: ephemeral`
+    so subsequent calls within 5 minutes hit the prompt cache (~10× cheaper input).
+    """
     client = _anthropic()
     if client is None:
         return ""
@@ -314,10 +320,26 @@ def _claude_chat(prompt: str, *, system: str = "", model: Optional[str] = None,
             "messages": [{"role": "user", "content": content}],
         }
         if system:
-            kwargs["system"] = system
+            # When caching, system MUST be a list of content blocks. We mark
+            # the last block with cache_control to enable prefix-cache.
+            if cache_system and len(system) > 4000:   # ~1000 tokens minimum
+                kwargs["system"] = [{
+                    "type": "text", "text": system,
+                    "cache_control": {"type": "ephemeral"},
+                }]
+            else:
+                kwargs["system"] = system
         resp = client.messages.create(**kwargs)
         _breaker_for("anthropic").on_success()
-        # Extract text from response content blocks
+        # Log cache stats if returned
+        try:
+            usage = resp.usage
+            cr = getattr(usage, "cache_read_input_tokens", None)
+            cw = getattr(usage, "cache_creation_input_tokens", None)
+            if cr or cw:
+                log.info(f"[anthropic] cache: read={cr or 0}  write={cw or 0}")
+        except Exception:
+            pass
         out = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
         return out.strip()
     except Exception as e:

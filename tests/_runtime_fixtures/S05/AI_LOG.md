@@ -58,3 +58,15 @@
 - 𝓘: 0.21 → 0.13 (expected)
 
 ---
+
+## 2026-04-30 21:42:56 — triage by scenario
+
+**Alternatives considered:** 2
+
+-    `mri` (imaging): U=0.761 (𝒞=0.02, Φ_Ze=0.99, Ethics=0.90) — МРТ головы
+- ⭐ `bp_monitor` (test): U=0.766 (𝒞=0.05, Φ_Ze=0.99, Ethics=0.89) — СМАД 24ч
+
+**Decision:** `bp_monitor` — СМАД 24ч
+- 𝓘: 0.16 → 0.10 (expected)
+
+---

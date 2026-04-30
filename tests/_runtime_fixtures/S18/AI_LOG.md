@@ -58,3 +58,15 @@
 - 𝓘: 0.31 → 0.26 (expected)
 
 ---
+
+## 2026-04-30 21:54:56 — triage by scenario
+
+**Alternatives considered:** 2
+
+- ⭐ `gl` (treatment): U=0.703 (𝒞=0.01, Φ_Ze=0.93, Ethics=0.82) — Согласно GOLD guideline
+-    `custom` (treatment): U=0.695 (𝒞=0.01, Φ_Ze=0.92, Ethics=0.81) — Custom protocol
+
+**Decision:** `gl` — Согласно GOLD guideline
+- 𝓘: 0.36 → 0.24 (expected)
+
+---

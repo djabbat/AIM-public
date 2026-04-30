@@ -103,3 +103,24 @@
 - ❌ `ampi` (treatment): Laws FAIL (L1 block: ampicillin в семействе аллергии 'penicillin (rash)') — Ампициллин
 
 ---
+
+## 2026-04-30 21:37:34 — triage by test
+
+**Alternatives considered:** 2
+
+- ❌ `amoxi` (treatment): Laws FAIL (L1 block: amoxicillin в семействе аллергии 'penicillin (rash)') — Амоксициллин
+- ⭐ `azithro` (treatment): U=0.616 (𝒞=0.01, Φ_Ze=0.94, Ethics=0.59) — Азитромицин
+
+**Decision:** `azithro` — Азитромицин
+- 𝓘: 0.26 → 0.28 (expected)
+
+---
+
+## 2026-04-30 21:37:34 — triage by test
+
+**Alternatives considered:** 2
+
+- ❌ `amoxi` (treatment): Laws FAIL (L1 block: amoxicillin в семействе аллергии 'penicillin (rash)') — Амоксициллин
+- ❌ `ampi` (treatment): Laws FAIL (L1 block: ampicillin в семействе аллергии 'penicillin (rash)') — Ампициллин
+
+---

@@ -43,3 +43,12 @@
 - ❌ `y` (treatment): Laws FAIL (L1 block: interaction 'bad') — Y
 
 ---
+
+## 2026-04-30 21:48:36 — triage by scenario
+
+**Alternatives considered:** 2
+
+- ❌ `x` (treatment): Laws FAIL (L1 block: interaction 'bad') — X
+- ❌ `y` (treatment): Laws FAIL (L1 block: interaction 'bad') — Y
+
+---

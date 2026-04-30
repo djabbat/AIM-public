@@ -63,3 +63,16 @@
 - 𝓘: 0.73 → 0.44 (expected)
 
 ---
+
+## 2026-04-30 21:45:29 — triage by scenario
+
+**Alternatives considered:** 3
+
+-    `rheum_ref` (referral): U=0.659 (𝒞=0.02, Φ_Ze=0.74, Ethics=0.89) — Ревматолог
+- ⭐ `ana_anca` (test): U=0.812 (𝒞=0.30, Φ_Ze=0.98, Ethics=0.89) — ANA + ANCA + CBC
+-    `nsaids` (treatment): U=0.583 (𝒞=0.01, Φ_Ze=0.86, Ethics=0.59) — НПВС empirically
+
+**Decision:** `ana_anca` — ANA + ANCA + CBC
+- 𝓘: 0.68 → 0.41 (expected)
+
+---

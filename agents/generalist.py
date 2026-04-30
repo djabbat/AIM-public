@@ -20,11 +20,14 @@ Public API:
 """
 from __future__ import annotations
 
+import contextvars
 import json
 import logging
 import os
+import platform
 import shlex
 import subprocess
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -48,13 +51,15 @@ class Tool:
 
 
 _TOOLS: dict[str, Tool] = {}
+_TOOLS_LOCK = threading.RLock()
 
 
 def register_tool(name: str, description: str, schema: dict,
                   examples: Optional[list[dict]] = None):
     def deco(fn):
-        _TOOLS[name] = Tool(name=name, description=description, fn=fn,
-                             schema=schema, examples=examples or [])
+        with _TOOLS_LOCK:
+            _TOOLS[name] = Tool(name=name, description=description, fn=fn,
+                                 schema=schema, examples=examples or [])
         return fn
     return deco
 
@@ -71,42 +76,165 @@ def register_tool(name: str, description: str, schema: dict,
 def _t_read_file(path: str, offset: int = 0, limit: int = 200) -> str:
     p = Path(path).expanduser()
     if not p.exists():
-        return f"ERROR: not found: {p}"
+        return f"ERROR:NOT_FOUND:{p}"
     text = p.read_text(encoding="utf-8", errors="replace")
     lines = text.splitlines()
     sl = lines[offset:offset + limit]
     return "\n".join(sl)[:6000]
 
 
+def _post_write_verify(p: Path) -> Optional[str]:
+    """Implicit syntax check after a file write. Returns warning string if
+    syntax is broken (None if clean / unsupported extension)."""
+    suf = p.suffix.lower()
+    try:
+        if suf == ".py":
+            import py_compile
+            py_compile.compile(str(p), doraise=True)
+        elif suf == ".json":
+            json.loads(p.read_text(encoding="utf-8"))
+        elif suf in (".yml", ".yaml"):
+            try:
+                import yaml  # type: ignore
+                yaml.safe_load(p.read_text(encoding="utf-8"))
+            except ImportError:
+                pass
+    except Exception as e:
+        return f"WARN:post-write verify failed ({suf}): {e}"
+    return None
+
+
+def _gate_write(path: str, content: str = "") -> Optional[str]:
+    """Run kernel L_PRIVACY + L_CONSENT before any file write.
+
+    Returns ERROR string if the write must be blocked, else None.
+    Files inside Patients/ require explicit privacy_consent context.
+    Writes that contain Patients/ paths or PII patterns get blocked.
+    """
+    from agents.kernel import Decision, evaluate_l_privacy
+    blob = f"{path}\n{content[:8000]}"
+    if "Patients/" in str(path) or "/Patients/" in str(path):
+        # Hard refusal unless explicit consent — user code can override
+        # via env var if they really mean it.
+        if os.environ.get("AIM_ALLOW_PATIENT_WRITE") != "1":
+            return ("ERROR:PERMISSION:write blocked under L_PRIVACY — "
+                    f"path '{path}' is inside Patients/. Set "
+                    "AIM_ALLOW_PATIENT_WRITE=1 to override.")
+        # Override active — skip the inner L_PRIVACY check too (it would
+        # re-flag the same Patients/ path)
+        return None
+    d = Decision(id="write", description="file write",
+                 action_type="external_api_call_with_data",
+                 payload={"path": str(path), "data": blob})
+    ok, reason = evaluate_l_privacy(d, {}, {})
+    if not ok and not os.environ.get("AIM_ALLOW_PII_WRITE"):
+        return f"ERROR:PERMISSION:{reason}"
+    return None
+
+
+@register_tool(
+    "view_file",
+    "Read a file with LINE-NUMBERED viewport and total-line metadata. Use when planning a precise edit, especially with apply_patch. SWE-agent-style viewport.",
+    {"path": "absolute path",
+     "start_line": "int default 1 (1-indexed)",
+     "end_line": "int default 200; -1 = end-of-file",
+     "context_around": "if set, return ±N lines around a search regex"},
+    examples=[{
+        "call": {"tool": "view_file",
+                 "args": {"path": "/path/to/file.py",
+                          "start_line": 100, "end_line": 150}},
+    }],
+)
+def _t_view_file(path: str, start_line: int = 1, end_line: int = 200,
+                 context_around: str = "") -> str:
+    p = Path(path).expanduser()
+    if not p.exists():
+        return f"ERROR:NOT_FOUND:{p}"
+    try:
+        text = p.read_text(encoding="utf-8", errors="replace")
+    except Exception as e:
+        return f"ERROR:INTERNAL:{e}"
+    lines = text.splitlines()
+    total = len(lines)
+    if context_around:
+        try:
+            import re as _re
+            rgx = _re.compile(context_around)
+        except _re.error as e:
+            return f"ERROR:INVALID_INPUT:bad regex — {e}"
+        hits = []
+        for i, ln in enumerate(lines, 1):
+            if rgx.search(ln):
+                lo = max(1, i - 8)
+                hi = min(total, i + 8)
+                hits.append((lo, hi, i))
+        if not hits:
+            return f"(no matches for /{context_around}/ in {total} lines)"
+        out = [f"FILE: {p}  ({total} lines, {len(hits)} matches)"]
+        for lo, hi, mid in hits[:5]:
+            out.append(f"\n— ±8 around line {mid} —")
+            for j in range(lo, hi + 1):
+                marker = "→" if j == mid else " "
+                out.append(f"{marker}{j:>5}: {lines[j-1]}")
+        return "\n".join(out)[:6000]
+    if end_line == -1:
+        end_line = total
+    start_line = max(1, start_line)
+    end_line = min(total, end_line)
+    chunk = lines[start_line - 1:end_line]
+    out = [f"FILE: {p}  ({total} total lines, viewing {start_line}-{end_line})"]
+    for j, ln in enumerate(chunk, start_line):
+        out.append(f"{j:>5}: {ln}")
+    return "\n".join(out)[:8000]
+
+
 @register_tool(
     "write_file",
-    "Write text to a file (overwrites). Returns 'OK <bytes>' on success.",
+    "Write text to a file (overwrites). Returns 'OK <bytes>' on success. Blocked by L_PRIVACY if path is under Patients/ or content contains PII unless AIM_ALLOW_PATIENT_WRITE=1.",
     {"path": "absolute path", "content": "text to write"},
 )
 def _t_write_file(path: str, content: str) -> str:
+    blocked = _gate_write(path, content)
+    if blocked:
+        return blocked
     p = Path(path).expanduser()
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(content, encoding="utf-8")
+    _post_write_verify(p)
     return f"OK {len(content)} bytes → {p}"
 
 
 @register_tool(
     "edit_file",
-    "Replace one occurrence of old_text with new_text in the file. old_text must be unique.",
+    "Replace ONE occurrence of old_text with new_text in the file. old_text must be unique. On match-not-unique returns context lines so you can refine.",
     {"path": "abs path", "old_text": "exact match", "new_text": "replacement"},
 )
 def _t_edit_file(path: str, old_text: str, new_text: str) -> str:
     p = Path(path).expanduser()
     if not p.exists():
-        return f"ERROR: not found: {p}"
+        return f"ERROR:NOT_FOUND:{p}"
     content = p.read_text(encoding="utf-8")
     occ = content.count(old_text)
     if occ == 0:
-        return "ERROR: old_text not found"
+        return "ERROR:NOT_FOUND:old_text not found in file"
     if occ > 1:
-        return f"ERROR: old_text occurs {occ} times; provide more context to make it unique"
+        # Surface a few lines of context for each occurrence so the LLM can
+        # add more uniqueness instead of blindly retrying.
+        snippets = []
+        idx = 0
+        for i in range(occ):
+            j = content.find(old_text, idx)
+            line = content.count("\n", 0, j) + 1
+            snippets.append(f"  line {line}")
+            idx = j + len(old_text)
+        return (f"ERROR:INVALID_INPUT:old_text occurs {occ}× — at "
+                f"{', '.join(snippets)}. Add surrounding context to make it unique.")
+    blocked = _gate_write(path, new_text)
+    if blocked:
+        return blocked
     p.write_text(content.replace(old_text, new_text, 1), encoding="utf-8")
-    return f"OK 1 replacement"
+    _post_write_verify(p)
+    return "OK 1 replacement"
 
 
 @register_tool(
@@ -122,9 +250,13 @@ def _t_edit_file(path: str, old_text: str, new_text: str) -> str:
 )
 def _t_apply_patch(diff: str, strip: int = 0) -> str:
     if not diff.strip():
-        return "ERROR: empty diff"
+        return "ERROR:INVALID_INPUT:empty diff"
     if "@@" not in diff:
-        return "ERROR: not a unified diff (no @@ hunk markers)"
+        return "ERROR:INVALID_INPUT:not a unified diff (no @@ hunk markers)"
+    # L_PRIVACY: scan diff for Patients/ paths or PII patterns
+    blocked = _gate_write("(patch)", diff)
+    if blocked:
+        return blocked
     # Try `git apply` first if available — better error messages, preserves
     # mode bits, supports binary diffs.
     import tempfile
@@ -141,13 +273,13 @@ def _t_apply_patch(diff: str, strip: int = 0) -> str:
                                 capture_output=True, text=True)
             if do.returncode == 0:
                 return f"OK applied via git apply (-p{strip})"
-            return f"ERROR: git apply failed: {do.stderr.strip()}"
+            return f"ERROR:INTERNAL:git apply: {do.stderr.strip()}"
         # Fall back to standard `patch`
         do = subprocess.run(["patch", f"-p{strip}", "-N", "-i", tmp],
                             capture_output=True, text=True)
         if do.returncode == 0:
             return f"OK applied via patch -p{strip}\n{do.stdout.strip()[:1000]}"
-        return (f"ERROR: patch failed (rc={do.returncode}): "
+        return (f"ERROR:INTERNAL:patch failed (rc={do.returncode}): "
                 f"{do.stdout.strip()}\n{do.stderr.strip()}")[:2000]
     finally:
         Path(tmp).unlink(missing_ok=True)
@@ -162,7 +294,7 @@ def _t_glob(pattern: str, root: str = ".") -> str:
     from pathlib import Path as _P
     base = _P(root).expanduser().resolve()
     if not base.is_dir():
-        return f"ERROR: not a directory: {base}"
+        return f"ERROR:NOT_FOUND:{base}"
     matches = sorted(str(p) for p in base.glob(pattern) if p.exists())[:200]
     return "\n".join(matches) or "(no matches)"
 
@@ -185,7 +317,7 @@ def _t_grep(pattern: str, path: str = ".", max_results: int = 100) -> str:
     try:
         rgx = _re.compile(pattern)
     except _re.error as e:
-        return f"ERROR: bad regex — {e}"
+        return f"ERROR:INVALID_INPUT:bad regex — {e}"
     base = Path(path).expanduser()
     files = [base] if base.is_file() else \
             [p for p in base.rglob("*") if p.is_file() and p.stat().st_size < 5_000_000]
@@ -203,9 +335,37 @@ def _t_grep(pattern: str, path: str = ".", max_results: int = 100) -> str:
     return "\n".join(out)[:6000] or "(no matches)"
 
 
+def _bwrap_available() -> bool:
+    """Check if bubblewrap is installed (Linux only). Sandbox is opt-in via
+    AIM_SANDBOX=1 — most users don't have bwrap installed by default."""
+    if platform.system() != "Linux":
+        return False
+    try:
+        return subprocess.run(["which", "bwrap"], capture_output=True,
+                              text=True).returncode == 0
+    except Exception:
+        return False
+
+
+def _maybe_sandbox(command: str) -> list[str]:
+    """If AIM_SANDBOX=1 and bwrap is installed, wrap the command. Otherwise
+    return the command as a normal shell invocation."""
+    if os.environ.get("AIM_SANDBOX") == "1" and _bwrap_available():
+        return ["bwrap",
+                "--ro-bind", "/", "/",
+                "--tmpfs", "/tmp",
+                "--proc", "/proc",
+                "--dev", "/dev",
+                "--unshare-all", "--share-net",
+                "--die-with-parent",
+                "--bind", str(Path.cwd()), str(Path.cwd()),  # writable cwd
+                "/bin/sh", "-c", command]
+    return ["/bin/sh", "-c", command]
+
+
 @register_tool(
     "bash",
-    "Run a shell command (whitelisted: ls, cat, head, tail, wc, grep, find, git status/log/diff, python3 -c, pytest). Returns stdout+stderr (truncated).",
+    "Run a shell command (whitelisted: ls, cat, head, tail, wc, grep, find, git status/log/diff, python3 -c, pytest). 60s timeout. Returns stdout+stderr (truncated). Optional bubblewrap sandbox via AIM_SANDBOX=1.",
     {"command": "shell command string"},
 )
 def _t_bash(command: str) -> str:
@@ -214,25 +374,41 @@ def _t_bash(command: str) -> str:
              "diff", "stat", "file", "which")
     first = (shlex.split(command) or [""])[0].split("/")[-1]
     if first not in allow:
-        return f"ERROR: command '{first}' not whitelisted; allowed: {allow}"
-    proc = subprocess.run(command, shell=True, capture_output=True,
-                          text=True, timeout=60)
+        return f"ERROR:PERMISSION:command '{first}' not whitelisted; allowed: {allow}"
+    cmd_list = _maybe_sandbox(command)
+    try:
+        proc = subprocess.run(cmd_list, capture_output=True,
+                              text=True, timeout=60)
+    except subprocess.TimeoutExpired:
+        return "ERROR:TIMEOUT:bash exceeded 60s"
     out = (proc.stdout + proc.stderr).strip()
     return out[:4000] + ("\n[…truncated]" if len(out) > 4000 else "")
 
 
 _SCRATCHPADS: dict[str, dict[str, str]] = {}   # run_id → {key: value}
-_CURRENT_RUN_ID: Optional[str] = None
 _INTERRUPTED: dict[str, bool] = {}             # run_id → True if SIGINT
+_STATE_LOCK = threading.RLock()                # protects all per-run dicts
+
+# contextvars-based run id — every spawned thread/task inherits parent's
+# context unless explicitly overridden by run() at start. This means
+# delegate_parallel sub-agents see THEIR OWN run_id, not the parent's.
+_RUN_ID_VAR: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
+    "_aim_run_id", default=None,
+)
+
+
+def _current_run_id() -> Optional[str]:
+    return _RUN_ID_VAR.get()
 
 
 def request_interrupt(run_id: Optional[str] = None) -> None:
     """Signal a running generalist to stop at the next safe point.
-    `run_id=None` interrupts whatever is currently active."""
+    `run_id=None` interrupts the run associated with the calling context."""
     if run_id is None:
-        run_id = _CURRENT_RUN_ID
+        run_id = _current_run_id()
     if run_id:
-        _INTERRUPTED[run_id] = True
+        with _STATE_LOCK:
+            _INTERRUPTED[run_id] = True
 
 
 @register_tool(
@@ -242,11 +418,14 @@ def request_interrupt(run_id: Optional[str] = None) -> None:
      "value": "string content (≤4000 chars)"},
 )
 def _t_note(key: str, value: str) -> str:
-    if _CURRENT_RUN_ID is None:
-        return "ERROR: no active run scratchpad"
-    pad = _SCRATCHPADS.setdefault(_CURRENT_RUN_ID, {})
-    pad[key] = str(value)[:4000]
-    return f"OK noted '{key}' ({len(pad)} entries)"
+    rid = _current_run_id()
+    if rid is None:
+        return "ERROR:UNAVAILABLE:no active run scratchpad"
+    with _STATE_LOCK:
+        pad = _SCRATCHPADS.setdefault(rid, {})
+        pad[key] = str(value)[:4000]
+        n = len(pad)
+    return f"OK noted '{key}' ({n} entries)"
 
 
 @register_tool(
@@ -255,13 +434,15 @@ def _t_note(key: str, value: str) -> str:
     {"key": "string identifier (omit to list all keys)"},
 )
 def _t_recall(key: str = "") -> str:
-    if _CURRENT_RUN_ID is None:
-        return "ERROR: no active run scratchpad"
-    pad = _SCRATCHPADS.get(_CURRENT_RUN_ID, {})
+    rid = _current_run_id()
+    if rid is None:
+        return "ERROR:UNAVAILABLE:no active run scratchpad"
+    with _STATE_LOCK:
+        pad = dict(_SCRATCHPADS.get(rid, {}))
     if not key:
         return "keys: " + ", ".join(sorted(pad)) if pad else "(scratchpad empty)"
     if key not in pad:
-        return f"ERROR: no entry '{key}'. Keys: {sorted(pad)}"
+        return f"ERROR:NOT_FOUND:no entry '{key}'. Keys: {sorted(pad)}"
     return pad[key]
 
 
@@ -269,6 +450,7 @@ def _t_recall(key: str = "") -> str:
 
 
 _BG_JOBS: dict[str, dict] = {}   # job_id → {proc, stdout_path, started, cmd}
+_BG_JOBS_LOCK = threading.RLock()
 
 
 @register_tool(
@@ -285,7 +467,7 @@ def _t_bash_async(command: str, cwd: Optional[str] = None) -> str:
              "uvicorn", "node", "rsync")
     first = (shlex.split(command) or [""])[0].split("/")[-1]
     if first not in allow:
-        return f"ERROR: command '{first}' not whitelisted for bash_async"
+        return f"ERROR:PERMISSION:command '{first}' not whitelisted for bash_async"
     job_id = "j" + _sec.token_hex(4)
     out_path = Path(tempfile.gettempdir()) / f"aim_{job_id}.log"
     f = out_path.open("w", encoding="utf-8")
@@ -305,7 +487,7 @@ def _t_bash_async(command: str, cwd: Optional[str] = None) -> str:
 def _t_bash_status(job_id: str) -> str:
     j = _BG_JOBS.get(job_id)
     if not j:
-        return f"ERROR: unknown job_id '{job_id}'"
+        return f"ERROR:NOT_FOUND:unknown job_id '{job_id}'"
     proc = j["proc"]
     rc = proc.poll()
     elapsed = __import__("time").time() - j["started"]
@@ -323,11 +505,11 @@ def _t_bash_status(job_id: str) -> str:
 def _t_bash_output(job_id: str, tail: int = 4000) -> str:
     j = _BG_JOBS.get(job_id)
     if not j:
-        return f"ERROR: unknown job_id '{job_id}'"
+        return f"ERROR:NOT_FOUND:unknown job_id '{job_id}'"
     try:
         text = j["log"].read_text(encoding="utf-8", errors="replace")
     except Exception as e:
-        return f"ERROR: read log: {e}"
+        return f"ERROR:INTERNAL:read log: {e}"
     if len(text) > tail:
         text = "[…earlier truncated]\n" + text[-tail:]
     rc = j["proc"].poll()
@@ -343,7 +525,7 @@ def _t_bash_output(job_id: str, tail: int = 4000) -> str:
 def _t_bash_kill(job_id: str) -> str:
     j = _BG_JOBS.get(job_id)
     if not j:
-        return f"ERROR: unknown job_id '{job_id}'"
+        return f"ERROR:NOT_FOUND:unknown job_id '{job_id}'"
     proc = j["proc"]
     if proc.poll() is None:
         proc.terminate()
@@ -356,17 +538,33 @@ def _t_bash_kill(job_id: str) -> str:
     return f"OK killed {job_id} (rc={proc.poll()})"
 
 
+def _with_timeout(fn, args, timeout: float = 5.0):
+    """Run a callable with a timeout. Uses ThreadPoolExecutor for portability
+    (works on Windows; signal-based timeouts don't)."""
+    import concurrent.futures as _cf
+    with _cf.ThreadPoolExecutor(max_workers=1) as pool:
+        fut = pool.submit(fn, **args) if isinstance(args, dict) else pool.submit(fn, args)
+        try:
+            return fut.result(timeout=timeout)
+        except _cf.TimeoutError:
+            return f"ERROR:TIMEOUT:operation exceeded {timeout}s"
+
+
 @register_tool(
     "memory_recall",
     "Semantic search over Claude memory + cross-project Desktop memory. Returns top-k passages.",
-    {"query": "string", "k": "int default 6"},
+    {"query": "string", "k": "int default 6", "timeout_s": "float default 5"},
 )
-def _t_memory_recall(query: str, k: int = 6) -> str:
-    try:
+def _t_memory_recall(query: str, k: int = 6, timeout_s: float = 5.0) -> str:
+    def _do():
         from agents.memory_index import retrieve
-        hits = retrieve(query, k=k)
+        return retrieve(query, k=k)
+    try:
+        hits = _with_timeout(_do, {}, timeout=timeout_s)
     except Exception as e:
-        return f"ERROR: memory_index unavailable: {e}"
+        return f"ERROR:UNAVAILABLE:memory_index: {e}"
+    if isinstance(hits, str) and hits.startswith("ERROR:"):
+        return hits
     if not hits:
         return "(no hits)"
     out = []
@@ -386,7 +584,7 @@ def _t_memory_save(text: str, category: str = "general") -> str:
         path = remember(text, category=category, quiet=True)
         return f"OK saved → {Path(str(path)).name}"
     except Exception as e:
-        return f"ERROR: {e}"
+        return f"ERROR:INTERNAL:{e}"
 
 
 @register_tool(
@@ -424,24 +622,28 @@ def _t_view_image(path: str, prompt: str, page: int = 0) -> str:
 
 @register_tool(
     "verify_pmid",
-    "Look up a PMID at PubMed. Returns metadata or ERROR if it does not exist.",
+    "Look up a PMID at PubMed (8s timeout). Returns metadata or ERROR.",
     {"pmid": "string of digits"},
 )
 def _t_verify_pmid(pmid: str) -> str:
     from tools.literature import verify_pmid
-    rec = verify_pmid(pmid)
-    return json.dumps(rec, ensure_ascii=False) if rec else f"ERROR: PMID {pmid} not found at PubMed"
+    rec = _with_timeout(verify_pmid, {"pmid": pmid}, timeout=8.0)
+    if isinstance(rec, str) and rec.startswith("ERROR:"):
+        return rec
+    return json.dumps(rec, ensure_ascii=False) if rec else f"ERROR:NOT_FOUND:PMID {pmid} not found at PubMed"
 
 
 @register_tool(
     "verify_doi",
-    "Look up a DOI at Crossref. Returns metadata or ERROR if it does not exist.",
+    "Look up a DOI at Crossref (8s timeout). Returns metadata or ERROR.",
     {"doi": "DOI string (e.g. 10.1126/sciadv.adh2560)"},
 )
 def _t_verify_doi(doi: str) -> str:
     from tools.literature import verify_doi
-    rec = verify_doi(doi)
-    return json.dumps(rec, ensure_ascii=False) if rec else f"ERROR: DOI {doi} not found at Crossref"
+    rec = _with_timeout(verify_doi, {"doi": doi}, timeout=8.0)
+    if isinstance(rec, str) and rec.startswith("ERROR:"):
+        return rec
+    return json.dumps(rec, ensure_ascii=False) if rec else f"ERROR:NOT_FOUND:DOI {doi} not found at Crossref"
 
 
 @register_tool(
@@ -467,10 +669,10 @@ def _t_delegate_doctor(action: str, input: str) -> str:
         fn = {"diagnose": d.diagnose, "treatment": d.treatment,
               "labs": d.interpret_labs, "chat": d.chat}.get(action)
         if not fn:
-            return f"ERROR: unknown doctor action '{action}'"
+            return f"ERROR:INVALID_INPUT:unknown doctor action '{action}'"
         return fn(input)
     except Exception as e:
-        return f"ERROR: doctor delegation failed: {e}"
+        return f"ERROR:INTERNAL:doctor: {e}"
 
 
 @register_tool(
@@ -506,8 +708,8 @@ def _t_delegate_writer(action: str, args: dict) -> str:
             out = W.md_to_docx(args["md"], args["docx"])
             return f"OK → {out}"
     except Exception as e:
-        return f"ERROR: writer.{action} failed: {e}"
-    return f"ERROR: unknown writer action '{action}'"
+        return f"ERROR:INTERNAL:writer.{action} failed: {e}"
+    return f"ERROR:INVALID_INPUT:unknown writer action '{action}'"
 
 
 @register_tool(
@@ -550,8 +752,39 @@ def _t_delegate_email(action: str, args: dict | None = None) -> str:
     except PermissionError as e:
         return f"BLOCKED by kernel: {e}"
     except Exception as e:
-        return f"ERROR: email.{action} failed: {e}"
-    return f"ERROR: unknown email action '{action}'"
+        return f"ERROR:INTERNAL:email.{action} failed: {e}"
+    return f"ERROR:INVALID_INPUT:unknown email action '{action}'"
+
+
+@register_tool(
+    "run_tests",
+    "Run a test command (e.g. 'pytest tests/test_x.py -q -x'). Returns stdout/stderr + exit code. Use after edit_file/apply_patch to verify implicitly. Whitelisted prefix as bash.",
+    {"command": "test command",
+     "cwd": "optional working directory",
+     "timeout_s": "int default 120"},
+    examples=[{
+        "call": {"tool": "run_tests",
+                 "args": {"command": "pytest tests/test_auth.py -q -x",
+                          "cwd": "/home/oem/Desktop/AIM"}},
+    }],
+)
+def _t_run_tests(command: str, cwd: Optional[str] = None,
+                 timeout_s: int = 120) -> str:
+    allow = ("pytest", "python", "python3", "npm", "yarn",
+             "make", "cargo", "go", "mvn", "gradle", "bash", "sh")
+    first = (shlex.split(command) or [""])[0].split("/")[-1]
+    if first not in allow:
+        return f"ERROR:PERMISSION:command '{first}' not whitelisted for run_tests"
+    try:
+        proc = subprocess.run(command, shell=True, capture_output=True,
+                              text=True, cwd=cwd, timeout=timeout_s)
+    except subprocess.TimeoutExpired:
+        return f"ERROR:TIMEOUT:tests exceeded {timeout_s}s"
+    out = (proc.stdout + proc.stderr).strip()
+    head = f"[exit={proc.returncode}]\n"
+    if proc.returncode == 0:
+        return head + "TESTS PASSED\n" + out[-2500:]
+    return head + "TESTS FAILED\n" + out[-3500:]
 
 
 @register_tool(
@@ -575,7 +808,7 @@ def _t_delegate_coder(files: list[str], instruction: str,
                     f"--- last test output ---\n{tail}")
         return agent.edit(instruction)[:6000]
     except Exception as e:
-        return f"ERROR: coder.delegate failed: {e}"
+        return f"ERROR:INTERNAL:coder.delegate: {e}"
 
 
 @register_tool(
@@ -601,8 +834,8 @@ def _t_delegate_researcher(action: str, args: dict) -> str:
             return json.dumps(R.formulate_queries(args["topic"],
                               n=args.get("n", 5)), ensure_ascii=False)
     except Exception as e:
-        return f"ERROR: researcher.{action} failed: {e}"
-    return f"ERROR: unknown researcher action '{action}'"
+        return f"ERROR:INTERNAL:researcher.{action} failed: {e}"
+    return f"ERROR:INVALID_INPUT:unknown researcher action '{action}'"
 
 
 @register_tool(
@@ -615,7 +848,7 @@ def _t_delegate_researcher(action: str, args: dict) -> str:
 def _t_delegate_parallel(tasks: list[str], max_iters: int = 6,
                          synthesise: bool = True) -> str:
     if not isinstance(tasks, list) or not tasks:
-        return "ERROR: tasks must be a non-empty list of strings"
+        return "ERROR:INVALID_INPUT:tasks must be a non-empty list of strings"
     results: list[str] = [""] * len(tasks)
     with ThreadPoolExecutor(max_workers=min(len(tasks), 4)) as pool:
         futs = {pool.submit(run, t, max_iters=max_iters, speculative=False): i
@@ -642,6 +875,56 @@ def _t_delegate_parallel(tasks: list[str], max_iters: int = 6,
     except Exception:
         from llm import ask_deep as _ask
     return _ask(syn_prompt)
+
+
+@register_tool(
+    "critique",
+    "Adversarial review of a plan or draft by a DIFFERENT model than the main one. Catches single-model blind spots. Returns critique text or 'OK' if no flaws found.",
+    {"text": "the plan or draft to critique",
+     "context": "optional task context for the critic",
+     "focus": "optional focus area (e.g. 'fact-check', 'security', 'logic')"},
+    examples=[{
+        "call": {"tool": "critique",
+                 "args": {"text": "Plan: send email to Klien with patient lab results.",
+                          "focus": "privacy + correctness"}},
+    }],
+)
+def _t_critique(text: str, context: str = "", focus: str = "fact-check + logic") -> str:
+    """Cross-model critique. If main is Claude/Gemini, calls DS-reasoner.
+    Otherwise prefers Claude → Gemini → DS-reasoner."""
+    try:
+        from llm import (anthropic_available, gemini_available,
+                          DEEPSEEK_API_KEY, _claude_chat, _gemini_chat,
+                          ask_deep)
+        from config import Models
+    except Exception as e:
+        return f"ERROR:UNAVAILABLE:{e}"
+
+    sys = ("You are an adversarial reviewer. Find MATERIAL flaws in the "
+            "plan/draft below. Material = wrong fact, unsupported claim, "
+            "fabricated PMID/DOI, harmful or unsafe action, missing user "
+            "constraint, security issue, logical contradiction. Style nits "
+            "are NOT material. If acceptable, reply EXACTLY 'OK'. Otherwise "
+            "list flaws as numbered bullets, 1-2 lines each.\n"
+            f"Focus area: {focus}")
+    prompt = (f"=== CONTEXT ===\n{context[:1500]}\n=== END ===\n\n"
+              f"=== PLAN/DRAFT TO REVIEW ===\n{text[:6000]}\n=== END ===")
+
+    # Pick the BEST cross-model critic available
+    if DEEPSEEK_API_KEY:
+        # DS-reasoner is the best critic for cross-model dissent (different
+        # post-training family from Claude/Gemini)
+        out = ask_deep(prompt, system=sys)
+        if out: return f"[critic=ds-pro]\n{out.strip()}"
+    if anthropic_available():
+        out = _claude_chat(prompt, system=sys, model=Models.CLAUDE_OPUS,
+                           temperature=0)
+        if out: return f"[critic=claude-opus]\n{out.strip()}"
+    if gemini_available():
+        out = _gemini_chat(prompt, system=sys, model=Models.GEMINI_PRO,
+                           temperature=0)
+        if out: return f"[critic=gemini-2.5-pro]\n{out.strip()}"
+    return "ERROR:UNAVAILABLE:no critique provider configured"
 
 
 @register_tool(
@@ -710,6 +993,17 @@ PARALLELISM RULE:
     • read_file then edit_file the same file
     • search_pubmed then verify_pmid on a result of the search
 
+TOOL ERROR FORMAT:
+  Tool errors come back as `ERROR:<CATEGORY>:<detail>`.
+  Categories: NOT_FOUND, PERMISSION, TIMEOUT, INVALID_INPUT, UNAVAILABLE, INTERNAL.
+  Use the category to choose retry strategy:
+    NOT_FOUND     → check path/id; don't retry blindly
+    PERMISSION    → respect it; surface to user, set the env var, OR drop
+    TIMEOUT       → one retry with smaller scope
+    INVALID_INPUT → fix args (read detail), retry once
+    UNAVAILABLE   → fall back or skip
+    INTERNAL      → one retry, then move on or escalate to user
+
 ABSOLUTE RULES:
   1. NEVER fabricate a PMID or DOI. If you reference one, you MUST first
      call verify_pmid / verify_doi. Unverified citations break the law and
@@ -753,18 +1047,18 @@ def run(task: str, *, max_iters: int = 10, kernel: bool = True,
                      (3 models in parallel + adjudication) for grounding.
     """
     import secrets as _sec, signal as _signal
-    global _CURRENT_RUN_ID
     run_id = _sec.token_hex(6)
-    _CURRENT_RUN_ID = run_id
+    _run_id_token = _RUN_ID_VAR.set(run_id)
 
-    # SIGINT handler — only install if main thread (avoid breaking when called
-    # from streaming worker thread). Restored on exit.
+    # SIGINT handler — only install if main thread. Sub-agents spawned via
+    # delegate_parallel run in worker threads with their own run_id (via
+    # contextvars), so they don't trample this handler.
     _prev_sigint = None
     try:
-        import threading as _th
-        if _th.current_thread() is _th.main_thread():
+        if threading.current_thread() is threading.main_thread():
             def _sigint_handler(_sig, _frame):
-                _INTERRUPTED[run_id] = True
+                with _STATE_LOCK:
+                    _INTERRUPTED[run_id] = True
             _prev_sigint = _signal.signal(_signal.SIGINT, _sigint_handler)
     except Exception:
         pass
@@ -772,7 +1066,25 @@ def run(task: str, *, max_iters: int = 10, kernel: bool = True,
     history: list[dict] = [{"role": "user", "content": task}]
     trace: list[dict] = []
     tools_used: list[str] = []
+    recent_actions: list[str] = []   # for stuck-loop detection
+    stuck_warned = False
     critical = False
+
+    # Reflexion: inject recent reflections as a hint at start
+    try:
+        from agents.reflexion import recent_reflections, classify as _rclass
+        bucket = _rclass(task)
+        refs = recent_reflections(task, n=3)
+        if refs:
+            history.append({
+                "role": "tool", "name": "_reflexion",
+                "result": (f"REFLEXION HINTS (bucket={bucket}, "
+                           f"{len(refs)} past reflections):\n"
+                           + "\n".join(f"  • {r}" for r in refs)
+                           + "\nUse these to avoid prior pitfalls.")
+            })
+    except Exception as e:
+        log.debug(f"reflexion inject skipped: {e}")
     try:
         from agents.ensemble import is_critical as _is_crit
         critical = _is_crit(task)
@@ -882,10 +1194,11 @@ def run(task: str, *, max_iters: int = 10, kernel: bool = True,
             emit({"type": "interrupted"})
             if pf is not None:
                 pf.shutdown()
-            _SCRATCHPADS.pop(run_id, None)
-            _INTERRUPTED.pop(run_id, None)
-            if _CURRENT_RUN_ID == run_id:
-                globals()["_CURRENT_RUN_ID"] = None
+            with _STATE_LOCK:
+                _SCRATCHPADS.pop(run_id, None)
+                _INTERRUPTED.pop(run_id, None)
+            try: _RUN_ID_VAR.reset(_run_id_token)
+            except Exception: pass
             if _prev_sigint is not None:
                 try: _signal.signal(_signal.SIGINT, _prev_sigint)
                 except Exception: pass
@@ -917,11 +1230,47 @@ def run(task: str, *, max_iters: int = 10, kernel: bool = True,
         if not action:
             log.warning("generalist: invalid JSON from LLM; retrying")
             history.append({"role": "tool", "name": "_parser",
-                            "result": "ERROR: previous reply was not valid JSON. "
+                            "result": "ERROR:INVALID_INPUT:previous reply was not valid JSON. "
                                       "Reply with EXACTLY one JSON object: "
                                       '{"tool": "...", "args": {...}} '
                                       'OR {"parallel": [...]} OR {"final": "..."}'})
             continue
+
+        # Stuck-loop detection — hash the action signature, abort if same
+        # action repeats 3× consecutively.
+        try:
+            sig = json.dumps(action, sort_keys=True, default=str)[:300]
+        except Exception:
+            sig = str(action)[:300]
+        recent_actions.append(sig)
+        if len(recent_actions) > 4:
+            recent_actions = recent_actions[-4:]
+        if (len(recent_actions) >= 3 and
+                recent_actions[-1] == recent_actions[-2] == recent_actions[-3]):
+            log.warning(f"generalist: stuck-loop detected (action repeated 3×)")
+            if not stuck_warned:
+                history.append({"role": "tool", "name": "_loop_guard",
+                                "result": "WARNING:STUCK:You repeated the same "
+                                          "action 3 times. Either change strategy, "
+                                          "use a different tool, or finalise. "
+                                          "Repeating the same action again will abort."})
+                stuck_warned = True
+                continue
+            # Second strike — abort
+            emit({"type": "stuck_aborted", "action": sig[:100]})
+            if pf is not None:
+                pf.shutdown()
+            with _STATE_LOCK:
+                _SCRATCHPADS.pop(run_id, None)
+                _INTERRUPTED.pop(run_id, None)
+            try: _RUN_ID_VAR.reset(_run_id_token)
+            except Exception: pass
+            if _prev_sigint is not None:
+                try: _signal.signal(_signal.SIGINT, _prev_sigint)
+                except Exception: pass
+            return {"answer": "[stuck-loop aborted: same action repeated]",
+                    "trace": trace, "tools_used": tools_used,
+                    "iters": it, "stuck": True}
 
         if "final" in action:
             final_text = action["final"]
@@ -932,6 +1281,12 @@ def run(task: str, *, max_iters: int = 10, kernel: bool = True,
                     log.info("generalist: self-critique surfaced flaws; regenerating")
                     emit({"type": "self_critique_failed",
                           "preview": fix[:200]})
+                    try:
+                        from agents.reflexion import save_reflection
+                        save_reflection(task,
+                                         f"first draft was rejected by self-critique: {fix[:400]}")
+                    except Exception:
+                        pass
                     history.append({"role": "tool", "name": "_self_critique",
                                     "result": "CRITIQUE OF YOUR DRAFT FINAL:\n"
                                               + fix[:2000]
@@ -941,10 +1296,11 @@ def run(task: str, *, max_iters: int = 10, kernel: bool = True,
                 emit({"type": "self_critique_passed"})
             if pf is not None:
                 pf.shutdown()
-            _SCRATCHPADS.pop(run_id, None)
-            _INTERRUPTED.pop(run_id, None)
-            if _CURRENT_RUN_ID == run_id:
-                globals()["_CURRENT_RUN_ID"] = None
+            with _STATE_LOCK:
+                _SCRATCHPADS.pop(run_id, None)
+                _INTERRUPTED.pop(run_id, None)
+            try: _RUN_ID_VAR.reset(_run_id_token)
+            except Exception: pass
             if _prev_sigint is not None:
                 try: _signal.signal(_signal.SIGINT, _prev_sigint)
                 except Exception: pass
@@ -977,7 +1333,7 @@ def run(task: str, *, max_iters: int = 10, kernel: bool = True,
                     args = step.get("args") or {}
                     if tname not in _TOOLS:
                         history.append({"role": "tool", "name": tname or "?",
-                                        "result": f"ERROR: unknown tool '{tname}'"})
+                                        "result": f"ERROR:NOT_FOUND:unknown tool '{tname}'"})
                         continue
                     tools_used.append(tname)
                     emit({"type": "tool_call", "tool": tname, "args": args,
@@ -1012,7 +1368,7 @@ def run(task: str, *, max_iters: int = 10, kernel: bool = True,
         args = action.get("args") or {}
         if tool not in _TOOLS:
             history.append({"role": "tool", "name": tool or "?",
-                            "result": f"ERROR: unknown tool '{tool}'. "
+                            "result": f"ERROR:NOT_FOUND:unknown tool '{tool}'. "
                                       f"Available: {list(_TOOLS)}"})
             emit({"type": "tool_error", "tool": tool, "reason": "unknown"})
             continue
@@ -1034,9 +1390,14 @@ def run(task: str, *, max_iters: int = 10, kernel: bool = True,
 
     if pf is not None:
         pf.shutdown()
-    _SCRATCHPADS.pop(run_id, None)
-    if _CURRENT_RUN_ID == run_id:
-        globals()["_CURRENT_RUN_ID"] = None
+    with _STATE_LOCK:
+        _SCRATCHPADS.pop(run_id, None)
+        _INTERRUPTED.pop(run_id, None)
+    try: _RUN_ID_VAR.reset(_run_id_token)
+    except Exception: pass
+    if _prev_sigint is not None:
+        try: _signal.signal(_signal.SIGINT, _prev_sigint)
+        except Exception: pass
     return {"answer": "[max iterations reached without final answer]",
             "trace": trace, "tools_used": tools_used, "iters": max_iters}
 
@@ -1076,15 +1437,15 @@ def run_streaming(task: str, **kwargs):
 
 def _run_one_tool(tool: str, args: Any) -> str:
     if tool not in _TOOLS:
-        return f"ERROR: unknown tool '{tool}'"
+        return f"ERROR:NOT_FOUND:unknown tool '{tool}'"
     try:
         if isinstance(args, dict):
             return str(_TOOLS[tool].fn(**args))
         return str(_TOOLS[tool].fn(args))
     except TypeError as e:
-        return f"ERROR: bad arguments to {tool} — {e}"
+        return f"ERROR:INVALID_INPUT:bad arguments to {tool} — {e}"
     except Exception as e:
-        return f"ERROR: {tool} raised: {e}"
+        return f"ERROR:INTERNAL:{tool} raised: {e}"
 
 
 def _run_tools_parallel(calls: list[dict], max_workers: int = 6) -> list[str]:
@@ -1131,8 +1492,40 @@ def _self_critique(task: str, draft: str) -> str:
     return verdict
 
 
+_TIKTOKEN_ENC = None
+
+
+def _get_encoder():
+    global _TIKTOKEN_ENC
+    if _TIKTOKEN_ENC is not None:
+        return _TIKTOKEN_ENC
+    try:
+        import tiktoken
+        _TIKTOKEN_ENC = tiktoken.get_encoding("cl100k_base")
+    except Exception:
+        _TIKTOKEN_ENC = False    # sentinel: don't try again
+    return _TIKTOKEN_ENC
+
+
+def _count_text_tokens(text: str) -> int:
+    """Best-effort token count. Uses tiktoken when available; otherwise
+    a non-ASCII-aware estimate (~3.3 chars/tok for Latin, ~1.5 for CJK)."""
+    if not text:
+        return 0
+    enc = _get_encoder()
+    if enc:
+        try:
+            return len(enc.encode(text))
+        except Exception:
+            pass
+    # Heuristic: count Latin and non-Latin separately
+    latin = sum(1 for c in text if ord(c) < 0x80)
+    other = len(text) - latin
+    return max(1, latin // 4 + other // 2)
+
+
 def _approx_tokens(history: list[dict]) -> int:
-    return sum(len(str(m.get("content", "") or m.get("result", ""))) // 4
+    return sum(_count_text_tokens(str(m.get("content", "") or m.get("result", "")))
                for m in history)
 
 

@@ -58,3 +58,15 @@
 - 𝓘: 0.31 → 0.28 (expected)
 
 ---
+
+## 2026-04-30 21:48:07 — triage by scenario
+
+**Alternatives considered:** 2
+
+- ❌ `asa` (treatment): Laws FAIL (L1 block: interaction 'warfarin + ASA: severe bleeding') — Добавить ASA
+- ⭐ `clopi` (treatment): U=0.610 (𝒞=0.00, Φ_Ze=0.93, Ethics=0.59) — Клопидогрель
+
+**Decision:** `clopi` — Клопидогрель
+- 𝓘: 0.36 → 0.32 (expected)
+
+---

@@ -68,3 +68,17 @@
 **Override:** type=soft, reason=want data first
 
 ---
+
+## 2026-04-30 21:46:53 — triage by scenario
+
+**Alternatives considered:** 2
+
+- ⭐ `cbc` (test): U=0.780 (𝒞=0.12, Φ_Ze=0.99, Ethics=0.89) — CBC
+-    `dx_viral` (dx): U=0.747 (𝒞=0.10, Φ_Ze=1.00, Ethics=0.82) — Viral URI
+
+**Decision:** `cbc` — CBC
+- 𝓘: 0.31 → 0.19 (expected)
+
+**Override:** type=soft, reason=want data first
+
+---

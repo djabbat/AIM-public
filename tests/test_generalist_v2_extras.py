@@ -17,11 +17,9 @@ sys.path.insert(0, str(ROOT))
 
 
 def test_scratchpad_note_recall():
-    from agents.generalist import (_t_note, _t_recall,
-                                    _SCRATCHPADS, _CURRENT_RUN_ID)
-    # bootstrap a run id manually
+    from agents.generalist import _t_note, _t_recall
     import agents.generalist as G
-    G._CURRENT_RUN_ID = "test_run_xyz"
+    tok = G._RUN_ID_VAR.set("test_run_xyz")
     try:
         assert _t_note("plan", "step 1: read file").startswith("OK")
         assert _t_note("count", "42").startswith("OK")
@@ -30,15 +28,19 @@ def test_scratchpad_note_recall():
         assert "plan" in _t_recall("")    # list keys
         assert _t_recall("missing").startswith("ERROR")
     finally:
-        G._SCRATCHPADS.pop("test_run_xyz", None)
-        G._CURRENT_RUN_ID = None
+        with G._STATE_LOCK:
+            G._SCRATCHPADS.pop("test_run_xyz", None)
+        G._RUN_ID_VAR.reset(tok)
 
 
 def test_scratchpad_no_run_returns_error():
     from agents.generalist import _t_note
     import agents.generalist as G
-    G._CURRENT_RUN_ID = None
-    assert _t_note("k", "v").startswith("ERROR")
+    tok = G._RUN_ID_VAR.set(None)
+    try:
+        assert _t_note("k", "v").startswith("ERROR")
+    finally:
+        G._RUN_ID_VAR.reset(tok)
 
 
 # ── F1: examples render in tools block ─────────────────────────────────────
@@ -115,13 +117,12 @@ def test_bash_kill_terminates_long_running():
 def test_request_interrupt_sets_flag():
     from agents import generalist as G
     G._INTERRUPTED.clear()
-    # Pretend we're inside a run
-    G._CURRENT_RUN_ID = "run_for_interrupt_test"
+    tok = G._RUN_ID_VAR.set("run_for_interrupt_test")
     try:
         G.request_interrupt()
         assert G._INTERRUPTED.get("run_for_interrupt_test") is True
     finally:
-        G._CURRENT_RUN_ID = None
+        G._RUN_ID_VAR.reset(tok)
         G._INTERRUPTED.clear()
 
 

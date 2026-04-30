@@ -58,3 +58,15 @@
 - 𝓘: 0.40 → 0.18 (expected)
 
 ---
+
+## 2026-04-30 21:44:05 — triage by scenario
+
+**Alternatives considered:** 2
+
+-    `empiric_ppi` (treatment): U=0.607 (𝒞=0.00, Φ_Ze=0.92, Ethics=0.59) — ИПП empirically
+- ⭐ `egd` (imaging): U=0.760 (𝒞=0.04, Φ_Ze=0.98, Ethics=0.90) — ЭГДС
+
+**Decision:** `egd` — ЭГДС
+- 𝓘: 0.30 → 0.20 (expected)
+
+---
