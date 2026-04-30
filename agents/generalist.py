@@ -44,14 +44,17 @@ class Tool:
     description: str
     fn: Callable[..., Any]
     schema: dict = field(default_factory=dict)
+    examples: list[dict] = field(default_factory=list)   # [{call, result_preview}]
 
 
 _TOOLS: dict[str, Tool] = {}
 
 
-def register_tool(name: str, description: str, schema: dict):
+def register_tool(name: str, description: str, schema: dict,
+                  examples: Optional[list[dict]] = None):
     def deco(fn):
-        _TOOLS[name] = Tool(name=name, description=description, fn=fn, schema=schema)
+        _TOOLS[name] = Tool(name=name, description=description, fn=fn,
+                             schema=schema, examples=examples or [])
         return fn
     return deco
 
@@ -111,6 +114,11 @@ def _t_edit_file(path: str, old_text: str, new_text: str) -> str:
     "Apply a unified diff to one or more files atomically (uses `patch -p0` or git apply). Format: standard `--- a/file` / `+++ b/file` headers. Either all hunks apply or none do.",
     {"diff": "unified-diff text including file headers and @@ hunks",
      "strip": "int (default 0; pass 1 if diff has a/ and b/ prefixes)"},
+    examples=[{
+        "call": {"tool": "apply_patch",
+                 "args": {"diff": "--- a/file.py\n+++ b/file.py\n@@ -1,1 +1,1 @@\n-old\n+new\n",
+                          "strip": 1}}
+    }],
 )
 def _t_apply_patch(diff: str, strip: int = 0) -> str:
     if not diff.strip():
@@ -211,6 +219,141 @@ def _t_bash(command: str) -> str:
                           text=True, timeout=60)
     out = (proc.stdout + proc.stderr).strip()
     return out[:4000] + ("\n[…truncated]" if len(out) > 4000 else "")
+
+
+_SCRATCHPADS: dict[str, dict[str, str]] = {}   # run_id → {key: value}
+_CURRENT_RUN_ID: Optional[str] = None
+_INTERRUPTED: dict[str, bool] = {}             # run_id → True if SIGINT
+
+
+def request_interrupt(run_id: Optional[str] = None) -> None:
+    """Signal a running generalist to stop at the next safe point.
+    `run_id=None` interrupts whatever is currently active."""
+    if run_id is None:
+        run_id = _CURRENT_RUN_ID
+    if run_id:
+        _INTERRUPTED[run_id] = True
+
+
+@register_tool(
+    "note",
+    "Save a value to the per-run scratchpad. Use for working memory: intermediate counts, plans, partial findings the user does NOT need to see in the final answer. Survives within one run() invocation.",
+    {"key": "string identifier (no spaces preferred)",
+     "value": "string content (≤4000 chars)"},
+)
+def _t_note(key: str, value: str) -> str:
+    if _CURRENT_RUN_ID is None:
+        return "ERROR: no active run scratchpad"
+    pad = _SCRATCHPADS.setdefault(_CURRENT_RUN_ID, {})
+    pad[key] = str(value)[:4000]
+    return f"OK noted '{key}' ({len(pad)} entries)"
+
+
+@register_tool(
+    "recall",
+    "Retrieve a previously noted value. With no key, returns the list of all keys in the scratchpad.",
+    {"key": "string identifier (omit to list all keys)"},
+)
+def _t_recall(key: str = "") -> str:
+    if _CURRENT_RUN_ID is None:
+        return "ERROR: no active run scratchpad"
+    pad = _SCRATCHPADS.get(_CURRENT_RUN_ID, {})
+    if not key:
+        return "keys: " + ", ".join(sorted(pad)) if pad else "(scratchpad empty)"
+    if key not in pad:
+        return f"ERROR: no entry '{key}'. Keys: {sorted(pad)}"
+    return pad[key]
+
+
+# ── Async bash jobs (long-running commands) ──────────────────────────────
+
+
+_BG_JOBS: dict[str, dict] = {}   # job_id → {proc, stdout_path, started, cmd}
+
+
+@register_tool(
+    "bash_async",
+    "Start a shell command in the background. Returns a job_id you can poll with bash_status / bash_output. Use for long-running things (test suites, builds, downloads). Whitelisted prefix as bash.",
+    {"command": "shell command",
+     "cwd": "optional working directory (default cwd)"},
+)
+def _t_bash_async(command: str, cwd: Optional[str] = None) -> str:
+    import secrets as _sec, tempfile
+    allow = ("ls", "cat", "head", "tail", "wc", "grep", "find",
+             "git", "python", "python3", "pytest", "pip", "npm", "yarn",
+             "make", "bash", "sh", "ollama", "echo", "diff",
+             "uvicorn", "node", "rsync")
+    first = (shlex.split(command) or [""])[0].split("/")[-1]
+    if first not in allow:
+        return f"ERROR: command '{first}' not whitelisted for bash_async"
+    job_id = "j" + _sec.token_hex(4)
+    out_path = Path(tempfile.gettempdir()) / f"aim_{job_id}.log"
+    f = out_path.open("w", encoding="utf-8")
+    proc = subprocess.Popen(command, shell=True, stdout=f, stderr=subprocess.STDOUT,
+                            cwd=cwd, text=True)
+    _BG_JOBS[job_id] = {"proc": proc, "log": out_path,
+                        "started": __import__("time").time(),
+                        "cmd": command, "fh": f}
+    return f"OK job_id={job_id}  (poll with bash_status / bash_output)"
+
+
+@register_tool(
+    "bash_status",
+    "Check status of a background bash job started with bash_async.",
+    {"job_id": "string returned by bash_async"},
+)
+def _t_bash_status(job_id: str) -> str:
+    j = _BG_JOBS.get(job_id)
+    if not j:
+        return f"ERROR: unknown job_id '{job_id}'"
+    proc = j["proc"]
+    rc = proc.poll()
+    elapsed = __import__("time").time() - j["started"]
+    if rc is None:
+        return f"running  pid={proc.pid}  elapsed={elapsed:.1f}s  cmd={j['cmd']!r}"
+    return f"exited  rc={rc}  elapsed={elapsed:.1f}s  cmd={j['cmd']!r}"
+
+
+@register_tool(
+    "bash_output",
+    "Get the latest accumulated stdout/stderr of a background bash job (last 4000 chars).",
+    {"job_id": "string returned by bash_async",
+     "tail": "int chars from end (default 4000)"},
+)
+def _t_bash_output(job_id: str, tail: int = 4000) -> str:
+    j = _BG_JOBS.get(job_id)
+    if not j:
+        return f"ERROR: unknown job_id '{job_id}'"
+    try:
+        text = j["log"].read_text(encoding="utf-8", errors="replace")
+    except Exception as e:
+        return f"ERROR: read log: {e}"
+    if len(text) > tail:
+        text = "[…earlier truncated]\n" + text[-tail:]
+    rc = j["proc"].poll()
+    state = "running" if rc is None else f"exited rc={rc}"
+    return f"[{state}]\n{text}"
+
+
+@register_tool(
+    "bash_kill",
+    "Kill a background bash job started with bash_async.",
+    {"job_id": "string returned by bash_async"},
+)
+def _t_bash_kill(job_id: str) -> str:
+    j = _BG_JOBS.get(job_id)
+    if not j:
+        return f"ERROR: unknown job_id '{job_id}'"
+    proc = j["proc"]
+    if proc.poll() is None:
+        proc.terminate()
+        try:
+            proc.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+    try: j["fh"].close()
+    except Exception: pass
+    return f"OK killed {job_id} (rc={proc.poll()})"
 
 
 @register_tool(
@@ -335,6 +478,12 @@ def _t_delegate_doctor(action: str, input: str) -> str:
     "Delegate a writing task: peer-review, edit, cover letter, response-to-reviewers, md→docx.",
     {"action": "review|edit|cover_letter|response|md_to_docx",
      "args": "dict of parameters"},
+    examples=[{
+        "call": {"tool": "delegate_writer",
+                 "args": {"action": "md_to_docx",
+                          "args": {"md": "/home/oem/Desktop/article.md",
+                                   "docx": "/home/oem/Desktop/article.docx"}}},
+    }],
 )
 def _t_delegate_writer(action: str, args: dict) -> str:
     from agents import writer as W
@@ -534,6 +683,20 @@ PROTOCOL — reply with EXACTLY ONE JSON object on a single line, NOTHING ELSE:
       ]
     }
 
+  Multi-action pipeline (mixed sequential + parallel groups):
+    { "actions": [
+        { "tool": "read_file", "args": { ... } },                  # step 1 (serial)
+        { "parallel": [                                            # step 2 (3 in parallel)
+            { "tool": "verify_pmid", "args": { "pmid": "..." } },
+            { "tool": "verify_pmid", "args": { "pmid": "..." } },
+            { "tool": "verify_pmid", "args": { "pmid": "..." } }
+        ] },
+        { "tool": "write_file", "args": { ... } }                  # step 3 (serial)
+      ]
+    }
+    Use "actions" when you can plan multiple steps without needing
+    intermediate LLM thinking — saves a full round-trip per step.
+
   Final answer:
     { "final": "<answer to the user>" }
 
@@ -565,6 +728,11 @@ def _format_tools_block() -> str:
     for t in _TOOLS.values():
         schema_str = ", ".join(f"{k}: {v}" for k, v in t.schema.items())
         rows.append(f"  {t.name}({schema_str})  — {t.description}")
+        # F1: render up to 1 example per tool inline (terse) for the
+        # high-mistake tools that expose examples.
+        for ex in t.examples[:1]:
+            call = json.dumps(ex.get("call") or {}, ensure_ascii=False)
+            rows.append(f"      example: {call}")
     return "AVAILABLE TOOLS:\n" + "\n".join(rows)
 
 
@@ -573,6 +741,7 @@ def run(task: str, *, max_iters: int = 10, kernel: bool = True,
         speculative: bool = True,
         critique: bool = True,
         ensemble: bool = True,
+        session_id: Optional[int] = None,
         on_event: Optional[Callable[[dict], None]] = None) -> dict:
     """Tool-agency cycle. Returns dict with answer + trace.
 
@@ -583,6 +752,23 @@ def run(task: str, *, max_iters: int = 10, kernel: bool = True,
         ensemble:    on critical tasks, route the FIRST plan via ensemble
                      (3 models in parallel + adjudication) for grounding.
     """
+    import secrets as _sec, signal as _signal
+    global _CURRENT_RUN_ID
+    run_id = _sec.token_hex(6)
+    _CURRENT_RUN_ID = run_id
+
+    # SIGINT handler — only install if main thread (avoid breaking when called
+    # from streaming worker thread). Restored on exit.
+    _prev_sigint = None
+    try:
+        import threading as _th
+        if _th.current_thread() is _th.main_thread():
+            def _sigint_handler(_sig, _frame):
+                _INTERRUPTED[run_id] = True
+            _prev_sigint = _signal.signal(_signal.SIGINT, _sigint_handler)
+    except Exception:
+        pass
+
     history: list[dict] = [{"role": "user", "content": task}]
     trace: list[dict] = []
     tools_used: list[str] = []
@@ -593,7 +779,62 @@ def run(task: str, *, max_iters: int = 10, kernel: bool = True,
     except Exception:
         pass
 
+    # F2: JSONL session log under platform-portable cache dir.
+    def _log_dir() -> Path:
+        import platform as _pl
+        sysname = _pl.system()
+        if sysname == "Windows":
+            base = Path(os.environ.get("LOCALAPPDATA",
+                                       Path.home() / "AppData" / "Local"))
+            d = base / "aim" / "sessions"
+        elif sysname == "Darwin":
+            d = Path.home() / "Library" / "Caches" / "aim" / "sessions"
+        else:
+            d = Path(os.environ.get("XDG_CACHE_HOME",
+                                    str(Path.home() / ".cache"))) / "aim" / "sessions"
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+
+    log_path = _log_dir() / f"{run_id}.jsonl"
+    try:
+        log_path.write_text(json.dumps({"type": "run_start", "task": task,
+                                        "session_id": session_id,
+                                        "ts": __import__("datetime")
+                                              .datetime.now().isoformat()}) + "\n",
+                             encoding="utf-8")
+    except Exception:
+        pass
+
+    def _jsonl(ev: dict) -> None:
+        try:
+            with log_path.open("a", encoding="utf-8") as f:
+                f.write(json.dumps(ev, ensure_ascii=False, default=str) + "\n")
+        except Exception:
+            pass
+
+    def _persist(role: str, name: str, content: str) -> None:
+        if session_id is None:
+            return
+        try:
+            from db import save_message
+            save_message(session_id, role, content,
+                         model="generalist", provider=name)
+        except Exception as e:
+            log.debug(f"persist failed: {e}")
+
     def emit(ev: dict) -> None:
+        # F2: append every event to JSONL session log
+        _jsonl(ev)
+        # D1: persist tool calls + tool results to messages table
+        et = ev.get("type")
+        if et == "tool_call":
+            _persist("tool_call", ev.get("tool", "?"),
+                     json.dumps(ev.get("args") or {}, ensure_ascii=False)[:1000])
+        elif et == "tool_result":
+            _persist("tool_result", ev.get("tool", "?"),
+                     str(ev.get("result_preview", ""))[:1000])
+        elif et == "final":
+            _persist("assistant", "final", str(ev.get("answer", ""))[:4000])
         if on_event:
             try:
                 on_event(ev)
@@ -636,6 +877,21 @@ def run(task: str, *, max_iters: int = 10, kernel: bool = True,
             log.warning(f"ensemble plan skipped: {e}")
 
     for it in range(max_iters):
+        if _INTERRUPTED.get(run_id):
+            log.info(f"generalist {run_id}: interrupted by user")
+            emit({"type": "interrupted"})
+            if pf is not None:
+                pf.shutdown()
+            _SCRATCHPADS.pop(run_id, None)
+            _INTERRUPTED.pop(run_id, None)
+            if _CURRENT_RUN_ID == run_id:
+                globals()["_CURRENT_RUN_ID"] = None
+            if _prev_sigint is not None:
+                try: _signal.signal(_signal.SIGINT, _prev_sigint)
+                except Exception: pass
+            return {"answer": "[interrupted by user]",
+                    "trace": trace, "tools_used": tools_used,
+                    "iters": it, "interrupted": True}
         if pf is not None:
             pf.observe(history)
         history = _maybe_compact(history)
@@ -685,10 +941,54 @@ def run(task: str, *, max_iters: int = 10, kernel: bool = True,
                 emit({"type": "self_critique_passed"})
             if pf is not None:
                 pf.shutdown()
+            _SCRATCHPADS.pop(run_id, None)
+            _INTERRUPTED.pop(run_id, None)
+            if _CURRENT_RUN_ID == run_id:
+                globals()["_CURRENT_RUN_ID"] = None
+            if _prev_sigint is not None:
+                try: _signal.signal(_signal.SIGINT, _prev_sigint)
+                except Exception: pass
             emit({"type": "final", "answer": final_text,
                   "tools_used": tools_used, "iters": it + 1})
             return {"answer": final_text, "trace": trace,
                     "tools_used": tools_used, "iters": it + 1}
+
+        # Multi-action pipeline (A3) — mixed sequential + parallel groups
+        if isinstance(action.get("actions"), list) and action["actions"]:
+            for step in action["actions"]:
+                if not isinstance(step, dict):
+                    continue
+                if isinstance(step.get("parallel"), list) and step["parallel"]:
+                    calls = step["parallel"]
+                    for c in calls:
+                        emit({"type": "tool_call", "tool": c.get("tool"),
+                              "args": c.get("args"), "parallel": True})
+                    results = _run_tools_parallel(calls)
+                    for call, result in zip(calls, results):
+                        tname = call.get("tool", "?")
+                        tools_used.append(f"{tname}*")
+                        history.append({"role": "tool", "name": tname,
+                                        "result": str(result)[:4000]})
+                        emit({"type": "tool_result", "tool": tname,
+                              "ok": not str(result).startswith("ERROR"),
+                              "result_preview": str(result)[:200]})
+                else:
+                    tname = step.get("tool")
+                    args = step.get("args") or {}
+                    if tname not in _TOOLS:
+                        history.append({"role": "tool", "name": tname or "?",
+                                        "result": f"ERROR: unknown tool '{tname}'"})
+                        continue
+                    tools_used.append(tname)
+                    emit({"type": "tool_call", "tool": tname, "args": args,
+                          "parallel": False})
+                    result = _run_one_tool(tname, args)
+                    history.append({"role": "tool", "name": tname,
+                                    "result": str(result)[:4000]})
+                    emit({"type": "tool_result", "tool": tname,
+                          "ok": not str(result).startswith("ERROR"),
+                          "result_preview": str(result)[:200]})
+            continue
 
         # Parallel tool calls — fan-out concurrently
         if isinstance(action.get("parallel"), list) and action["parallel"]:
@@ -734,6 +1034,9 @@ def run(task: str, *, max_iters: int = 10, kernel: bool = True,
 
     if pf is not None:
         pf.shutdown()
+    _SCRATCHPADS.pop(run_id, None)
+    if _CURRENT_RUN_ID == run_id:
+        globals()["_CURRENT_RUN_ID"] = None
     return {"answer": "[max iterations reached without final answer]",
             "trace": trace, "tools_used": tools_used, "iters": max_iters}
 

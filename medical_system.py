@@ -91,7 +91,8 @@ class AIM:
             answer = ""
             tools_used: list[str] = []
             try:
-                for ev in G.run_streaming(task, max_iters=12):
+                for ev in G.run_streaming(task, max_iters=12,
+                                          session_id=self.session_id):
                     et = ev.get("type")
                     if et == "start":
                         flag = "  [critical]" if ev.get("critical") else ""

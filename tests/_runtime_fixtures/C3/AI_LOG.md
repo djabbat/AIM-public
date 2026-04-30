@@ -63,3 +63,16 @@
 - 𝓘: 0.45 → 0.34 (expected)
 
 ---
+
+## 2026-04-30 21:32:51 — triage by chat
+
+**Alternatives considered:** 3
+
+-    `triage_redirect` (referral): U=0.711 (𝒞=0.01, Φ_Ze=0.86, Ethics=0.91) — Предложить запустить полный triage (kernel)
+- ⭐ `clarify_symptom` (clarify): U=0.958 (𝒞=1.00, Φ_Ze=1.00, Ethics=0.89) — Уточняющие вопросы по симптому
+-    `home_remedy` (treatment): U=0.610 (𝒞=0.00, Φ_Ze=0.92, Ethics=0.61) — Базовые home care (fluids, rest) без dx
+
+**Decision:** `clarify_symptom` — Уточняющие вопросы по симптому
+- 𝓘: 0.40 → 0.23 (expected)
+
+---

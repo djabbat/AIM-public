@@ -42,7 +42,7 @@ AIM работает в двух режимах через `AIM_ROLE`:
 
 ## Generalist & Domain Specialists (2026-04-30, расширено)
 
-AIM имеет **tool-using executor** (Claude-style agency) с **22 tools**:
+AIM имеет **tool-using executor** (Claude-style agency) с **28 tools**:
 
 | Tool | Что делает |
 |---|---|
@@ -61,14 +61,21 @@ AIM имеет **tool-using executor** (Claude-style agency) с **22 tools**:
 | `delegate_parallel` | **Sub-agent fan-out** — N независимых generalist'ов + synthesis |
 | `kernel_check` | precheck L_PRIVACY/L_CONSENT/L_VERIFIABILITY перед side-effect |
 
-### Generalist v2 features (2026-04-30, аудит-фикс)
+### Generalist v2 features (2026-04-30 final)
 
 - **Native messages[] + strict JSON mode** для DeepSeek calls — лучший prefix-cache hit, меньше parse failures.
 - **Auto-compact history** при >30K tokens — старые tool-results summarises через `ask_long`.
 - **Auto-ensemble на critical prompts** — `is_critical(task)` триггерит 3-model planning consensus до старта tool-loop.
 - **Self-critique loop** — на критичный final adversarial reviewer ловит фабрикованные ссылки / unsupported claims; 1 retry max.
-- **Streaming events** — `run_streaming(task)` yield'ит `{type:tool_call|tool_result|self_critique_*|final}`. CLI `medical_system.py "A"` показывает live progress.
+- **Streaming events** — `run_streaming(task)` yield'ит `{type:tool_call|tool_result|self_critique_*|final|interrupted}`. CLI `medical_system.py "A"` показывает live progress.
 - **Speculative prefetch + parallel tool batches + sub-agent fan-out** — все три вместе резко снижают wall-clock на multi-step задачах.
+- **Multi-action pipeline** (A3) — `{"actions":[...]}` allows mixed serial+parallel groups within one LLM round.
+- **D1 persisted tool calls** — каждый tool_call/result пишется в `messages` table → resume restores full trace, не только user/assistant.
+- **D2 scratchpad** — tools `note(key,value)` / `recall(key)` для working memory внутри одного run() (не в каждом prompt).
+- **C4 bash_async / bash_status / bash_output / bash_kill** — long-running commands не блокируют generalist; job_id polling.
+- **E2 SIGINT interrupt** — `request_interrupt()` API + auto Ctrl+C handler в main thread; чистый shutdown prefetcher/pool.
+- **F1 tool examples** — `register_tool(..., examples=[{call:...}])` рендерится в system prompt для error-prone tools (apply_patch, delegate_writer).
+- **F2 JSONL session log** — каждый event пишется в `~/.cache/aim/sessions/<run_id>.jsonl` для retro debugging.
 
 ### LLM tier chain extended (per user 2026-04-30)
 
