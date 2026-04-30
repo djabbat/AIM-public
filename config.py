@@ -41,11 +41,19 @@ class Models:
     GROQ_LLAMA_FAST = "llama-3.1-8b-instant"
     GROQ_MIXTRAL = "mixtral-8x7b-32768"
 
+    # Ollama (local — runs on the user's own machine via http://127.0.0.1:11434)
+    # Each AIM node ships these by default. Override per-user via env.
+    OLLAMA_CHAT     = os.getenv("AIM_OLLAMA_CHAT_MODEL",     "qwen2.5:7b-instruct")
+    OLLAMA_FAST     = os.getenv("AIM_OLLAMA_FAST_MODEL",     "qwen2.5:3b-instruct")
+    OLLAMA_REASONER = os.getenv("AIM_OLLAMA_REASONER_MODEL", "deepseek-r1:7b")
+
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 class Endpoints:
     DEEPSEEK = "https://api.deepseek.com/v1"
     GROQ     = "https://api.groq.com/openai/v1"
+    # Ollama exposes an OpenAI-compatible /v1 surface since 0.1.27 — same client.
+    OLLAMA   = os.getenv("AIM_OLLAMA_URL", "http://127.0.0.1:11434/v1")
 
 # ── Языки ─────────────────────────────────────────────────────────────────────
 

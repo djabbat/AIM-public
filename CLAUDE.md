@@ -8,6 +8,37 @@
 
 ---
 
+## Multi-user (Hub + Node)
+
+AIM работает в двух режимах через `AIM_ROLE`:
+
+| Режим | Назначение | LLM | DB | Запуск |
+|---|---|---|---|---|
+| `hub` (1 шт) | users / tokens / audit / `/link` codes | НЕТ | `aim_hub.db` | `bash start.sh hub` |
+| `node` (default, у каждого юзера локально) | chat / memory / patients / LLM | Ollama + DeepSeek-V4 | `aim.db` | `bash start.sh web` |
+
+**Установка:**
+- Linux/macOS node: `bash scripts/install_node.sh` (ставит Ollama + qwen2.5:7b/3b + venv + `~/.aim_env`)
+- Windows node: `powershell -ExecutionPolicy Bypass -File scripts\install_node.ps1`
+- Hub: `bash scripts/install_hub.sh` (минимум deps, без Ollama, создаёт первого admin)
+
+**Auth flow node→hub:**
+1. Admin создаёт юзера: `python -m scripts.user_admin create <username>`
+2. Admin выдаёт токен: `python -m scripts.user_admin token <username>` → копирует в `~/.aim_env` пользователя как `AIM_USER_TOKEN` + `AIM_HUB_URL`
+3. Node при старте бьёт `/api/auth/validate-token` у hub'а, кэширует ответ 24h, шлёт heartbeat в `/api/nodes/heartbeat`
+4. Offline grace: 7 дней по кэшу при недоступном hub'е (`AIM_OFFLINE_GRACE`)
+5. Telegram /link — admin: `python -m scripts.user_admin link-code <username>` → 6-значный код, юзер шлёт боту `/link 123456`
+
+**LLM на node — приоритеты роутинга:**
+1. Reasoning task → DeepSeek-V4-pro (cloud) если есть `DEEPSEEK_API_KEY`, иначе Ollama deepseek-r1
+2. Long-context (>30K токенов) → DeepSeek-V4-flash (1M) если есть ключ
+3. Default chat → Ollama qwen2.5:7b (local, $0)
+4. ask_fast → Ollama qwen2.5:3b (local, instant)
+
+**Без Ollama** node работает на DeepSeek/Groq cloud (как раньше). **Без DeepSeek** — на локальном Ollama. Hybrid рекомендован.
+
+---
+
 ## Архитектура
 
 AIM v7.0 — гибридный LLM-роутер. Ядро:
@@ -16,9 +47,15 @@ AIM v7.0 — гибридный LLM-роутер. Ядро:
 |------|------|
 | `medical_system.py` | Точка входа (CLI), agent loop |
 | `aim_gui.py` | GUI (customtkinter), паритет с CLI |
-| `telegram_bot.py` | Telegram-бот (python-telegram-bot) |
-| `llm.py` | Роутер: DeepSeek (chat/reasoner) + Groq (fast); KIMI/Qwen удалены 2026-04-28 |
+| `telegram_bot.py` | Telegram-бот (python-telegram-bot) с `/link` для multi-user |
+| `llm.py` | Роутер: Ollama (local) + DeepSeek-V4 (reasoner/long) + Groq (fast cloud) |
 | `config.py` | Ключи, модели, пути, языки |
+| `agents/auth.py` | Hub-side: users / JWT / API tokens / audit / link codes |
+| `agents/hub_client.py` | Node-side: validate AIM_USER_TOKEN against hub, 24h cache |
+| `web/api.py` | FastAPI; `AIM_ROLE=hub`/`node` переключает routes |
+| `scripts/user_admin.py` | Hub admin CLI: create / list / token / link-code / nodes / audit |
+| `scripts/install_node.{sh,ps1}` | Linux+mac / Windows installer (Ollama + venv + ~/.aim_env) |
+| `scripts/install_hub.{sh,ps1}` | Hub installer (минимум deps, бутстрап admin user) |
 | `i18n.py` | 9 языков (ООН-6 + KA + KZ + DA) |
 | `db.py` | SQLite: пациенты, сессии, кэш |
 | `lab_reference.py` | База лабораторных норм (59 аналитов) |
@@ -76,10 +113,22 @@ print(t("menu_title", lang))
 
 ## Ключи
 
-Только в `~/.aim_env`. Никогда в коде.
+Только в `~/.aim_env` (или `%USERPROFILE%\.aim_env` на Windows). Никогда в коде.
 
 ```
-DEEPSEEK_API_KEY   GROQ_API_KEY
+# Multi-user (если node ходит в hub)
+AIM_HUB_URL=https://hub.example.com
+AIM_USER_TOKEN=aim_xxx       # выдаёт admin: python -m scripts.user_admin token <user>
+AIM_NODE_ID=my-laptop-jaba   # опц. (default: hostname-username)
+
+# LLM
+DEEPSEEK_API_KEY=...         # опционально (для reasoner/long-context)
+GROQ_API_KEY=...             # опционально (cloud fast tier)
+                             # Ollama не требует ключа — только http://127.0.0.1:11434
+
+# Telegram (опц.)
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_ALLOWED_IDS=123,456 # static allow-list (или используй /link через hub)
 ```
 
 ---

@@ -462,6 +462,19 @@ class AIMGui(ctk.CTk):
 
 def main():
     logging.basicConfig(level=logging.WARNING)
+    # Multi-user gate. Validates AIM_USER_TOKEN against AIM_HUB_URL once.
+    # Local-only (no AIM_HUB_URL) → no-op.
+    try:
+        from agents import hub_client
+        u = hub_client.require_user()
+        if not u.get("local_only"):
+            log = logging.getLogger("aim.gui")
+            log.warning(f"authenticated as '{u['username']}' (role={u['role']})")
+            hub_client.heartbeat()
+    except SystemExit:
+        raise
+    except Exception as e:
+        logging.getLogger("aim.gui").warning(f"hub_client error: {e}")
     app = AIMGui()
     app.mainloop()
 

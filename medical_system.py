@@ -431,5 +431,18 @@ class AIM:
 # ── Запуск ────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
+    # Multi-user gate: each AIM node validates its identity against the hub on
+    # startup. In local-only mode (no AIM_HUB_URL) this is a no-op.
+    try:
+        from agents import hub_client
+        u = hub_client.require_user()
+        if not u.get("local_only"):
+            print(f"[AIM] authenticated as '{u['username']}' (role={u['role']})")
+            hub_client.heartbeat()
+    except SystemExit:
+        raise
+    except Exception as e:
+        print(f"[AIM] hub_client error (continuing in local mode): {e}")
+
     app = AIM()
     app.run()

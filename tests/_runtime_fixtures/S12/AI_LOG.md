@@ -46,3 +46,15 @@
 - 𝓘: 0.26 → 0.23 (expected)
 
 ---
+
+## 2026-04-30 15:27:25 — triage by scenario
+
+**Alternatives considered:** 2
+
+- ❌ `bad` (treatment): Laws FAIL (L1 block: interaction 'QT prolong') — Drug X
+- ⭐ `ok` (treatment): U=0.610 (𝒞=0.00, Φ_Ze=0.93, Ethics=0.59) — Drug Y
+
+**Decision:** `ok` — Drug Y
+- 𝓘: 0.31 → 0.28 (expected)
+
+---

@@ -12,7 +12,17 @@ from dotenv import load_dotenv
 load_dotenv(Path.home() / ".aim_env")
 
 TELEGRAM_TOKEN      = os.getenv("TELEGRAM_BOT_TOKEN", "")
-TELEGRAM_ALLOWED_ID = int(os.getenv("TELEGRAM_ALLOWED_ID", "0"))
+
+# Multi-user authorization. Two modes co-exist:
+#   1. TELEGRAM_ALLOWED_IDS=12345,67890 (comma-separated) — static allow-list
+#      kept for backward compatibility with the old single-id deployment.
+#   2. /link <CODE> — dynamic linking via the AIM Hub. Each per-user
+#      hub-issued code (10-min TTL) binds a Telegram account to a hub user.
+#      Bound IDs are cached in ~/.cache/aim/telegram_links.json on the node.
+_static_allow = os.getenv("TELEGRAM_ALLOWED_IDS",
+                          os.getenv("TELEGRAM_ALLOWED_ID", "")).strip()
+ALLOWED_IDS: set[int] = {int(x) for x in _static_allow.split(",")
+                         if x.strip().lstrip("-").isdigit()}
 
 if not TELEGRAM_TOKEN:
     raise RuntimeError("TELEGRAM_BOT_TOKEN не задан в ~/.aim_env")
@@ -52,11 +62,112 @@ def _state(uid: int) -> dict:
     return user_state[uid]
 
 
+# ── Telegram-link cache (cross-platform, per-node) ──────────────────────────
+
+
+def _link_file() -> Path:
+    """Where bound telegram_id ↔ user mappings persist on this node."""
+    import platform
+    sysname = platform.system()
+    if sysname == "Windows":
+        base = Path(os.environ.get("LOCALAPPDATA",
+                                   Path.home() / "AppData" / "Local"))
+        d = base / "aim" / "Cache"
+    elif sysname == "Darwin":
+        d = Path.home() / "Library" / "Caches" / "aim"
+    else:
+        d = Path(os.environ.get("XDG_CACHE_HOME",
+                                str(Path.home() / ".cache"))) / "aim"
+    d.mkdir(parents=True, exist_ok=True)
+    return d / "telegram_links.json"
+
+
+def _load_links() -> dict[int, dict]:
+    fp = _link_file()
+    if not fp.exists():
+        return {}
+    try:
+        import json as _json
+        raw = _json.loads(fp.read_text(encoding="utf-8"))
+        return {int(k): v for k, v in raw.items()}
+    except Exception:
+        return {}
+
+
+def _save_links(links: dict[int, dict]) -> None:
+    import json as _json
+    _link_file().write_text(_json.dumps(links, indent=2), encoding="utf-8")
+
+
+_LINKS: dict[int, dict] = _load_links()
+
+
 def _check_auth(update: Update) -> bool:
+    """Allow if tg_id is in the static allow-list OR in dynamic /link bindings."""
     uid = update.effective_user.id
-    if TELEGRAM_ALLOWED_ID and uid != TELEGRAM_ALLOWED_ID:
-        return False
-    return True
+    if uid in ALLOWED_IDS:
+        return True
+    if uid in _LINKS:
+        return True
+    return False
+
+
+async def cmd_link(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Bind this Telegram account to an AIM Hub user via a one-time link code.
+
+    Usage:  /link 123456
+    """
+    args = context.args or []
+    if not args:
+        await update.message.reply_text(
+            "Использование: /link <CODE>\n"
+            "Получите 6-значный код у админа AIM Hub:\n"
+            "    python -m scripts.user_admin link-code <username>\n"
+            "или в веб-UI на хабе: → Users → /link code")
+        return IDLE
+    code = args[0].strip()
+    tg_id = update.effective_user.id
+    user = _consume_link_code(code, tg_id)
+    if user is None:
+        await update.message.reply_text(
+            "❌ Код неверный, истёк или уже использован.\n"
+            "Запросите новый у админа.")
+        return IDLE
+    _LINKS[tg_id] = {"user_id": user.get("id"),
+                     "username": user.get("username"),
+                     "linked_at": __import__("datetime").datetime.now().isoformat()}
+    _save_links(_LINKS)
+    await update.message.reply_text(
+        f"✅ Привязано к AIM пользователю '{user.get('username', '?')}'.\n"
+        f"Этот Telegram-аккаунт теперь имеет доступ к боту.")
+    return IDLE
+
+
+def _consume_link_code(code: str, tg_id: int) -> dict | None:
+    """Try hub first; if no hub configured, accept any 6-digit code (local mode)."""
+    try:
+        from agents import hub_client  # noqa: WPS433
+        if not hub_client.is_local_only():
+            url = os.getenv("AIM_HUB_URL", "").rstrip("/") + "/api/telegram/consume-link"
+            import urllib.request as _r
+            import json as _json
+            req = _r.Request(url, method="POST",
+                             data=_json.dumps({"code": code,
+                                               "telegram_id": tg_id}).encode(),
+                             headers={"Content-Type": "application/json"})
+            try:
+                with _r.urlopen(req, timeout=5) as resp:
+                    if resp.status == 200:
+                        return _json.loads(resp.read().decode()).get("user")
+            except Exception as e:
+                log.warning(f"hub consume-link failed: {e}")
+            return None
+    except Exception:
+        pass
+    # Local-only fallback: accept any 6-digit code; bind as "local" user.
+    if code.isdigit() and len(code) == 6:
+        return {"id": 0, "username": "local", "role": "user"}
+    return None
 
 
 def _main_keyboard(lang: str) -> ReplyKeyboardMarkup:
@@ -72,7 +183,11 @@ def _main_keyboard(lang: str) -> ReplyKeyboardMarkup:
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if not _check_auth(update):
-        await update.message.reply_text("⛔ Доступ запрещён.")
+        await update.message.reply_text(
+            "⛔ Доступ закрыт.\n\n"
+            "Этот AIM-бот привязан к конкретному пользователю.\n"
+            "Получите 6-значный код у админа AIM Hub и отправьте:\n"
+            "    /link <CODE>\n")
         return IDLE
 
     uid = update.effective_user.id
@@ -306,10 +421,12 @@ def main():
 
     app.add_handler(conv)
     app.add_handler(CommandHandler("lang", cmd_lang))
+    app.add_handler(CommandHandler("link", cmd_link))
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
 
-    log.info("AIM Telegram Bot запущен")
+    log.info(f"AIM Telegram Bot запущен; allow-list: {len(ALLOWED_IDS)} static + "
+             f"{len(_LINKS)} linked")
     app.run_polling(drop_pending_updates=True)
 
 

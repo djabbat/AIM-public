@@ -21,3 +21,9 @@ customtkinter>=5.2.0
 # Утилиты
 httpx>=0.25.0
 json-repair>=0.59.0   # robust JSON парсинг LLM-выдачи (intake, MEMORY.md fill)
+
+# Web / multi-user (hub + node)
+fastapi>=0.110.0
+uvicorn>=0.27.0
+pydantic>=2.5.0
+argon2-cffi>=23.1.0   # password hashing on the hub

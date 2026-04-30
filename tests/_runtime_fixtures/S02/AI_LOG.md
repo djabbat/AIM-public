@@ -50,3 +50,16 @@
 - 𝓘: 0.22 → 0.21 (expected)
 
 ---
+
+## 2026-04-30 15:26:01 — triage by scenario
+
+**Alternatives considered:** 3
+
+- ❌ `vanco` (treatment): Laws FAIL (L0 risk: broad-spectrum ABx for likely viral — resistance pressure) — Ванкомицин IV
+-    `symptomatic` (treatment): U=0.614 (𝒞=0.00, Φ_Ze=0.94, Ethics=0.59) — Парацетамол + жидкость
+- ⭐ `observe` (wait): U=0.617 (𝒞=0.00, Φ_Ze=0.94, Ethics=0.60) — Наблюдение 72ч
+
+**Decision:** `observe` — Наблюдение 72ч
+- 𝓘: 0.27 → 0.26 (expected)
+
+---

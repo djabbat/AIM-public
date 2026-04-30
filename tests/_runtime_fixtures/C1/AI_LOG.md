@@ -46,3 +46,15 @@
 - 𝓘: 0.10 → 0.08 (expected)
 
 ---
+
+## 2026-04-30 15:23:38 — triage by chat
+
+**Alternatives considered:** 2
+
+-    `emergency` (referral): U=0.732 (𝒞=0.01, Φ_Ze=0.89, Ethics=0.93) — Экстренное направление (скорая / ER)
+- ⭐ `reassure_and_call` (clarify): U=0.958 (𝒞=1.00, Φ_Ze=1.00, Ethics=0.89) — Успокоить + подтвердить вызов скорой
+
+**Decision:** `reassure_and_call` — Успокоить + подтвердить вызов скорой
+- 𝓘: 0.25 → 0.23 (expected)
+
+---
