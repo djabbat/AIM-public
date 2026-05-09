@@ -61,6 +61,11 @@ ka_dict = {}
 args = None
 user_patient_map = {}  # user_id -> patient_name
 
+# ─── микрофон ────────────────────────────────────────────────────────────
+mic_active = False
+mic_thread = None
+current_output_path = None  # текущий файл для записи (устанавливается при голосовом)
+
 
 def load_ka_dict():
     """Загрузить грузинский медицинский словарь."""
@@ -199,15 +204,15 @@ print(resp["choices"][0]["message"]["content"].strip())
 
 async def handle_voice_message(update, context):
     """Обработка голосового сообщения."""
+    global current_output_path, mic_active
     user = update.effective_user
     chat = update.effective_chat
 
     log.info(f"Голосовое от {user.id} ({user.first_name}) в чате {chat.id}")
 
-    # Сообщаем пользователю
     msg = await update.message.reply_text("🎤 Распознаю речь...")
 
-    # Скачиваем файл
+    # Скачиваем
     voice = update.message.voice
     file = await voice.get_file()
 
@@ -216,18 +221,22 @@ async def handle_voice_message(update, context):
         audio_path = tmp.name
 
     try:
-        # Транскрибация
         lang = args.lang if args else "auto"
         text, detected = transcribe_audio(audio_path, lang=lang, fix=args.fix if args else False)
 
-        # Сохраняем в файл
         ts = datetime.now().strftime("%H:%M:%S")
         output_path = get_transcript_path(user.id, chat.id)
-        speaker = user.first_name or f"tg_{user.id}"
+
+        # Устанавливаем как текущий файл для микрофона
+        current_output_path = output_path
+
+        speaker = user.first_name or f"Пациент(tg)"
         append_to_transcript(output_path, text, ts, detected, speaker)
 
-        # Ответ пользователю
         reply = f"📝 *{speaker}* [{ts}]\n\n{text}"
+
+        if mic_active:
+            reply += f"\n\n_🎙 Микрофон активен — говорите ответ_"
 
         if detected != lang and lang == "auto":
             detected_name = {"ru": "русский", "ka": "ქართული", "en": "english"}.get(detected, detected)
@@ -339,6 +348,32 @@ async def handle_text(update, context):
             await update.message.reply_text("ℹ️ Сегодня ещё не было транскрипций.")
         return
 
+    # /mic
+    if text == "/mic":
+        global mic_active, mic_thread, current_output_path
+        mic_active = not mic_active
+
+        if mic_active:
+            # Если есть активный пациент — используем его файл
+            if user.id in user_patient_map:
+                current_output_path = get_transcript_path(user.id, chat.id)
+            else:
+                current_output_path = get_transcript_path(user.id, chat.id)
+
+            from threading import Thread
+            mic_thread = Thread(target=_mic_listener, args=(user.id, chat.id), daemon=True)
+            mic_thread.start()
+            await update.message.reply_text(
+                "🎙 *Микрофон ВКЛЮЧЁН*\n\n"
+                "Говорите — ваш голос будет транскрибироваться "
+                "в тот же файл, что и голосовые пациента.\n"
+                "`/mic` — выключить",
+                parse_mode="Markdown"
+            )
+        else:
+            await update.message.reply_text("🎙 *Микрофон выключен*", parse_mode="Markdown")
+        return
+
     # /help
     if text == "/help":
         await update.message.reply_text(
@@ -346,6 +381,7 @@ async def handle_text(update, context):
             "• Пришли голосовое — я расшифрую и сохраню\n"
             "• `/patient Имя` — задать имя текущего пациента\n"
             "• `/lang ka` — переключить язык на грузинский\n"
+            "• `/mic` — включить/выключить микрофон врача\n"
             "• `/file` — показать сегодняшний транскрипт\n"
             "• `/help` — эта справка\n\n"
             "Транскрипты сохраняются в `patient_intake/transcripts/`",
@@ -440,6 +476,8 @@ async def main_async():
                         help="Voice chat режим (экспериментально)")
     parser.add_argument("--no-bot", action="store_true",
                         help="Только voice chat, без Telegram бота")
+    parser.add_argument("--mic", action="store_true",
+                        help="Автовключение микрофона врача при старте")
     parser.add_argument("--no-voice", action="store_true",
                         help="Не обрабатывать входящие голосовые")
     args = parser.parse_args()
@@ -453,6 +491,8 @@ async def main_async():
 
     if args.fix:
         print(f"   DeepSeek: ✅ коррекция")
+    if args.mic:
+        print(f"   Микрофон: ✅ режим врача")
 
     # Словарь
     if load_ka_dict():
@@ -492,11 +532,22 @@ async def main_async():
     app.add_handler(CommandHandler("help", handle_text))
     app.add_handler(CommandHandler("patient", handle_text))
     app.add_handler(CommandHandler("lang", handle_text))
+    app.add_handler(CommandHandler("mic", handle_text))
     app.add_handler(CommandHandler("file", handle_text))
     app.add_error_handler(error_handler)
 
+    # Автовключение микрофона
+    if args.mic:
+        log.info("Автозапуск микрофона...")
+        from threading import Thread
+        global mic_active, mic_thread, current_output_path
+        mic_active = True
+        current_output_path = OUTPUT_DIR / f"doctor_{datetime.now().strftime('%Y%m%d')}.md"
+        mic_thread = Thread(target=_mic_listener, args=(0, 0), daemon=True)
+        mic_thread.start()
+
     print(f"\n🤖 Бот запущен. Ожидаю голосовые сообщения...")
-    print(f"   Команды: /start, /patient, /lang, /file, /help")
+    print(f"   Команды: /start, /patient, /lang, /mic, /file, /help")
     print(f"   Транскрипты: {OUTPUT_DIR.resolve()}")
     print(f"{'='*60}")
 
@@ -512,6 +563,76 @@ async def main_async():
 
     await app.run_polling(stop_signals=None)
     log.info("Бот остановлен")
+
+
+def _mic_listener(user_id: int, chat_id: int):
+    """Фоновый поток: слушает микрофон и транскрибирует в файл."""
+    global mic_active, current_output_path
+
+    import sounddevice as sd
+    import numpy as np
+
+    log.info("🎙 Микрофон запущен")
+
+    CHUNK = 10  # секунд на чанк
+    SAMPLE_RATE = 16000
+
+    while mic_active:
+        try:
+            # Запись с микрофона
+            audio = sd.rec(
+                int(CHUNK * SAMPLE_RATE),
+                samplerate=SAMPLE_RATE,
+                channels=1,
+                dtype="float32",
+            )
+            sd.wait()
+
+            audio = audio.flatten()
+            rms = np.sqrt(np.mean(audio ** 2))
+            if rms < 0.015:
+                continue  # тишина
+
+            # Нормализация
+            max_val = np.max(np.abs(audio))
+            if max_val > 0:
+                audio = audio / max_val
+
+            # Транскрибация
+            lang = args.lang if args else "auto"
+            opts = {"fp16": False}
+            if lang != "auto":
+                opts["language"] = lang
+            else:
+                opts["language"] = None
+
+            if lang == "ka" and ka_dict and ka_dict.get("_whisper_prompt"):
+                opts["initial_prompt"] = ka_dict["_whisper_prompt"]
+
+            result = model.transcribe(audio, **opts)
+            text = result.get("text", "").strip()
+            detected = result.get("language", lang)
+
+            if text:
+                ts = datetime.now().strftime("%H:%M:%S")
+
+                # Используем текущий файл пациента или создаём новый
+                path = current_output_path
+                if path is None:
+                    path = get_transcript_path(user_id, chat_id)
+                    current_output_path = path
+
+                append_to_transcript(path, text, ts, detected, "Врач")
+                log.info(f"🎙 [Врач] {text[:80]}...")
+
+        except Exception as e:
+            log.warning(f"Микрофон: {e}")
+            if not mic_active:
+                break
+            import time
+            time.sleep(1)
+
+    log.info("🎙 Микрофон остановлен")
 
 
 def main():

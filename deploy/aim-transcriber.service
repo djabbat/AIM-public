@@ -7,7 +7,10 @@ Type=simple
 User=oem
 WorkingDirectory=/home/oem/Desktop/LongevityCommon/AIM
 EnvironmentFile=/home/oem/.aim_env
-ExecStart=/home/oem/Desktop/LongevityCommon/AIM/venv/bin/python /home/oem/Desktop/LongevityCommon/AIM/bot_transcriber.py
+# --lang ka : грузинский
+# --fix     : DeepSeek коррекция
+# --mic     : автовключение микрофона врача
+ExecStart=/home/oem/Desktop/LongevityCommon/AIM/venv/bin/python /home/oem/Desktop/LongevityCommon/AIM/bot_transcriber.py --mic
 Restart=always
 RestartSec=5
 
