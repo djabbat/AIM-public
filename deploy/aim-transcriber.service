@@ -1,0 +1,15 @@
+[Unit]
+Description=AIM Telegram Transcriber — голосовые сообщения → текст
+After=network.target
+
+[Service]
+Type=simple
+User=oem
+WorkingDirectory=/home/oem/Desktop/LongevityCommon/AIM
+EnvironmentFile=/home/oem/.aim_env
+ExecStart=/home/oem/Desktop/LongevityCommon/AIM/venv/bin/python /home/oem/Desktop/LongevityCommon/AIM/bot_transcriber.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
