@@ -1,0 +1,16 @@
+[package]
+name = "aim-notify"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM — notification multiplexer (N1). Single front door for alerts/briefs/digests; per-channel fallback chain; JSONL audit; dedup window. Rust port of agents/notify.py."
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"

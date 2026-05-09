@@ -1,0 +1,12 @@
+[Unit]
+Description=Run AIM_FS decay sweeper every 60 seconds
+Requires=aim-fs-sweeper.service
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=60s
+AccuracySec=10s
+Unit=aim-fs-sweeper.service
+
+[Install]
+WantedBy=timers.target

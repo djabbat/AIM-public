@@ -1,0 +1,11 @@
+[Unit]
+Description=Run AIM daily project brief at 09:00 local
+Requires=aim-daily-brief.service
+
+[Timer]
+OnCalendar=*-*-* 09:00:00
+Persistent=true
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

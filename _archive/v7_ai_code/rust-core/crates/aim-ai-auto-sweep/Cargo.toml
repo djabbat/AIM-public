@@ -1,0 +1,30 @@
+[package]
+name = "aim-ai-auto-sweep"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM AI — periodic maintenance sweep (AS1). Re-fingerprint prompt, validate cases, archive stale cases, prune phantoms + expired suppressions, snapshot health. Rust port of AI/ai/auto_sweep.py."
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "aim-ai-sweep"
+path = "src/bin/sweep.rs"
+
+[dependencies]
+aim-ai-ledger = { path = "../aim-ai-ledger" }
+aim-ai-cases = { path = "../aim-ai-cases" }
+aim-ai-prompt-versions = { path = "../aim-ai-prompt-versions" }
+aim-ai-prompt-impact = { path = "../aim-ai-prompt-impact" }
+aim-ai-case-archiver = { path = "../aim-ai-case-archiver" }
+aim-ai-suppressions = { path = "../aim-ai-suppressions" }
+aim-ai-health = { path = "../aim-ai-health" }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+chrono = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"

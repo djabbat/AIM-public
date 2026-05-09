@@ -1,0 +1,20 @@
+[Unit]
+Description=AIM Hive Queen — nightly SQLite backup (P1.5 hardening 2026-05-07)
+Documentation=file:///home/oem/Desktop/LongevityCommon/AIM/docs/operational/HIVE_QUEEN_DEPLOY.md
+After=aim-hive-queen.service
+
+[Service]
+Type=oneshot
+User=jaba
+Group=jaba
+ExecStart=/bin/bash -lc '\
+  set -eu; \
+  src=/home/jaba/hive_queen/hive_queen.db; \
+  dst_dir=/home/jaba/backups/aim-hive-queen; \
+  mkdir -p "$dst_dir"; \
+  date_iso=$(date +%%F); \
+  /usr/bin/sqlite3 "$src" ".backup $dst_dir/queen-$date_iso.sqlite"; \
+  /usr/bin/find "$dst_dir" -name "queen-*.sqlite" -mtime +14 -delete; \
+  echo "Backup complete: $dst_dir/queen-$date_iso.sqlite"'
+StandardOutput=journal
+StandardError=journal

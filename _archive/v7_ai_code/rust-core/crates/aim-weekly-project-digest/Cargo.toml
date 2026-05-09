@@ -1,0 +1,25 @@
+[package]
+name = "aim-weekly-project-digest"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+chrono = { workspace = true }
+aim-project-owner = { path = "../aim-project-owner" }
+aim-experiment-owner = { path = "../aim-experiment-owner" }
+aim-patient-comms = { path = "../aim-patient-comms" }
+aim-stakeholder-tracker = { path = "../aim-stakeholder-tracker" }
+aim-daily-brief = { path = "../aim-daily-brief" }
+reqwest = { workspace = true, features = ["blocking"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[[bin]]
+name = "aim-weekly-project-digest"
+path = "src/main.rs"

@@ -1,0 +1,22 @@
+[package]
+name = "aim-ai-suppressions"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM AI — finding suppressions (FS1). SQLite-backed mute list for known false-positive file:line refs, optional expiry. Rust port of AI/ai/finding_suppressions.py."
+
+[dependencies]
+aim-ai-ledger = { path = "../aim-ai-ledger" }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+chrono = { workspace = true }
+rusqlite = { version = "0.31", features = ["bundled"] }
+
+[[bin]]
+name = "aim-ai-suppressions"
+path = "src/main.rs"
+
+[dev-dependencies]
+tempfile = "3"

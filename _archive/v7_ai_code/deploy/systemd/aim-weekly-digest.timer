@@ -1,0 +1,11 @@
+[Unit]
+Description=Run AIM weekly digest every Sunday at 09:00
+Requires=aim-weekly-digest.service
+
+[Timer]
+OnCalendar=Sun *-*-* 09:00:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

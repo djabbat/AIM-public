@@ -1,0 +1,6 @@
+[Unit]
+Description=AIM full stack
+Wants=aim-llm.service aim-rag.service aim-medkb.service aim-doctor.service aim-generalist.service aim-phoenix.service
+
+[Install]
+WantedBy=multi-user.target

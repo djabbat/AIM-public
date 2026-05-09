@@ -1,0 +1,20 @@
+[package]
+name = "aim-pam"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+chrono = { workspace = true }
+aim-patient-memory = { path = "../aim-patient-memory" }
+
+[dev-dependencies]
+tempfile = "3"
+
+[[bin]]
+name = "aim-pam"
+path = "src/main.rs"

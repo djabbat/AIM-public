@@ -1,0 +1,24 @@
+[package]
+name = "aim-medkb"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM medical knowledge base: lab reference, drug interactions, i18n"
+
+[lib]
+name = "aim_medkb"
+path = "src/lib.rs"
+
+[[bin]]
+name = "aim-medkb"
+path = "src/main.rs"
+
+[dependencies]
+aim-common = { workspace = true }
+axum = { workspace = true }
+tokio = { workspace = true }
+tower-http = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }

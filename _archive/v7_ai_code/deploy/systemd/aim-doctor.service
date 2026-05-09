@@ -1,0 +1,22 @@
+[Unit]
+Description=AIM doctor pipeline (Rust :8773)
+After=network-online.target aim-llm.service aim-medkb.service
+Wants=aim-llm.service aim-medkb.service
+
+[Service]
+Type=simple
+User=oem
+WorkingDirectory=/home/oem/Desktop/LongevityCommon/AIM/rust-core
+EnvironmentFile=-/home/oem/.aim_env
+Environment="RUST_LOG=info"
+Environment="AIM_ENV=prod"
+ExecStart=/home/oem/Desktop/LongevityCommon/AIM/rust-core/target/release/aim-doctor
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/home/oem/Desktop/LongevityCommon/AIM
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

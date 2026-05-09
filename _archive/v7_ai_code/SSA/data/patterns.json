@@ -1,0 +1,185 @@
+{
+  "version": "AIM-SSA_v0.1",
+  "patterns": [
+    {
+      "id": "PANCYTOPENIA",
+      "label": "Панцитопения",
+      "severity": "red",
+      "match": {"AND":[
+        {"param":"WBC","zone":["L1","L2"]},
+        {"param":"HGB","zone":["L1","L2"]},
+        {"param":"PLT","zone":["L1","L2"]}
+      ]},
+      "differentials": ["aplastic_anemia","MDS","myelofibrosis","B12_folate_deficiency","hypersplenism","PNH","leukemia_infiltration"]
+    },
+    {
+      "id": "BICYTOPENIA_HEM_PLT",
+      "label": "Бицитопения HGB+PLT (WBC сохранён)",
+      "severity": "amber",
+      "match": {"AND":[
+        {"param":"HGB","zone":["L1","L2"]},
+        {"param":"PLT","zone":["L1","L2"]},
+        {"param":"WBC","zone":["L0","H1"]}
+      ]},
+      "differentials": ["TTP","HUS","DIC","B12_folate_deficiency","MDS","hypersplenism"]
+    },
+    {
+      "id": "MYELOPROLIFERATIVE",
+      "label": "Миелопролиферативный паттерн",
+      "severity": "amber",
+      "match": {"AND":[
+        {"param":"WBC","zone":["H1","H2"]},
+        {"param":"PLT","zone":["H1","H2"]},
+        {"param":"HGB","zone":["H1","H2"]}
+      ]},
+      "differentials": ["polycythemia_vera","essential_thrombocythemia","CML","primary_myelofibrosis"]
+    },
+    {
+      "id": "ACUTE_INFLAMMATION",
+      "label": "Острофазная воспалительная реакция",
+      "severity": "amber",
+      "match": {"AND":[
+        {"param":"WBC","zone":["H1","H2"]},
+        {"param":"NEUT_abs","zone":["H1","H2"]},
+        {"param":"PLT","zone":["L0","H1","H2"]},
+        {"param":"ESR","zone":["H1","H2"]}
+      ]},
+      "differentials": ["bacterial_infection","sepsis","sterile_inflammation","postoperative","acute_GVHD"]
+    },
+    {
+      "id": "VIRAL_PATTERN",
+      "label": "Вирусная картина",
+      "severity": "green",
+      "match": {"AND":[
+        {"param":"WBC","zone":["L0","L1","H1"]},
+        {"param":"LYMPH_abs","zone":["H1","H2"]},
+        {"param":"NEUT_pct","zone":["L0","L1"]}
+      ]},
+      "differentials": ["acute_viral_infection","infectious_mononucleosis","CMV","COVID-19","acute_HIV"]
+    },
+    {
+      "id": "EOS_HYPERSYNDROME",
+      "label": "Гиперэозинофильный синдром",
+      "severity": "amber",
+      "match": {"AND":[
+        {"param":"EOS_abs","zone":["H2"]}
+      ]},
+      "differentials": ["HES","EGPA","parasitosis","DRESS","CEL","atopy"]
+    },
+    {
+      "id": "ANEMIA_MICROCYTIC_IDA",
+      "label": "Микроцитарная анемия — ЖДА-паттерн",
+      "severity": "amber",
+      "match": {"AND":[
+        {"param":"HGB","zone":["L1","L2"]},
+        {"param":"MCV","zone":["L1","L2"]},
+        {"param":"MCH","zone":["L1","L2"]},
+        {"param":"RDW","zone":["H1","H2"]}
+      ]},
+      "differentials": ["iron_deficiency_anemia","anemia_chronic_disease","sideroblastic"]
+    },
+    {
+      "id": "ANEMIA_MICROCYTIC_THAL",
+      "label": "Микроцитарная анемия — талассемия-паттерн",
+      "severity": "amber",
+      "match": {"AND":[
+        {"param":"HGB","zone":["L1","L2"]},
+        {"param":"MCV","zone":["L1","L2"]},
+        {"param":"RBC","zone":["L0","H1","H2"]},
+        {"param":"RDW","zone":["L0","L1"]}
+      ]},
+      "differentials": ["thalassemia_trait","beta_thalassemia"]
+    },
+    {
+      "id": "ANEMIA_MACROCYTIC",
+      "label": "Макроцитарная анемия (мегалобластная или MDS)",
+      "severity": "amber",
+      "match": {"AND":[
+        {"param":"HGB","zone":["L1","L2"]},
+        {"param":"MCV","zone":["H1","H2"]},
+        {"param":"RDW","zone":["H1","H2"]}
+      ]},
+      "differentials": ["B12_deficiency","folate_deficiency","MDS","alcohol","liver_disease","hypothyroidism"]
+    },
+    {
+      "id": "HEMOLYSIS_PATTERN",
+      "label": "Гемолитический паттерн (CBC-часть)",
+      "severity": "amber",
+      "match": {"AND":[
+        {"param":"HGB","zone":["L1","L2"]},
+        {"param":"RETIC","zone":["H1","H2"]},
+        {"param":"MCV","zone":["L0","H1"]}
+      ]},
+      "differentials": ["AIHA","hereditary_spherocytosis","G6PD","sickle_cell","TTP","HUS","DIC","PNH"]
+    },
+    {
+      "id": "THROMBOTIC_MICROANG",
+      "label": "Тромботическая микроангиопатия",
+      "severity": "red",
+      "match": {"AND":[
+        {"param":"PLT","zone":["L2"]},
+        {"param":"HGB","zone":["L1","L2"]},
+        {"param":"RETIC","zone":["H1","H2"]}
+      ]},
+      "differentials": ["TTP","HUS","DIC","HELLP","aHUS"]
+    },
+    {
+      "id": "STRESS_CORTISOL",
+      "label": "Стресс/кортикостероидная картина",
+      "severity": "green",
+      "match": {"AND":[
+        {"param":"WBC","zone":["H1"]},
+        {"param":"NEUT_abs","zone":["H1","H2"]},
+        {"param":"LYMPH_abs","zone":["L1","L2"]},
+        {"param":"EOS_abs","zone":["L0","L1","L2"]}
+      ]},
+      "differentials": ["acute_stress","corticosteroid_therapy","postoperative","Cushing"]
+    },
+    {
+      "id": "BONE_MARROW_FAILURE",
+      "label": "Несостоятельность костного мозга",
+      "severity": "red",
+      "match": {"AND":[
+        {"param":"WBC","zone":["L1","L2"]},
+        {"param":"HGB","zone":["L1","L2"]},
+        {"param":"PLT","zone":["L1","L2"]},
+        {"param":"RETIC","zone":["L1","L2"]}
+      ]},
+      "differentials": ["aplastic_anemia","severe_radiation_injury","drug_induced_aplasia","Fanconi"]
+    },
+    {
+      "id": "ACD",
+      "label": "Анемия хронического воспаления",
+      "severity": "green",
+      "match": {"AND":[
+        {"param":"HGB","zone":["L1","L2"]},
+        {"param":"MCV","zone":["L0","L1"]},
+        {"param":"RDW","zone":["L0","L1"]},
+        {"param":"PLT","zone":["H1","H2"]},
+        {"param":"ESR","zone":["H1","H2"]}
+      ]},
+      "differentials": ["anemia_of_chronic_disease","chronic_infection","autoimmune","malignancy"]
+    },
+    {
+      "id": "HIGH_NLR",
+      "label": "Высокий NLR (системное воспаление/прогноз)",
+      "severity": "amber",
+      "match": {"AND":[
+        {"param":"NLR","zone":["H1","H2"]}
+      ]},
+      "differentials": ["sepsis","COVID-19_severe","cancer_progression","acute_coronary_syndrome","critical_illness"]
+    },
+    {
+      "id": "LEUKOERYTHROBLASTIC_HINT",
+      "label": "Лейкоэритробластический намёк (CBC-уровень)",
+      "severity": "red",
+      "match": {"AND":[
+        {"param":"WBC","zone":["H1","H2"]},
+        {"param":"HGB","zone":["L1","L2"]},
+        {"param":"PLT","zone":["L1","H1","H2"]},
+        {"param":"RDW","zone":["H1","H2"]}
+      ]},
+      "differentials": ["myelofibrosis","BM_metastasis","severe_sepsis","massive_hemorrhage"]
+    }
+  ]
+}

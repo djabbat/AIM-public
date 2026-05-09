@@ -1,0 +1,13 @@
+[Unit]
+Description=AIM weekly project digest (projects + patients + experiments)
+Documentation=file:///home/oem/Desktop/LongevityCommon/AIM/AUDIT_PROJECT_MANAGER_2026-05-06.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-%h/.aim_env
+WorkingDirectory=%h/Desktop/LongevityCommon/AIM
+ExecStart=%h/Desktop/LongevityCommon/AIM/venv/bin/python -m scripts.weekly_project_digest
+StandardOutput=journal
+StandardError=journal

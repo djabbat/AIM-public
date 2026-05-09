@@ -1,0 +1,368 @@
+{
+  "pairs": [
+    {
+      "drugs": [
+        "dasatinib",
+        "quercetin"
+      ],
+      "severity": "minor",
+      "mechanism": "Senolytic combination; quercetin is a mild CYP3A4 inhibitor and may marginally increase dasatinib exposure. Clinically acceptable in single-dose / monthly pulsed protocols.",
+      "recommendation": "Acceptable as intermittent senolytic pulse (Tkemaladze & Apkhazava 2019; Tkemaladze 2023). Avoid continuous daily co-administration; monitor CBC and LFTs if repeated.",
+      "source": "PMID:38510429"
+    },
+    {
+      "drugs": [
+        "ibuprofen",
+        "warfarin"
+      ],
+      "severity": "major",
+      "mechanism": "Additive bleeding risk: NSAID inhibits platelet aggregation and can cause GI mucosal injury while warfarin impairs coagulation.",
+      "recommendation": "Avoid routine co-administration. If NSAID is essential, prefer shortest course + PPI; increase INR monitoring frequency.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=warfarin"
+    },
+    {
+      "drugs": [
+        "acetylsalicylic_acid",
+        "warfarin"
+      ],
+      "severity": "major",
+      "mechanism": "Additive antiplatelet + anticoagulant effect.",
+      "recommendation": "Combine only for specific cardiology indications (e.g. mechanical valve + ACS) with close INR and bleeding surveillance.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=warfarin"
+    },
+    {
+      "drugs": [
+        "vitamin_k",
+        "warfarin"
+      ],
+      "severity": "major",
+      "mechanism": "Vitamin K directly antagonises warfarin's mechanism.",
+      "recommendation": "Keep dietary/supplemental vitamin K intake stable. Avoid supplemental doses unless reversing over-anticoagulation.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=warfarin"
+    },
+    {
+      "drugs": [
+        "st_johns_wort",
+        "warfarin"
+      ],
+      "severity": "major",
+      "mechanism": "St John's wort induces CYP2C9 and CYP3A4, lowering warfarin plasma levels and INR — thrombosis risk.",
+      "recommendation": "Avoid combination. If unavoidable, monitor INR weekly.",
+      "source": "PMID:14748826"
+    },
+    {
+      "drugs": [
+        "ginkgo_biloba",
+        "warfarin"
+      ],
+      "severity": "moderate",
+      "mechanism": "Ginkgo inhibits platelet-activating factor; additive bleeding.",
+      "recommendation": "Avoid routine combination; monitor for bruising/bleeding.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=warfarin"
+    },
+    {
+      "drugs": [
+        "omega3",
+        "warfarin"
+      ],
+      "severity": "moderate",
+      "mechanism": "High-dose fish oil (>3 g/d) may prolong bleeding time.",
+      "recommendation": "Doses <=1 g/d generally safe; above that, monitor INR and bleeding.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=warfarin"
+    },
+    {
+      "drugs": [
+        "allium_sativum",
+        "warfarin"
+      ],
+      "severity": "moderate",
+      "mechanism": "Garlic has mild antiplatelet activity; additive bleeding.",
+      "recommendation": "Limit high-dose garlic extracts; monitor INR.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=warfarin"
+    },
+    {
+      "drugs": [
+        "vitamin_e",
+        "warfarin"
+      ],
+      "severity": "moderate",
+      "mechanism": "High-dose vitamin E (>400 IU/d) can potentiate anticoagulation.",
+      "recommendation": "Keep vitamin E <400 IU/d; monitor INR if higher.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=warfarin"
+    },
+    {
+      "drugs": [
+        "maoi",
+        "ssri"
+      ],
+      "severity": "contraindicated",
+      "mechanism": "Serotonin syndrome via additive serotonergic activity.",
+      "recommendation": "Contraindicated. Observe washout: >=14 d off MAOI before SSRI; >=5 wk off fluoxetine before MAOI.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/"
+    },
+    {
+      "drugs": [
+        "fluoxetine",
+        "maoi"
+      ],
+      "severity": "contraindicated",
+      "mechanism": "Serotonin syndrome; fluoxetine has long half-life.",
+      "recommendation": "Contraindicated. Require >=5 weeks washout.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/"
+    },
+    {
+      "drugs": [
+        "maoi",
+        "sertraline"
+      ],
+      "severity": "contraindicated",
+      "mechanism": "Serotonin syndrome.",
+      "recommendation": "Contraindicated. >=14 d washout both directions.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/"
+    },
+    {
+      "drugs": [
+        "ssri",
+        "tramadol"
+      ],
+      "severity": "major",
+      "mechanism": "Additive serotonergic effect; lowered seizure threshold.",
+      "recommendation": "Prefer non-serotonergic analgesic; if combined, low dose + monitor.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/"
+    },
+    {
+      "drugs": [
+        "ssri",
+        "st_johns_wort"
+      ],
+      "severity": "major",
+      "mechanism": "Additive serotonergic activity → serotonin syndrome.",
+      "recommendation": "Avoid combination.",
+      "source": "PMID:14748826"
+    },
+    {
+      "drugs": [
+        "ace_inhibitor",
+        "potassium"
+      ],
+      "severity": "major",
+      "mechanism": "Hyperkalaemia: ACEi reduces aldosterone-mediated K+ excretion.",
+      "recommendation": "Avoid K+ supplements unless hypokalaemic; monitor serum K+.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/"
+    },
+    {
+      "drugs": [
+        "ace_inhibitor",
+        "spironolactone"
+      ],
+      "severity": "major",
+      "mechanism": "Additive hyperkalaemia (both retain K+).",
+      "recommendation": "Monitor K+ and creatinine every 1–2 wk after initiation.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/"
+    },
+    {
+      "drugs": [
+        "ace_inhibitor",
+        "nsaid"
+      ],
+      "severity": "moderate",
+      "mechanism": "NSAID blunts ACEi antihypertensive effect; risk of AKI.",
+      "recommendation": "Avoid chronic NSAID; if essential, monitor BP + creatinine.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/"
+    },
+    {
+      "drugs": [
+        "ace_inhibitor",
+        "ibuprofen"
+      ],
+      "severity": "moderate",
+      "mechanism": "NSAID blunts ACEi antihypertensive effect; risk of AKI.",
+      "recommendation": "Avoid chronic NSAID; if essential, monitor BP + creatinine.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/"
+    },
+    {
+      "drugs": [
+        "amiodarone",
+        "digoxin"
+      ],
+      "severity": "major",
+      "mechanism": "Amiodarone raises digoxin levels ~2×.",
+      "recommendation": "Halve digoxin dose; monitor digoxin level + ECG.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/"
+    },
+    {
+      "drugs": [
+        "clarithromycin",
+        "statin"
+      ],
+      "severity": "major",
+      "mechanism": "CYP3A4 inhibition → statin rhabdomyolysis risk.",
+      "recommendation": "Hold statin during macrolide course, or switch to azithromycin.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/"
+    },
+    {
+      "drugs": [
+        "grapefruit",
+        "simvastatin"
+      ],
+      "severity": "major",
+      "mechanism": "Intestinal CYP3A4 inhibition → simvastatin AUC up to 3–7×.",
+      "recommendation": "Avoid grapefruit; or switch to pravastatin/rosuvastatin.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/"
+    },
+    {
+      "drugs": [
+        "alcohol",
+        "metformin"
+      ],
+      "severity": "moderate",
+      "mechanism": "Acute/binge alcohol raises lactic acidosis risk.",
+      "recommendation": "Avoid binge drinking; moderate intake acceptable with meals.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/"
+    },
+    {
+      "drugs": [
+        "iodinated_contrast",
+        "metformin"
+      ],
+      "severity": "major",
+      "mechanism": "Contrast-induced AKI + metformin accumulation → lactic acidosis.",
+      "recommendation": "Hold metformin at time of contrast; resume 48 h after, if eGFR stable.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/"
+    },
+    {
+      "drugs": [
+        "alcohol",
+        "insulin"
+      ],
+      "severity": "moderate",
+      "mechanism": "Alcohol impairs hepatic gluconeogenesis → delayed hypoglycaemia.",
+      "recommendation": "Advise food with alcohol; check glucose before sleep.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/"
+    },
+    {
+      "drugs": [
+        "calcium",
+        "levothyroxine"
+      ],
+      "severity": "moderate",
+      "mechanism": "Calcium binds T4 in gut, reduces absorption ~30%.",
+      "recommendation": "Separate doses by >=4 h.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/"
+    },
+    {
+      "drugs": [
+        "iron",
+        "levothyroxine"
+      ],
+      "severity": "moderate",
+      "mechanism": "Iron binds T4 in gut, reduces absorption.",
+      "recommendation": "Separate doses by >=4 h.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/"
+    },
+    {
+      "drugs": [
+        "chemotherapy",
+        "dasatinib"
+      ],
+      "severity": "major",
+      "mechanism": "Additive myelosuppression; CYP3A4-mediated PK interactions with many cytotoxic regimens.",
+      "recommendation": "Do not combine without oncologist supervision.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/"
+    },
+    {
+      "drugs": [
+        "chemotherapy",
+        "senolytic"
+      ],
+      "severity": "major",
+      "mechanism": "Unknown effect on tumour clearance; potential additive toxicity.",
+      "recommendation": "Defer elective senolytic protocols until chemotherapy washout (>=4 wk) unless on clinical trial.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/"
+    },
+    {
+      "drugs": [
+        "dasatinib",
+        "warfarin"
+      ],
+      "severity": "moderate",
+      "mechanism": "Dasatinib may affect CYP3A4 and platelet function.",
+      "recommendation": "Monitor INR and platelets during senolytic pulse.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/"
+    },
+    {
+      "drugs": [
+        "oral_contraceptive",
+        "st_johns_wort"
+      ],
+      "severity": "major",
+      "mechanism": "CYP3A4 induction reduces contraceptive levels; pregnancy risk.",
+      "recommendation": "Use alternative contraception or stop St John's wort.",
+      "source": "PMID:14748826"
+    },
+    {
+      "drugs": [
+        "amiodarone",
+        "grapefruit"
+      ],
+      "severity": "major",
+      "mechanism": "CYP3A4 inhibition raises amiodarone AUC.",
+      "recommendation": "Avoid grapefruit with amiodarone.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/"
+    },
+    {
+      "drugs": [
+        "quercetin",
+        "warfarin"
+      ],
+      "severity": "moderate",
+      "mechanism": "In-vitro CYP2C9 inhibition; possible INR rise at high doses.",
+      "recommendation": "Monitor INR if quercetin >500 mg/d is added.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/"
+    },
+    {
+      "drugs": [
+        "acetylsalicylic_acid",
+        "omega3"
+      ],
+      "severity": "minor",
+      "mechanism": "Mild additive antiplatelet effect at high fish-oil doses.",
+      "recommendation": "Clinically insignificant at <1 g/d fish oil.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/"
+    },
+    {
+      "drugs": [
+        "acetylsalicylic_acid",
+        "ginkgo_biloba"
+      ],
+      "severity": "moderate",
+      "mechanism": "Additive antiplatelet effect.",
+      "recommendation": "Avoid in patients with bleeding history; monitor otherwise.",
+      "source": "https://dailymed.nlm.nih.gov/dailymed/"
+    }
+  ],
+  "synonyms": {
+    "aspirin": "acetylsalicylic_acid",
+    "asa": "acetylsalicylic_acid",
+    "nsaid": "ibuprofen",
+    "advil": "ibuprofen",
+    "motrin": "ibuprofen",
+    "tylenol": "paracetamol",
+    "acetaminophen": "paracetamol",
+    "coumadin": "warfarin",
+    "glucophage": "metformin",
+    "sprycel": "dasatinib",
+    "vitamin k": "vitamin_k",
+    "vit k": "vitamin_k",
+    "vitamin e": "vitamin_e",
+    "vit e": "vitamin_e",
+    "st johns wort": "st_johns_wort",
+    "st. john's wort": "st_johns_wort",
+    "hypericum": "st_johns_wort",
+    "fish oil": "omega3",
+    "omega 3": "omega3",
+    "omega-3": "omega3",
+    "garlic": "allium_sativum",
+    "ginkgo": "ginkgo_biloba"
+  }
+}

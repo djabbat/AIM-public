@@ -1,0 +1,21 @@
+[package]
+name = "aim-ai-doctor"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM AI — wiring smoke test (DR2). Local introspection probes for AI/ subproject. Rust port of AI/ai/doctor.py."
+
+[dependencies]
+aim-ai-ledger = { path = "../aim-ai-ledger" }
+aim-ai-meta-evaluator = { path = "../aim-ai-meta-evaluator" }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[[bin]]
+name = "aim-ai-doctor"
+path = "src/main.rs"
+
+[dev-dependencies]
+tempfile = "3"

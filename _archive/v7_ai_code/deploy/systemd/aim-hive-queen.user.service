@@ -1,0 +1,27 @@
+[Unit]
+Description=AIM Hive Queen (user-mode) — local hub for AIM-instances
+Documentation=file:///home/oem/Desktop/LongevityCommon/AIM/docs/operational/HIVE_QUEEN_DEPLOY.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h
+EnvironmentFile=-%h/.config/aim/hive_queen.env
+# Required env in ~/.config/aim/hive_queen.env:
+#   PORT=8090                        bind port (default 8090)
+#   HOST=127.0.0.1                   bind host
+#   AIM_HIVE_ADMIN_TOKEN=<random>    required for /v1/hive/distill, /status
+#   AIM_HIVE_REQUIRE_AUTH=0          0 = legacy bootstrap; 1 = enforce
+#   AIM_HIVE_WORKER_TOKENS=<sha256>  newline/comma-list (P1.7)
+#   AIM_HIVE_QUEEN_DB=%h/.local/share/aim/hive_queen/queen.sqlite
+#   RUST_LOG=info
+ExecStart=%h/Desktop/LongevityCommon/AIM/rust-core/target/release/aim-hive-queen
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+LimitNOFILE=65536
+
+[Install]
+WantedBy=default.target

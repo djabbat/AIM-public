@@ -1,0 +1,30 @@
+# AIM v7.0 — зависимости
+# Ядро
+openai>=1.30.0
+python-dotenv>=1.0.0
+
+# OCR
+pytesseract>=0.3.10
+Pillow>=10.0.0
+rapidocr-onnxruntime>=1.3.0
+
+# PDF
+pymupdf>=1.23.0
+pdfplumber>=0.10.0
+
+# Telegram
+python-telegram-bot>=21.0.0
+
+# GUI
+customtkinter>=5.2.0
+
+# Утилиты
+httpx>=0.25.0
+json-repair>=0.59.0   # robust JSON парсинг LLM-выдачи (intake, MEMORY.md fill)
+
+# Web / multi-user (hub + node)
+fastapi>=0.110.0
+uvicorn>=0.27.0
+pydantic>=2.5.0
+argon2-cffi>=23.1.0   # password hashing on the hub
+anthropic>=0.40.0     # Claude API (premium tier + native vision)

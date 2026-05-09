@@ -1,0 +1,15 @@
+[build-system]
+requires = ["maturin>=1.5,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "aim-kernel"
+version = "0.1.0"
+description = "PyO3 bindings for AIM Asimov decision kernel"
+requires-python = ">=3.10"
+authors = [{name = "AIM team"}]
+license = {text = "Proprietary"}
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
+module-name = "aim_kernel"

@@ -1,0 +1,12 @@
+id: grant-deadline-summary
+task: |
+  In one paragraph (≤120 words), describe what an EIC Pathfinder Challenges
+  proposal needs in its Excellence section. Be specific about TRL targets
+  and the proof-of-principle requirement.
+tags: [grants, writing]
+rubrics:
+  contains_all: ["TRL", "proof"]
+  contains_any: ["principle", "concept"]
+  forbids: ["I don't know", "as an AI"]
+  min_length: 250
+  max_length: 1500

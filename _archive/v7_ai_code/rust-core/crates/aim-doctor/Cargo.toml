@@ -1,0 +1,28 @@
+[package]
+name = "aim-doctor"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM doctor pipeline: orchestrates diffdx + ssa + LLM + medkb"
+
+[lib]
+name = "aim_doctor"
+path = "src/lib.rs"
+
+[[bin]]
+name = "aim-doctor"
+path = "src/main.rs"
+
+[dependencies]
+aim-common = { workspace = true }
+axum = { workspace = true }
+tokio = { workspace = true }
+tower-http = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+parking_lot = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }

@@ -1,0 +1,12 @@
+[Unit]
+Description=AIM weekly self-improvement digest
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-%h/.aim_env
+WorkingDirectory=%h/Desktop/LongevityCommon/AIM
+ExecStart=%h/Desktop/LongevityCommon/AIM/venv/bin/python -m scripts.weekly_digest
+StandardOutput=journal
+StandardError=journal

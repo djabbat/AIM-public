@@ -1,0 +1,26 @@
+[package]
+name = "aim-ai-case-archiver"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM AI — case archiver (CA1). Move regression eval cases (regr-*.yaml) into _archived/ when they no longer appear in recent ledger findings. Rust port of AI/ai/case_archiver.py."
+
+[dependencies]
+aim-ai-ledger = { path = "../aim-ai-ledger" }
+aim-ai-meta-evaluator = { path = "../aim-ai-meta-evaluator" }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+regex = "1"
+once_cell = "1"
+glob = "0.3"
+
+[[bin]]
+name = "aim-ai-case-archiver"
+path = "src/main.rs"
+
+[dev-dependencies]
+tempfile = "3"

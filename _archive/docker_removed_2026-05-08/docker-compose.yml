@@ -1,0 +1,64 @@
+version: "3.8"
+
+services:
+  aim:
+    build: .
+    image: aim:7.0
+    container_name: aim
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"   # Web UI / API
+      - "127.0.0.1:9090:9090"   # Prometheus
+      - "127.0.0.1:9091:9091"   # /healthz
+    volumes:
+      - ${HOME}/.claude:/root/.claude
+      - ${HOME}/.aim_env:/root/.aim_env:ro
+      - ${HOME}/Desktop/AIM/Patients:/app/Patients
+      - ${HOME}/Desktop/AIM_backups:/backups
+    environment:
+      AIM_PROFILE: ${AIM_PROFILE:-default}
+      AIM_LLM_CACHE: ${AIM_LLM_CACHE:-1}
+      AIM_TRACING: ${AIM_TRACING:-0}
+      AIM_TRACING_ENDPOINT: ${AIM_TRACING_ENDPOINT:-http://jaeger:4317}
+      AIM_PI_ENABLED: ${AIM_PI_ENABLED:-0}
+      AIM_WEBHOOK_TOKEN: ${AIM_WEBHOOK_TOKEN}
+    depends_on:
+      - prometheus
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: aim-prometheus
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9092:9090"
+    volumes:
+      - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=30d
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: aim-grafana
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+    volumes:
+      - grafana-data:/var/lib/grafana
+
+  # Optional: Jaeger for distributed tracing (#41)
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: aim-jaeger
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:16686:16686"   # UI
+      - "127.0.0.1:4317:4317"     # OTLP gRPC
+    profiles: ["tracing"]         # only starts with `--profile tracing`
+
+volumes:
+  prometheus-data:
+  grafana-data:

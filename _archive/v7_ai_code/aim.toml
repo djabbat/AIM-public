@@ -1,0 +1,54 @@
+# AIM unified configuration
+#
+# Read by both Rust core (via aim-common::config) and Phoenix umbrella
+# (via Application.fetch_env in config/runtime.exs).
+#
+# Override individual values via env vars (see [env] section below).
+
+[ports]
+aim_web      = 4002
+aim_gateway  = 4003
+aim_llm      = 8770
+aim_rag      = 8771
+aim_medkb    = 8772
+aim_doctor   = 8773
+aim_generalist = 8774
+diffdx_api   = 8765
+ssa_api      = 8766
+
+[upstreams]
+# URLs the Phoenix orchestrator and aim-doctor use to reach the Rust core.
+llm    = "http://127.0.0.1:8770"
+rag    = "http://127.0.0.1:8771"
+medkb  = "http://127.0.0.1:8772"
+doctor = "http://127.0.0.1:8773"
+diffdx = "http://127.0.0.1:8765"
+ssa    = "http://127.0.0.1:8766"
+generalist = "http://127.0.0.1:8774"
+
+[security]
+require_auth   = false      # AIM_REQUIRE_AUTH=1 in prod
+cors_origin    = "http://127.0.0.1:4002"
+sandbox_root   = ""         # empty → $HOME/Desktop/LongevityCommon/AIM/Patients
+sandbox_extensions = ["md", "txt", "json", "csv", "yml", "yaml", "py", "rs", "ex", "exs", "heex", "toml", "html", "log"]
+
+[llm]
+default_tier   = "default"
+retries        = 2
+max_tokens     = 4096
+embed_concurrency = 8
+
+[telegram]
+allowed_ids = []            # empty = allow all (dev only)
+
+[hub]
+role     = "node"           # "node" or "hub"
+hub_url  = ""               # set on node when AIM_ROLE=node
+heartbeat_seconds = 300
+
+# ── ENV overrides ────────────────────────────────────────────────────────────
+# Each [ports] / [upstreams] / etc. value can be overridden via the
+# corresponding env var of the same name in screaming snake case, prefixed
+# with AIM_. Examples:
+#   AIM_LLM_PORT=18770 cargo run --bin aim-llm
+#   AIM_REQUIRE_AUTH=1 mix phx.server

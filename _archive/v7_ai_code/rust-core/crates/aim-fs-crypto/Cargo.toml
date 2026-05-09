@@ -1,0 +1,19 @@
+[package]
+name = "aim-fs-crypto"
+version = "0.1.0"
+edition = "2021"
+description = "AIM_FS Phase B encryption — AES-256-GCM + HMAC pseudonym + secret-management. MVP.1: env-var master key (Phase B.0.5). OS keyring deferred until clinic deployment."
+
+[dependencies]
+aes-gcm = "0.10"
+hmac = "0.12"
+sha2 = "0.10"
+subtle = "2.5"
+hex = "0.4"
+rand = "0.8"
+secrecy = "0.8"
+zeroize = "1.8"
+thiserror = "1"
+
+[dev-dependencies]
+tempfile = "3"

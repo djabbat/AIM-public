@@ -1,0 +1,16 @@
+[package]
+name = "aim-grep"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM grep — Rust regex search wrapper for Phase 10 hybrid (2026-05-07). Used by tools/grep shim; pure-Rust ripgrep-style file walking + regex matching без subprocess к /usr/bin/rg."
+
+[[bin]]
+name = "aim-grep"
+path = "src/main.rs"
+
+[dependencies]
+ignore = "0.4"
+regex = "1"
+serde = { workspace = true }
+serde_json = { workspace = true }

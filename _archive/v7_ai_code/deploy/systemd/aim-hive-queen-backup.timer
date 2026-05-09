@@ -1,0 +1,11 @@
+[Unit]
+Description=Nightly Hive Queen SQLite backup (03:00 host time, 14-day retention)
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+RandomizedDelaySec=10min
+Unit=aim-hive-queen-backup.service
+Persistent=true
+
+[Install]
+WantedBy=timers.target

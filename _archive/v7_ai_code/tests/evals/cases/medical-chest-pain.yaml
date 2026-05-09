@@ -1,0 +1,12 @@
+id: medical-chest-pain
+task: |
+  Patient: 62 y/o male, sudden retrosternal chest pain radiating to left arm,
+  diaphoresis, nausea, started 30 minutes ago. ECG shows ST-elevation in II,
+  III, aVF. Give a one-paragraph differential and the immediate action.
+tags: [medical, diagnosis, urgent]
+weight: 2.0
+rubrics:
+  contains_any: ["STEMI", "myocardial infarction", "инфаркт миокарда", "MI"]
+  contains_all: ["inferior", "PCI"]
+  forbids: ["as an AI", "I cannot", "consult a doctor"]
+  min_length: 200

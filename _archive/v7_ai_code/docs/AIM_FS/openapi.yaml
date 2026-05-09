@@ -1,0 +1,465 @@
+openapi: 3.0.3
+info:
+  title: AIM_FS HTTP API
+  version: 0.1.0
+  description: |
+    REST wrapper around the AIM_FS JSON Port (`aim-fs-http` binary).
+    Bearer-token auth on every request except `/healthz`.
+
+    See:
+      * `~/Desktop/LongevityCommon/AIM/docs/AIM_FS/SPEC.md`
+      * `~/Desktop/LongevityCommon/AIM/rust-core/crates/aim-fs/src/bin/aim_fs_http.rs`
+
+  contact:
+    name: Jaba Tkemaladze
+    email: djabbat@gmail.com
+
+servers:
+  - url: http://127.0.0.1:8770
+    description: Local single-user dev
+  - url: https://aim.example.org/api/v1
+    description: Hub deployment (Phase B)
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: AIM_FS_HTTP_TOKEN
+
+  schemas:
+    Actor:
+      type: object
+      required: [user_id]
+      properties:
+        user_id: { type: string, format: uuid }
+        session_id: { type: string, nullable: true }
+
+    NewEntity:
+      type: object
+      required:
+        - schema
+        - schema_version
+        - source
+        - user_id
+        - scope_user_ids
+        - scope_patient_ids
+        - tags
+        - requires_verification
+      properties:
+        schema:
+          type: string
+          example: feedback_v1
+        schema_version: { type: integer, default: 1 }
+        title: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        body: { type: string, nullable: true }
+        source:
+          type: string
+          enum: [user_message, user_command, system]
+        user_id: { type: string }
+        session_id: { type: string, nullable: true }
+        llm_model: { type: string, nullable: true }
+        confidence:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          nullable: true
+        requires_verification: { type: boolean }
+        scope_global: { type: boolean }
+        scope_user_ids: { type: array, items: { type: string } }
+        scope_project_ids:
+          type: array
+          items: { type: string }
+          nullable: true
+        scope_patient_ids: { type: array, items: { type: string } }
+        tags: { type: array, items: { type: string } }
+        decay_ttl_days: { type: integer, nullable: true }
+        decay_on_expire:
+          type: string
+          enum: [keep, deprecate]
+          nullable: true
+        initial_links:
+          type: array
+          items: { $ref: '#/components/schemas/InitialLink' }
+
+    InitialLink:
+      type: object
+      required: [target_id, link_type]
+      properties:
+        target_id: { type: string }
+        link_type:
+          type: string
+          enum: [depends_on, refines, supersedes, contradicts, references, produced_by]
+
+    ApprovalPolicy:
+      type: object
+      properties:
+        auto_approve_user_commands: { type: boolean }
+        auto_approve_observational_with_confidence_above:
+          type: number
+          minimum: 0
+          maximum: 1
+        auto_approve_service_events: { type: boolean }
+        require_approval_for: { type: array, items: { type: string } }
+        max_inactivity_days: { type: integer }
+
+    SimilarHit:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string, nullable: true }
+        schema: { type: string }
+        score: { type: integer }
+
+    ProposeOutcome:
+      type: object
+      required: [entity_id, proposal_id, auto_approved, entity_status]
+      properties:
+        entity_id: { type: string }
+        proposal_id: { type: string }
+        auto_approved: { type: boolean }
+        entity_status:
+          type: string
+          enum: [pending, active, superseded, rejected, deprecated, expired, disputed, stale]
+        similar_existing:
+          type: array
+          items: { $ref: '#/components/schemas/SimilarHit' }
+
+    ProposeBody:
+      type: object
+      required: [tenant_id, new, policy]
+      properties:
+        tenant_id: { type: string, format: uuid }
+        new: { $ref: '#/components/schemas/NewEntity' }
+        rationale: { type: string, nullable: true }
+        idempotency_key: { type: string, nullable: true }
+        policy: { $ref: '#/components/schemas/ApprovalPolicy' }
+
+    SearchScope:
+      type: object
+      properties:
+        schema: { type: string, nullable: true }
+        status: { type: string, nullable: true }
+        project_id: { type: string, nullable: true }
+        patient_id: { type: string, nullable: true }
+
+    SearchBody:
+      type: object
+      required: [tenant_id, query]
+      properties:
+        tenant_id: { type: string }
+        query: { type: string }
+        scope: { $ref: '#/components/schemas/SearchScope' }
+        limit: { type: integer, default: 20 }
+
+    Hit:
+      type: object
+      properties:
+        id: { type: string }
+        schema: { type: string }
+        status: { type: string }
+        title: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        snippet: { type: string, nullable: true }
+        created_at: { type: string }
+        score: { type: integer }
+
+    Proposal:
+      type: object
+      properties:
+        id: { type: string }
+        tenant_id: { type: string }
+        entity_id: { type: string }
+        proposal_type:
+          type: string
+          enum: [create, update, revert, delete]
+        status:
+          type: string
+          enum: [pending, approved, rejected, blocked]
+        proposed_data: { type: string, nullable: true }
+        rationale: { type: string, nullable: true }
+        proposed_by_user_id: { type: string, nullable: true }
+        approved_by_user_id: { type: string, nullable: true }
+        blocked_reason: { type: string, nullable: true }
+        version_at_proposal: { type: integer }
+        created_at: { type: string }
+        updated_at: { type: string }
+
+    ProjectSummary:
+      type: object
+      properties:
+        slug: { type: string }
+        path: { type: string }
+        title: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        status: { type: string, nullable: true }
+        created_at: { type: string, nullable: true }
+
+    PatientSummary:
+      type: object
+      properties:
+        key: { type: string }
+        path: { type: string }
+        surname: { type: string, nullable: true }
+        name: { type: string, nullable: true }
+        dob: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        last_visit_complaint: { type: string, nullable: true }
+
+    DisputeRecord:
+      type: object
+      properties:
+        a_id: { type: string }
+        a_title: { type: string, nullable: true }
+        a_body: { type: string, nullable: true }
+        b_id: { type: string }
+        b_title: { type: string, nullable: true }
+        b_body: { type: string, nullable: true }
+
+    Error:
+      type: object
+      properties:
+        message: { type: string }
+
+paths:
+  /healthz:
+    get:
+      summary: Liveness probe
+      security: []
+      responses:
+        "200":
+          description: alive
+          content:
+            text/plain:
+              schema: { type: string, example: ok }
+
+  /v1/propose:
+    post:
+      summary: Create / propose a new entity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProposeBody' }
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProposeOutcome' }
+        "400":
+          description: validation / busy / schema-invalid
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        "401":
+          description: missing / invalid bearer token
+
+  /v1/approve:
+    post:
+      summary: Approve a pending proposal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenant_id, proposal_id, actor]
+              properties:
+                tenant_id: { type: string }
+                proposal_id: { type: string }
+                actor: { $ref: '#/components/schemas/Actor' }
+      responses:
+        "200": { description: ok }
+        "400": { description: bad transition / not found }
+        "401": { description: unauthorised }
+
+  /v1/reject:
+    post:
+      summary: Reject a pending proposal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenant_id, proposal_id, actor]
+              properties:
+                tenant_id: { type: string }
+                proposal_id: { type: string }
+                actor: { $ref: '#/components/schemas/Actor' }
+                reason: { type: string, nullable: true }
+      responses:
+        "200": { description: ok }
+        "400": { description: bad transition / not found }
+
+  /v1/inbox:
+    get:
+      summary: List pending proposals
+      parameters:
+        - in: query
+          name: tenant_id
+          required: true
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50 }
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Proposal' }
+
+  /v1/search:
+    post:
+      summary: FTS5 BM25 search
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SearchBody' }
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Hit' }
+
+  /v1/projects:
+    get:
+      summary: List user-defined projects
+      parameters:
+        - in: query
+          name: user_id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ProjectSummary' }
+
+  /v1/patients:
+    get:
+      summary: List patient folders for a doctor
+      parameters:
+        - in: query
+          name: doctor_id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PatientSummary' }
+
+  /v1/disputes:
+    get:
+      summary: List active disputed pairs
+      parameters:
+        - in: query
+          name: tenant_id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/DisputeRecord' }
+
+  /v1/disputes/resolve:
+    post:
+      summary: Resolve a dispute by picking a winner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenant_id, winner_id, loser_id, actor]
+              properties:
+                tenant_id: { type: string }
+                winner_id: { type: string }
+                loser_id: { type: string }
+                actor: { $ref: '#/components/schemas/Actor' }
+      responses:
+        "200": { description: ok }
+        "400": { description: bad transition }
+
+  /v1/links/add:
+    post:
+      summary: Add a link between two entities
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenant_id, source_id, target_id, link_type]
+              properties:
+                tenant_id: { type: string }
+                source_id: { type: string }
+                target_id: { type: string }
+                link_type:
+                  type: string
+                  enum: [depends_on, refines, supersedes, contradicts, references, produced_by]
+      responses:
+        "200": { description: ok }
+        "400": { description: missing endpoint }
+
+  /v1/links/outgoing:
+    get:
+      summary: List outgoing links of an entity
+      parameters:
+        - in: query
+          name: tenant_id
+          required: true
+          schema: { type: string }
+        - in: query
+          name: source_id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    target_id: { type: string }
+                    link_type: { type: string }
+
+  /v1/sweep:
+    post:
+      summary: Run decay sweeper one-shot (status changes counted)
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  changed: { type: integer }

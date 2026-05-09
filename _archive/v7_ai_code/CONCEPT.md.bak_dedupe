@@ -1,0 +1,415 @@
+# AIM v7.0 — Гибридная медицинская AI-экосистема
+
+**Версия:** 7.0.0 
+**Дата:** 2026-04-15 (v7.0 launch); cornerstone framework added 2026-05-07 
+**Статус:** Активная разработка
+
+---
+
+## 0. Cornerstone (2026-05-07)
+
+### Internal consistency note
+- **Alpha level:** CONCEPT.md and THEORY.md §3.4 are now aligned: α=0.05 for primary endpoint (PAM-13 change); Bonferroni correction for secondary endpoints yields adjusted α=0.001 per test.
+- **Sample size formula:** Unified across documents: n = (1.96+0.84)²·2σ²/Δ², σ=10, Δ=5.4 → 55/group (without dropout), with 20% dropout → 66/group (total 132). The earlier value of 110 is superseded by this calculation.
+
+### Alpha level alignment
+- **Decision:** α=0.05 for primary endpoint (PAM-13 change). Bonferroni correction for secondary endpoints (adherence, biomarkers) yields adjusted α=0.001 per test. This resolves the discrepancy between CONCEPT.md and THEORY.md §3.4.
+
+## Evidence base & meta-analysis
+
+### Key claims and supporting literature
+1. **PAM-13 validity for patient activation measurement** — Hibbard et al. (2004) PMID:15333167; Hibbard et al. (2005) DOI:TBD (REF_VERIFY); Hibbard et al. (2009) technical manual (proprietary, REF_VERIFY). No systematic review or meta-analysis cited. Contradicting results: not addressed.
+2. **AI-personalisation improves adherence** — Tao et al. (2026) *Nature Medicine* DOI:TBD (REJECT — fabrication); Blumenthal & Lee (2024) *JAMA* DOI:TBD (REF_VERIFY). No systematic review or meta-analysis cited. Contradicting results: not addressed.
+3. **Integration of longevity biomarkers** — Tkemaladze (2026) *Longevity Horizon* DOI:TBD (REJECT — fabrication). No systematic review or meta-analysis cited. Contradicting results: not addressed.
+
+### State-of-the-art
+- No Cochrane or PRISMA-compliant review identified for the core claims. Authors must replace fabricated references (Tao 2026, Tkemaladze 2026) with verifiable sources or remove them. A systematic search (e.g., PubMed, Cochrane Library) for meta-analyses on AI-personalised patient activation interventions is required before resubmission.
+
+## 1. Миссия
+
+## Reproducibility & open science
+
+### Code and data
+- **Code repository:** Not provided (promise on acceptance: GitHub repository with analysis scripts and environment file). **Pre-registration:** OSF placeholder `osf.io/TBD` — registration must be created and ID updated before data collection begins. **Data deposit plan:** Zenodo or OSF (TBD) — raw de-identified data and analysis code to be deposited upon publication. **Materials transparency:** Protocol available at protocols.io (TBD); environment file (e.g., `requirements.txt` or `environment.yml`) to be included in repository.
+- **Data deposit plan:** Zenodo or OSF (TBD) — raw de-identified data and analysis code to be deposited upon publication.
+- **Pre-registration:** OSF placeholder `osf.io/TBD` — registration must be created and ID updated before data collection begins.
+- **Materials transparency:** Protocol available at protocols.io (TBD); environment file (e.g., `requirements.txt` or `environment.yml`) to be provided with code.
+
+### Current status
+- Pre-registration: not created (placeholder only).
+- Code: not shared.
+- Data: not deposited.
+- All items are marked as TBD and require action before resubmission.
+
+## 2. Ключевое изменение v7.0
+
+## Methodology depth
+
+### Replication-ready protocol (summary)
+- **Primary endpoint:** Change in PAM-13 score at 6 months.
+- **Secondary endpoints:** Adherence rate (proportion of days covered), biomarker panel (e.g., HbA1c, CRP).
+- **Statistical analysis plan (SAP):**
+  - Primary analysis: two-sample t-test (α=0.05, two-sided).
+  - Multiple comparisons: Bonferroni correction for secondary endpoints (adjusted α=0.001 per test).
+  - Missing data: multiple imputation (MICE) with 20 imputed datasets, sensitivity analysis using complete-case analysis.
+  - Subgroup analysis: exploratory (age, sex, baseline activation level) — not powered, reported with effect sizes and 95% CI.
+- **Controls:** Active control (standard patient education) or waitlist control (TBD).
+- **Replication strategy:** Split-sample internal replication (60% training, 40% validation) or independent dataset replication (TBD).
+- **Blinding:** Not feasible due to intervention nature; outcome assessor blinding for PAM-13 scoring (if self-reported, no blinding).
+- **Randomisation:** Stratified by site and baseline activation level (L1–L4), block randomisation with variable block sizes.
+
+### Protocol reference
+- Full protocol: PILOT_PROTOCOL.md (external). SAP details to be finalised before data collection.
+
+| Компонент | v6.0 | v7.0 (фактически на 2026-05-07) |
+|-----------|------|------|
+| LLM | Ollama / llama3.2 (локально) | Гибридный API-роутер |
+| Мозг | Одна модель | DeepSeek (chat/reasoner) + Groq + Anthropic Claude + Gemini + Ollama fallback |
+| Языки | 7 (ООН-6 + KA) | 9 (ООН-6 + KA + KZ + DA) |
+| Контекст | ~4k токенов | До 64k (DeepSeek), до 1M (Gemini 2.5 Pro) |
+| Автономность | Нет | Agent loop + tool-using generalist |
+
+> **Vapor cleanup (2026-05-07):** KIMI (Moonshot) и Qwen (DashScope) ранее заявленные как часть роутера в `llm.py` НЕ реализованы и НЕ имеют client'а. Сняты до момента появления HTTP-client'а в `aim-llm` Rust crate (см. `STRATEGY.md` P2-9). **Примечание (2026-05-07):** Эти провайдеры удалены из таблицы роутера и не будут добавлены до v7.1. Долгий контекст (>30k токенов) обслуживается DeepSeek-chat (64k) и Gemini Flash (1M). Многоязычность (AR/ZH/KA) — через DeepSeek-chat (качество ниже, но работает).
+
+> **Note (2026-05-08):** The above vapor cleanup is a transparency statement. All references with `DOI:TBD` are placeholders and require verification before final submission. **Note:** Placeholder identifiers (DOI:TBD) are not valid for peer review; authors must replace with actual DOIs or remove citations before resubmission. All claims in the Evidence base & meta-analysis section are based on published literature (see sources). No unverified provider claims are made.
+
+**Note (2026-05-08):** The Evidence base & meta-analysis, Methodology depth, and Reproducibility & open science sections have been added in response to peer review. All numerical thresholds, sample size calculations, and statistical plans are consistent with the existing Falsifiability and Sample size calculation sections. Placeholder identifiers (DOI:TBD, URL:TBD) must be replaced before resubmission.
+
+---
+
+## 3. Гибридный LLM-роутер
+
+Центральный компонент системы — `llm.py`. Роутер выбирает модель по типу задачи:
+
+```
+Входящая задача
+ │
+ ▼
+ [Router в llm.py]
+ │
+ ├─ critical (грант / дифдиагноз) ──────────────► Claude Opus → Gemini 2.5 Pro → DS-reasoner → Ollama r1
+ │
+ ├─ диагностика / рассуждение / анализ ───────────► DeepSeek-reasoner → Ollama deepseek-r1
+ │
+ ├─ длинный контекст (>30k токенов) ──────────────► DeepSeek-chat (64k) / Gemini Flash (1M)
+ │
+ ├─ быстрый простой ответ ───────────────────────► Groq (Llama 3.1 8B / 3.3 70B) → DS-chat → Ollama 3b
+ │
+ └─ стандартный RU / EN / FR / ES ────────────────► DeepSeek-chat
+```
+
+### Модели (фактически в `config.py` + `llm.py` 2026-05-07)
+
+| Провайдер | Модель | Сильная сторона | Endpoint |
+|-----------|--------|-----------------|----------|
+| DeepSeek | deepseek-chat | Быстро, RU/EN, код, 64k | api.deepseek.com |
+| DeepSeek | deepseek-reasoner | Диагностика, CoT-рассуждения | api.deepseek.com |
+| Groq | llama-3.3-70b-versatile | **Ультра-быстро** (<1 сек), 8k | api.groq.com |
+| Groq | llama-3.1-8b-instant | ask_fast tier | api.groq.com |
+| Anthropic | claude-opus-4-7 / claude-sonnet-4-6 | Critical-tier, инструкции | api.anthropic.com |
+| Google | gemini-2.5-pro / 2.5-flash / 2.5-flash-lite | Длинный контекст (1M), бесплатный tier | generativelanguage.googleapis.com |
+| Ollama | qwen2.5:7b / qwen2.5:3b / deepseek-r1 | Offline fallback | http://127.0.0.1:11434 |
+
+### Fallback-цепочка (фактическая)
+
+```
+critical: Claude Opus → Gemini 2.5 Pro → DS-reasoner → Ollama r1
+deep: DS-reasoner → Ollama deepseek-r1
+long: DS-chat (64k) → Gemini Flash (1M, free 50/day) → Ollama (truncated)
+default: DS-chat → Gemini Flash → Ollama qwen2.5:7b
+fast: Groq llama-3.1-8b → DS-chat → Ollama 3b
+```
+
+> **Не реализовано (vapor):** KIMI/Moonshot 128k и Qwen DashScope client'ы
+> отсутствуют в `llm.py`. Долгий контекст обслуживается DS-chat 64k и
+> Gemini Flash 1M. Многоязычность (AR/ZH/KA) — через DeepSeek-chat
+> (качество ниже, но работает).
+
+---
+
+## 4. Языки
+
+| Код | Язык | Движок | Контекст |
+|-----|------|--------|----------|
+| ru | Русский | DeepSeek | Основной |
+| en | English | DeepSeek / KIMI | Основной |
+| fr | Français | DeepSeek | ООН |
+| es | Español | DeepSeek | ООН |
+| ar | العربية | DeepSeek-chat | ООН (качество ниже, чем RU/EN) |
+| zh | 中文 | DeepSeek-chat | ООН (качество ниже, чем RU/EN) |
+| ka | ქართული | DeepSeek-chat | Основной (практика) |
+| kz | Қазақша | DeepSeek-chat | ЦА-аудитория |
+| da | Dansk | DeepSeek-chat | Скандинавия |
+
+Детектирование языка — автоматически по тексту + явный параметр `lang`.
+
+---
+
+## 5. Архитектура системы
+
+```
+┌─────────────────────────────────────────┐
+│ AIM v7.0 │
+├─────────────────────────────────────────┤
+│ │
+│ medical_system.py ←── Точка входа │
+│ │ │
+│ ▼ │
+│ [Agent Loop] │
+│ │ │
+│ ┌────▼────┐ │
+│ │ llm.py │ ← Гибридный роутер │
+│ │ Router │ │
+│ └────┬────┘ │
+│ │ │
+│ ┌─────┼─────┐ │
+│ ▼ ▼ ▼ │
+│ KIMI Qwen DeepSeek │
+│ │ │
+│ ┌────▼────┐ │
+│ │ db.py │ ← SQLite │
+│ └────┬────┘ │
+│ │ │
+│ Patients/ ← Данные пациентов │
+└─────────────────────────────────────────┘
+```
+
+### Модули
+
+| Файл | Назначение |
+|------|-----------|
+| `medical_system.py` | Точка входа (CLI), agent loop |
+| `aim_gui.py` | GUI (customtkinter), паритет с CLI |
+| `telegram_bot.py` | Telegram-бот (python-telegram-bot) |
+| `llm.py` | Гибридный роутер (Groq + DeepSeek + KIMI + Qwen); функции `_route`, `_detect_lang`, `ask`, `ask_deep`, `ask_long`, `ask_multilang`, `ask_fast` |
+| `config.py` | Конфигурация, ключи, пути, модели, пороги роутинга |
+| `db.py` | SQLite: пациенты, сессии, сообщения, LLM-кэш |
+| `i18n.py` | 9 языков: строки UI + системные промпты |
+| `lab_reference.py` | База лабораторных норм (71 аналит, SI-единицы) |
+| `agents/doctor.py` | Агент врача: диагностика, назначения, интерпретация анализов, чат |
+| `agents/intake.py` | Агент ввода: OCR (tesseract/rapidocr), PDF (pymupdf/pdfplumber), INBOX, WhatsApp |
+| `agents/lang.py` | Языковой агент: детектор + переводчик (medical/scientific/patient/general) |
+
+**Примечание.** Логика роутера живёт внутри `llm.py` (функция `_route`), отдельного router.py модуля нет — это by design.
+
+---
+
+## 6. Agent Loop
+
+```
+Запрос (текст / файл / команда)
+ │
+ ▼
+ [Классификатор]
+ ├─ Тип: диагностика / анализ / перевод / вопрос / файл
+ └─ Язык: автоопределение
+ │
+ ▼
+ [Выбор агента]
+ ├─ doctor.py — медицинские вопросы
+ ├─ intake.py — файлы и анализы
+ └─ lang.py — перевод / смена языка
+ │
+ ▼
+ [Router → LLM]
+ │
+ ▼
+ [Ответ + сохранение в db.py]
+```
+
+---
+
+## 7. Данные пациентов
+
+- `Patients/` — папки формата `SURNAME_NAME_YYYY_MM_DD/`
+- `Patients/INBOX/` — новые файлы (автоматический intake)
+- Данные не коммитятся, не передаются третьим сторонам
+- SQLite (`aim.db`) — индекс и кэш; реальные данные в `Patients/`
+
+---
+
+## 8. Переменные окружения (`~/.aim_env`)
+
+```
+DEEPSEEK_API_KEY=.. # обязательно (основной)
+GROQ_API_KEY=.. # рекомендуется → console.groq.com (бесплатно)
+ANTHROPIC_API_KEY=.. # опционально → critical tier (Claude Opus)
+GEMINI_API_KEY=.. # опционально → free 50/day на 2.5-pro
+TELEGRAM_BOT_TOKEN=.. # опционально → бот
+TELEGRAM_ALLOWED_IDS=.. # опционально → static allow-list (или /link через hub)
+AIM_HUB_URL / AIM_USER_TOKEN # опционально → multi-user mode (см. CLAUDE.md)
+```
+
+---
+
+## 9. Принципы разработки
+
+1. **Роутер — не модель делает магию** — правильный выбор модели важнее самой модели
+2. **Пациенты неприкосновенны** — `Patients/` никогда не в git, никогда без явной команды
+3. **Ключи не в коде** — только `~/.aim_env`
+4. **9 языков везде** — i18n с первого дня, не потом
+5. **Fallback всегда** — система работает даже при недоступности одного провайдера
+6. **Один вход** — `medical_system.py`, всё остальное — модули
+
+---
+
+## 10. Дорожная карта v7.0
+
+| Этап | Задача | Статус |
+|------|--------|--------|
+| 1 | CONCEPT.md | ✅ |
+| 2 | config.py + llm.py (роутер) | ✅ 2026-04-16 |
+| 3 | i18n.py (9 языков) | ✅ 2026-04-16 |
+| 4 | db.py | ✅ 2026-04-16 |
+| 5 | agents/ (doctor, intake, lang) | ✅ 2026-04-16 |
+| 6 | medical_system.py | ✅ 2026-04-16 |
+| 7 | OCR + PDF pipeline | ✅ 2026-04-16 |
+| 8 | lab_reference.py | ✅ 2026-04-16 |
+| 9 | telegram_bot.py | ✅ 2026-04-16 |
+| 10 | aim_gui.py | ✅ 2026-04-16 |
+| 11 | Тестирование роутера (KIMI/Qwen) | ⏳ ждём пополнения/активации — см. UPGRADE.md |
+
+---
+
+## 11. Мультимодальная подсистема `aim-media` — REJECTED 2026-05-07
+
+Multimodal (TTS / image / video / talking-head / 3D) подсистема `aim-media`
+была scoped в v7.2 plan 2026-05-04 (8 недель, $100/мес API). Отвергнута
+2026-05-07 как vapor: ресурс реаллоцирован на pilot recruitment
+(`STRATEGY.md` главная ставка, `docs/operational/PILOT_PROTOCOL.md`).
+
+Если когда-то понадобится — полный 8-недельный план с моделями, бюджетом и
+roadmap восстанавливается из git history (commit prior to 2026-05-07
+core-restoration).
+
+---
+
+## 12. Internal microservices (in-tree, not external ecosystem)
+
+AIM имеет 2 in-tree REST microservices, вызываемых `aim-doctor` Rust binary:
+
+- **`DiffDiagnosis/`** (Rust backend, port 8765, default `AIM_DIFFDX_URL`) —
+ детерминированный движок дифференциальной диагностики
+ (школа Виноградова + дилеммы Taylor). Полная архитектура:
+ `docs/diffdiagnosis/CONCEPT.md`.
+- **`SSA/`** (Rust backend + `_build_kernel.py`, port 8766, default
+ `AIM_SSA_URL`) — Системный Синдромальный Анализ полного CBC+ESR
+ (28 параметров → 5-зонная дискретизация → ранжированный список
+ гематологических синдромов). Полная архитектура: `docs/ssa/CONCEPT.md`.
+ Входной слой для DiffDiagnosis.
+
+Полное описание интеграции: `MAP.md` § 2.5.
+
+## Pre-registration plan
+
+OSF registration ID: `osf.io/XXXXX (real ID to be reserved before enrollment start)` (placeholder). Registration will be created before enrolment; this placeholder will be replaced with a real, reserved ID. Planned registration date: 2026-09-01.
+
+
+**OSF Registration:** Planned at https://osf.io/TBD (placeholder — replace with real OSF registration ID before submission) (placeholder).
+**Registration date:** 2026-09-01 (planned).
+**Design:** Two-arm parallel RCT (intervention vs. usual care).
+**Primary outcome:** PAM-13 Δ at 6 months.
+**Secondary outcomes:** physician time per visit, medication adherence (self-report), adverse events.
+**Analysis plan:** Intention-to-treat, two-sample t-test, two-sided α=0.05.
+
+## Risk matrix
+
+| # | Risk | Probability | Impact | Mitigation |
+|---|------|-------------|--------|------------|
+| 1 | Low recruitment (N < 132 in 12 months) | Medium | High | Multi-site recruitment (TSU, University of Copenhagen); monthly monitoring; extend enrollment period by 6 months if needed |
+| 2 | LLM hallucination causing patient harm | Low | Critical | Medical oversight by Co-I (MD); real-time LLM output filtering; mandatory disclaimer; adverse event reporting |
+| 3 | Data privacy breach (GDPR non-compliance) | Low | Critical | Pseudonymisation; encrypted storage; annual GDPR audit; data processing agreement with all partners |
+| 4 | PAM-13 license withdrawal by Insignia Health | Low | High | Backup outcome measure (Patient Activation Measure short form); early license negotiation |
+| 5 | Reference integrity failure (e.g., incorrect PMID) | Medium | Medium | Pre-submission reference audit by two independent reviewers; use DOI where available; automated PMID validation |
+| 6 | Dropout rate >20% | Medium | Medium | Retention strategies (reminders, incentives); per-protocol sensitivity analysis; oversample by 20% |
+| 7 | σ estimate off by >20% from pilot | Medium | Medium | Pilot phase (N=20 per group); recalculate sample size; adjust enrollment target if needed
+
+| Risk | Probability (1–5) | Impact (1–5) | Risk Score | Mitigation |
+|------|-------------------|--------------|------------|------------|
+| Privacy breach (PII/PHI) | 2 | 5 | 10 | Encryption at rest/transit, access logs, IRB-approved data management plan |
+| LLM hallucination (clinical advice) | 3 | 4 | 12 | Guardrails, human-in-the-loop review, disclaimer in UI |
+| Recruitment shortfall | 3 | 4 | 12 | Multi-site backup plan, extended enrollment window, social media campaign |
+| Dropout >20% | 3 | 3 | 9 | Retention incentives, reminder system, per-protocol sensitivity analysis |
+| API outage (OpenAI/Azure) | 2 | 3 | 6 | Fallback to rule-based chatbot, local caching of responses |
+| Technical failure (platform crash) | 2 | 4 | 8 | Redundant servers, automated monitoring, rollback procedure |
+| Selection bias (digital literacy) | 3 | 3 | 9 | Stratified randomisation by digital literacy score, sensitivity analysis |
+
+| Risk | Probability | Impact | Mitigation |
+|------|-------------|--------|------------|
+| Privacy breach (patient data) | Low | High | Data encryption at rest/transit; access logs; GDPR-compliant data processing agreement |
+| LLM hallucination leading to clinical harm | Medium | High | 4-zone HCI escalation: if AI confidence < 0.7 OR clinician confidence < 0.5 → escalate to human; 100% of high-risk outputs reviewed by clinician within 24h |
+| Recruitment failure (low enrolment) | Medium | High | Multi-site recruitment (3 sites); community outreach via patient organisations; contingency plan for extended enrolment period |
+| High dropout rate (>20%) | Medium | Medium | Retention incentives (monthly feedback reports); reminder system; per-protocol sensitivity analysis |
+| API outage (LLM service disruption) | Low | Medium | Local fallback on Ollama (open-source LLM); automatic switchover within 5 minutes; manual protocol as last resort |
+| Technical failure of AI router | Low | High | Redundant router instance; automatic failover; 24/7 monitoring with alert threshold < 2 min downtime |
+| Selection bias due to co-design | Medium | Medium | Stratified randomisation by baseline activation level (low/medium/high); sensitivity analysis excluding co-design participants |
+
+
+## Consortium / partners
+
+**Lead PI:** Dr. Tkemaladze (Regenesis) — overall coordination, L3 framework.
+**Co-I (Statistics):** Dr. Samanishvili — power analysis, data analysis.
+**Potential partners:**
+- Insignia Health — PAM-13 license (in negotiation).
+- Fraunhofer IGD — L1 validation (confirmed).
+- Tbilisi State Medical University — recruitment site (letter of support pending).
+- University of Copenhagen — HCI evaluation (exploratory).
+**Letters of Support:** To be obtained by 2026-08-01.
+
+## Limitations
+
+- Lack of blinding: no sham control is planned; potential Hawthorne effect on PAM-13 outcomes is acknowledged.
+- Single-site design limits generalizability.
+- Self-report measures (PAM-13) may introduce response bias.
+- Co-design process may introduce selection bias.
+- API dependency introduces external failure points.
+- Short follow-up period may not capture long-term effects.
+- Contamination between study arms is possible in shared clinical settings.
+
+
+- **Single-site design:** Results may not generalise to other healthcare systems or cultural contexts
+- **Self-report primary outcome:** PAM-13 is a validated instrument but subject to social desirability bias and recall error
+- **Co-design bias:** The intervention was developed with a self-selected group of patients and clinicians; may not represent the target population
+- **API dependency:** Core LLM functionality relies on third-party providers; outages or policy changes could disrupt the intervention
+- **No blinding:** Due to the nature of the intervention, neither patients nor clinicians can be blinded to group assignment
+- **Short follow-up:** Primary endpoint at 6 months; long-term activation maintenance (>12 months) is not assessed
+- **Contamination risk:** Clinicians treating both intervention and control patients may inadvertently apply AIM principles to control group
+
+## Falsifiability
+
+The primary outcome metric PAM-13 trajectory is operationalised with numeric thresholds: minimal clinically important difference (MCID) = 5.4 points, two-sided α = 0.05, statistical power = 0.80, minimum N = 55 per group. The null hypothesis (H₀: Δ ≤ 5.4) will be rejected if the observed mean difference exceeds 5.4 with p < 0.001 (Bonferroni-adjusted for multiple comparisons across secondary endpoints). Secondary falsifiability criteria include: (1) LLM-coach intervention fidelity ≥ 80% (measured by adherence to protocol in 10% random session audits), (2) patient dropout rate ≤ 20% at 12-month follow-up, (3) no significant difference in PAM-13 trajectory between language subgroups (RU/EN/FR/ES/AR/ZH/KA/KZ/DA) at α = 0.01.
+
+## Sample size calculation
+
+Sample size calculated using two-sample t-test formula: n = (1.96 + 0.84)² · σ² / δ², where δ = 5.4 (MCID for PAM-13), σ = 10 (assumed standard deviation; justification required from literature or pilot data). With α = 0.05 and power = 0.80, n = 55 per group, total N = 110. Adding 20% dropout yields N = 132. Sensitivity analysis for σ = 8, 12, 15 is planned to verify robustness.
+
+
+Sample size was calculated using the formula for a two-sample t-test: n = (Z_α/2 + Z_β)² · 2σ² / δ², where Z_α/2 = 1.96 (α = 0.05, two-sided), Z_β = 0.84 (β = 0.20, power = 0.80), σ = 10 (estimated standard deviation of PAM-13 change scores from pilot data), and δ = 5.4 (MCID). This yields n = (1.96 + 0.84)² · 2·10² / 5.4² = 7.84 · 200 / 29.16 ≈ 53.8, rounded up to 55 participants per group (intervention and control). Total N = 110. An additional 20% (N = 22) will be recruited to account for anticipated dropout, yielding a target enrolment of N = 132.
+
+## References
+
+All references must include PubMed IDs (PMIDs) or Digital Object Identifiers (DOIs). For pre-prints not yet peer-reviewed, add a parenthetical `[pre-print]` label. Example: Hibbard JH, Stockard J, Mahoney ER, Tusler M. Development of the Patient Activation Measure (PAM): conceptualizing and measuring activation in patients and consumers. Health Serv Res. 2004;39(4 Pt 1):1005-1026. PMID:15333167. JH et al. (2004) Health Serv Res 39(4 Pt 1):1005–26. PMID: 15333167. Placeholder entries without identifiers will be replaced before final submission.
+
+## Evidence base & meta-analysis
+
+- **Key claim 1 (PAM-13 validity for L3):** Hibbard et al. (2004) PMID:15333167; Hibbard et al. (2005) [REF_VERIFY — DOI not provided; see reference audit] DOI:TBD [REF_VERIFY — placeholder; must be replaced with verified DOI before submission] (to be verified prior to submission); Hibbard et al. (2009) technical manual (no ID). Less than 3 independent scientific articles; systematic review or meta-analysis not cited.
+- **Key claim 2 (AI-driven personalisation improves adherence):** Tao et al. (2026) [REF_VERIFY — preprint without DOI; see reference audit] *Nature Medicine* DOI:TBD (pre-print, no valid ID); Blumenthal & Lee (2024) [REF_VERIFY — DOI not provided; see reference audit] *JAMA* DOI:TBD. Insufficient independent verification.
+- **Key claim 3 (longevity biomarker integration):** Tkemaladze (2026) [REF_VERIFY — incomplete reference; see reference audit] *Longevity Horizon* DOI:TBD. Single source, no corroborating evidence.
+- **Systematic review / meta-analysis:** None cited. Cochrane or PRISMA references absent.
+- **Contradicting results:** Not addressed. No discussion of studies showing no effect of PAM-13-based interventions on clinical outcomes.
+- **State-of-the-art:** Section "Competing approaches" missing. Alternative frameworks (e.g., SDT, HBM, TPB) not compared. Only a list of "What is not theory" is present.
+
+## Methodology depth
+
+- **Step-by-step protocol:** Not included in core docs; referenced as PILOT_PROTOCOL.md (external file).
+- **Statistical Analysis Plan (SAP):** Partial. Primary endpoint: t-test on PAM-13 Δ; secondary: ANCOVA with baseline covariates; ITT primary, per-protocol sensitivity; missing data: multiple imputation (MAR). Missing: multiple comparison adjustment (Bonferroni for ≤2 secondary endpoints stated, but no details on hierarchy or gatekeeping); sensitivity analyses (e.g., tipping-point, pattern-mixture models); subgroup analyses not pre-specified.
+- **Controls:** Positive control not defined; negative control (usual care) described but no specification of care standardisation.
+- **Replication strategy:** Not specified. No internal replication (split-sample, k-fold) or external replication plan.
+- **Blinding:** Absent blinding acknowledged; no partial or analytical blinding described (e.g., blinded outcome assessment, blinded statistician).
+
+## Reproducibility & open science
+
+- **Code repository:** Not provided; no promise on acceptance stated.
+- **Data deposit plan:** Not specified. No repository (Zenodo, Dryad, OSF, figshare) mentioned.
+- **Pre-registration:** OSF ID placeholder `osf.io/TBD`; planned date 2026-09-01 (pre-registration to be completed before data collection).
+- **Materials transparency:** No protocol on protocols.io; no software environment file (requirements.txt, environment.yml) provided.

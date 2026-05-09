@@ -1,0 +1,12 @@
+[Unit]
+Description=AIM daily project brief (Project Owner Agent)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-%h/.aim_env
+WorkingDirectory=%h/Desktop/LongevityCommon/AIM
+ExecStart=%h/Desktop/LongevityCommon/AIM/venv/bin/python -m scripts.daily_brief
+StandardOutput=journal
+StandardError=journal

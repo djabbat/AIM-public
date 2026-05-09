@@ -1,0 +1,37 @@
+[Unit]
+Description=AIM Hive Queen — Axum HTTP aggregator (port 8090)
+Documentation=file:///home/oem/Desktop/LongevityCommon/AIM/AI/HIVE_ARCHITECTURE.md
+Documentation=file:///home/oem/Desktop/LongevityCommon/AIM/docs/operational/HIVE_QUEEN_DEPLOY.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# On a server-only deployment we typically run as a dedicated `aim` user.
+# For single-user dev box adjust to your $USER.
+User=aim
+Group=aim
+WorkingDirectory=/opt/aim-hive-queen
+EnvironmentFile=-/etc/aim/hive_queen.env
+# Required env in /etc/aim/hive_queen.env:
+#   PORT=8090                      # bind port (default 8090)
+#   HOST=0.0.0.0                   # bind host (default 127.0.0.1)
+#   AIM_HIVE_ADMIN_TOKEN=<random>  # required for /v1/hive/distill
+#   AIM_HIVE_REQUIRE_AUTH=1        # require Bearer token from workers
+#   RUST_LOG=info
+ExecStart=/opt/aim-hive-queen/aim-hive-queen
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/aim-hive-queen
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,18 @@
+[package]
+name = "aim-ai-stable-run"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM AI — repeatable diagnostic orchestrator (S13). Run diagnostic N times, consolidate via meta-evaluator, surface shared (signal) vs unique (noise) findings. Rust port of AI/ai/stable_run.py."
+
+[dependencies]
+aim-ai-meta-evaluator = { path = "../aim-ai-meta-evaluator" }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"

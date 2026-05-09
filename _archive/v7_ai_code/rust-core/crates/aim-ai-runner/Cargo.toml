@@ -1,0 +1,33 @@
+[package]
+name = "aim-ai-runner"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM AI — actually run the self-diagnostic. Build prompt → POST DeepSeek → save report → ledger record. Rust port of AI/ai/run_self_diagnostic.py."
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "aim-ai-diag"
+path = "src/bin/diag.rs"
+
+[dependencies]
+aim-ai-ledger = { path = "../aim-ai-ledger" }
+aim-ai-meta-evaluator = { path = "../aim-ai-meta-evaluator" }
+aim-ai-self-diagnostic = { path = "../aim-ai-self-diagnostic" }
+aim-ai-safety-gate = { path = "../aim-ai-safety-gate" }
+aim-ai-prompt-versions = { path = "../aim-ai-prompt-versions" }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+reqwest = { workspace = true }
+tokio = { workspace = true }
+async-trait = "0.1"
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { workspace = true, features = ["test-util", "macros"] }

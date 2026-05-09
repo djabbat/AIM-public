@@ -1,0 +1,14 @@
+[Unit]
+Description=AIM_FS decay sweeper (one-shot, called by aim-fs-sweeper.timer)
+After=network.target
+Documentation=file:///home/oem/Desktop/LongevityCommon/AIM/docs/AIM_FS/SPEC.md
+
+[Service]
+Type=oneshot
+Environment=AIM_FS_ROOT=%h/.aim_fs
+ExecStart=/usr/local/bin/aim-fs-sweep-once
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

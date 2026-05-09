@@ -1,0 +1,21 @@
+[package]
+name = "aim-ai-regression-alert"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM AI — regression alert (RA1). Format detected regression as alert payload; caller wires to a notify mux. Rust port of AI/ai/regression_alert.py."
+
+[dependencies]
+aim-ai-ledger = { path = "../aim-ai-ledger" }
+aim-ai-regression = { path = "../aim-ai-regression" }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[[bin]]
+name = "aim-ai-regression-alert"
+path = "src/main.rs"
+
+[dev-dependencies]
+tempfile = "3"

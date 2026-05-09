@@ -1,0 +1,14 @@
+[package]
+name = "aim-complexity-classifier"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+regex = "1"
+once_cell = "1"
+
+[dev-dependencies]

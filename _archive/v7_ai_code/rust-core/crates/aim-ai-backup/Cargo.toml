@@ -1,0 +1,23 @@
+[package]
+name = "aim-ai-backup"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM AI — JSON backup of every persistent DB (BK1). snapshot / write_snapshot / restore. Rust port of AI/ai/backup.py."
+
+[dependencies]
+aim-ai-ledger = { path = "../aim-ai-ledger" }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+rusqlite = { version = "0.31", features = ["bundled"] }
+
+[[bin]]
+name = "aim-ai-backup"
+path = "src/main.rs"
+
+[dev-dependencies]
+tempfile = "3"

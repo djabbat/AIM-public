@@ -1,0 +1,156 @@
+id: self_dev_proposal
+title: "AIM self-dev proposal (апгрейд самой AIM)"
+version: 1
+intent: |
+  Шаблон для AIM-агента (или человека-разработчика), предлагающего
+  улучшение самой AIM: новое правило, скилл, рефакторинг, тюнинг
+  параметра, новая фича.  Создаёт `proposal_v1` запись со статусом
+  `pending` в `_self_dev/proposals/pending/<id>.md` (правило
+  feedback_no_edit_asimov_laws — Kernel-laws не редактируются через
+  proposal без явной user-команды).
+
+target_dir_template: "_self_dev/proposals/pending"
+
+questions:
+  - id: title
+    prompt: "Краткий заголовок предложения (одно предложение)"
+    type: text
+    required: true
+
+  - id: proposal_type
+    prompt: "Тип предложения"
+    type: choice
+    required: true
+    options: [rule, skill, refactor, param_tune, new_feature, doc_fix, dependency_upgrade]
+
+  - id: priority
+    prompt: "Приоритет"
+    type: choice
+    required: true
+    options: [P0, P1, P2]
+
+  - id: blast_radius
+    prompt: "Blast radius (что сломается, если откатывать?)"
+    type: choice
+    required: true
+    options: [low, medium, high]
+
+  - id: rationale
+    prompt: "Зачем это нужно (1-3 фразы; eval-результат / incident / user-feedback)"
+    type: text
+    required: true
+    multiline: true
+
+  - id: what_proposed
+    prompt: "Что конкретно предлагается (детальный план)"
+    type: text
+    required: true
+    multiline: true
+
+  - id: evidence
+    prompt: "Доказательства / измерения (по строке: метрика → значение)"
+    type: list
+    required: true
+    multiline: true
+
+  - id: risks
+    prompt: "Риски и mitigation (по строке)"
+    type: list
+    required: true
+    multiline: true
+
+  - id: rollback
+    prompt: "Как откатить (точная команда / commit hash / скрипт)"
+    type: text
+    required: true
+    multiline: true
+
+  - id: affected_files
+    prompt: "Затронутые файлы (по строке относительно AIM root)"
+    type: list
+    optional: true
+    multiline: true
+
+  - id: kernel_law_touch
+    prompt: "Затрагивает ли L0-L3 Asimov-kernel или extended laws? (НЕ ДОПУСКАЕТСЯ без user)"
+    type: bool
+    required: true
+
+file_targets:
+  # Пишет markdown-файл proposal'а в _self_dev/proposals/pending/<slug>.md
+  # Slug генерируется из ulid + первых 30 символов title.
+  - path: "{{created_at}}_{{title}}.md"
+    template: |
+      ---
+      schema: proposal_v1
+      type: {{proposal_type}}
+      priority: {{priority}}
+      blast_radius: {{blast_radius}}
+      kernel_law_touch: {{kernel_law_touch}}
+      ---
+
+      # {{title}}
+
+      **Created:** {{created_at}}
+      **By:** {{user_id}}
+
+      ## Что предлагаю
+
+      {{what_proposed}}
+
+      ## Доказательства
+
+      {% for line in evidence %}- {{line}}
+      {% endfor %}
+
+      ## Риски
+
+      {% for line in risks %}- {{line}}
+      {% endfor %}
+
+      ## Rationale
+
+      {{rationale}}
+
+      ## Rollback
+
+      ```
+      {{rollback}}
+      ```
+
+      {% if affected_files %}
+      ## Затронутые файлы
+
+      {% for f in affected_files %}- `{{f}}`
+      {% endfor %}
+      {% endif %}
+
+      {% if kernel_law_touch %}
+      > ⚠ KERNEL-LAW TOUCH: Это предложение ЗАТРАГИВАЕТ Asimov-kernel
+      > или extended laws. По правилу `feedback_no_edit_asimov_laws`
+      > НЕ может быть применено без явной user-команды.  Reviewer:
+      > отклонить или эскалировать пользователю.
+      {% endif %}
+
+memory_proposals:
+  - schema: proposal_v1
+    title_template: "{{title}}"
+    body_template: |
+      ## Что предлагаю
+
+      {{what_proposed}}
+
+      ## Доказательства
+
+      {% for line in evidence %}- {{line}}
+      {% endfor %}
+
+      ## Риски
+
+      {% for line in risks %}- {{line}}
+      {% endfor %}
+
+      Type: {{proposal_type}} · Priority: {{priority}} · Blast: {{blast_radius}}
+      Rollback: {{rollback}}
+      Kernel-law touch: {{kernel_law_touch}}
+    tags: [self_dev, proposal, "{{priority}}", "{{proposal_type}}"]

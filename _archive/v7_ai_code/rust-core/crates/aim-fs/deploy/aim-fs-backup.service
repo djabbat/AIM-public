@@ -1,0 +1,17 @@
+[Unit]
+Description=AIM_FS daily backup (snapshot + tar + sha256)
+After=network.target
+Documentation=file:///home/oem/Desktop/LongevityCommon/AIM/docs/AIM_FS/SPEC.md
+
+[Service]
+Type=oneshot
+Environment=AIM_FS_ROOT=%h/.aim_fs
+ExecStart=/usr/local/bin/aim-fs-backup
+StandardOutput=journal
+StandardError=journal
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,23 @@
+[Unit]
+Description=AIM generalist agent (Rust :8774)
+After=network-online.target aim-llm.service
+Wants=aim-llm.service
+
+[Service]
+Type=simple
+User=oem
+WorkingDirectory=/home/oem/Desktop/LongevityCommon/AIM/rust-core
+EnvironmentFile=-/home/oem/.aim_env
+Environment="RUST_LOG=info"
+Environment="AIM_ENV=prod"
+Environment="AIM_GENERALIST_ROOT=/home/oem/Desktop/LongevityCommon/AIM/Patients"
+ExecStart=/home/oem/Desktop/LongevityCommon/AIM/rust-core/target/release/aim-generalist
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/home/oem/Desktop/LongevityCommon/AIM/Patients
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

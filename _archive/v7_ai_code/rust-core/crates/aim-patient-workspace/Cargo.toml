@@ -1,0 +1,24 @@
+[package]
+name = "aim-patient-workspace"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+chrono = { workspace = true }
+aim-patient-memory = { path = "../aim-patient-memory" }
+aim-patient-owner = { path = "../aim-patient-owner" }
+
+[dev-dependencies]
+tempfile = "3"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "aim-patient-workspace"
+path = "src/main.rs"

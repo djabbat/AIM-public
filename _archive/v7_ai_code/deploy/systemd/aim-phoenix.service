@@ -1,0 +1,23 @@
+[Unit]
+Description=AIM Phoenix umbrella (web :4002 + gateway :4003)
+After=network-online.target aim-llm.service aim-doctor.service
+Wants=aim-llm.service aim-doctor.service
+
+[Service]
+Type=simple
+User=oem
+WorkingDirectory=/home/oem/Desktop/LongevityCommon/AIM/phoenix-umbrella
+EnvironmentFile=-/home/oem/.aim_env
+Environment="MIX_ENV=prod"
+Environment="PHX_HOST=127.0.0.1"
+Environment="AIM_REQUIRE_AUTH=1"
+ExecStart=/usr/bin/mix phx.server
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/home/oem/Desktop/LongevityCommon/AIM
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,51 @@
+<div class="eco-bar-injected">
+  <div class="eco-inner-i">
+    <span class="eco-brand-i">LongevityCommon</span>
+    <nav class="eco-nav-i">
+      <a href="https://longevity.ge">Home</a>
+      <a href="https://mcoa.longevity.ge">MCOA</a>
+      <a href="https://cdata.longevity.ge">CDATA</a>
+      <a href="https://ze.longevity.ge">Ze</a>
+      <a href="https://biosense.longevity.ge">BioSense</a>
+      <a href="https://fclc.longevity.ge">FCLC</a>
+      <a href="https://hive.longevity.ge">Hive</a>
+      <a href="https://aim.longevity.ge" class="active">AIM</a>
+      <a href="https://longevity.ge/rescience/">Annals</a>
+      <a href="https://longevity.ge/team/">Team</a>
+      <a href="https://longevity.ge/#donate" class="donate-cta">Donate</a>
+      <a href="https://github.com/djabbat/LongevityCommon" rel="noopener">Source</a>
+      <button type="button" class="theme-toggle-i" aria-label="Toggle dark mode">☾</button>
+    </nav>
+  </div>
+</div>
+<%= unless assigns[:skip_layout_header] do %>
+<header class="header">
+  <div class="header-inner">
+    <a href="/" class="brand"><span class="logo">⌬</span>AIM</a>
+    <nav>
+      <a href="/dashboard"><%= t("home.menu.dashboard", @locale) %></a>
+      <a href="/chat"><%= t("nav.chat", @locale) %></a>
+      <a href="/intake"><%= t("nav.intake", @locale) %></a>
+      <a href="/cases"><%= t("nav.cases", @locale) %></a>
+      <a href="/drugs"><%= t("home.menu.drugs", @locale) %></a>
+      <a href="/settings"><%= t("home.menu.settings", @locale) %></a>
+      <a href="/about">About</a>
+      <a href="/status">Status</a>
+      <a href="/admin" title="Operator control panel">Admin</a>
+    </nav>
+    <form method="get" class="lang-switcher">
+      <select name="locale" onchange="this.form.submit()" aria-label="Language">
+        <%= for loc <- AimWeb.I18n.locales() do %>
+          <option value={loc} selected={loc == @locale}><%= AimWeb.I18n.name(loc) %></option>
+        <% end %>
+      </select>
+    </form>
+  </div>
+</header>
+<% end %>
+<%= @inner_content %>
+<footer class="aim-footer">
+  AIM · 178 Rust crates · 2531 tests · 0 warnings ·
+  <a href="https://github.com/djabbat/LongevityCommon-public" target="_blank" rel="noopener">source</a> ·
+  <a href="https://longevity.ge/" target="_blank">longevity.ge</a>
+</footer>

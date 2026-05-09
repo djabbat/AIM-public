@@ -1,0 +1,16 @@
+[package]
+name = "aim-citation-guard"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM — zero-hallucination citation pipeline (R1). Extract PMID/DOI/NCT/arXiv from text, verify via caller-provided verifier, sanitize unresolved with marker. Rust port of agents/citation_guard.py."
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+regex = "1"
+once_cell = "1"
+
+[dev-dependencies]
+tempfile = "3"

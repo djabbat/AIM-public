@@ -1,0 +1,26 @@
+[package]
+name = "aim-daily-brief"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+aim-lifecycle = { path = "../aim-lifecycle" }
+aim-project-owner = { path = "../aim-project-owner" }
+aim-patient-owner = { path = "../aim-patient-owner" }
+aim-experiment-owner = { path = "../aim-experiment-owner" }
+reqwest = { workspace = true, features = ["blocking"] }
+
+[dev-dependencies]
+parking_lot = { workspace = true }
+tempfile = "3"
+
+[[bin]]
+name = "aim-daily-brief"
+path = "src/main.rs"

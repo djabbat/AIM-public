@@ -1,0 +1,31 @@
+[Unit]
+Description=AIM LLM Router (DeepSeek/Groq/Anthropic/Gemini/Ollama) — Phase 5 (2026-05-07)
+Documentation=file:///home/oem/Desktop/LongevityCommon/AIM/PHASE_5_DESIGN.md
+After=network-online.target ollama.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/oem/Desktop/LongevityCommon/AIM
+EnvironmentFile=/home/oem/.aim_env
+Environment="AIM_LLM_PORT=8770"
+Environment="RUST_LOG=info"
+ExecStart=/home/oem/Desktop/LongevityCommon/AIM/rust-core/target/release/aim-llm
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=10
+
+# Service exposes only localhost (127.0.0.1) per the binary's hardcoded
+# bind in dev/non-prod. Production deployments only behind a reverse proxy.
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/oem/.cache/aim
+NoNewPrivileges=yes
+
+# Security: allow outbound network (LLM upstreams) but restrict syscalls
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+[Install]
+WantedBy=default.target

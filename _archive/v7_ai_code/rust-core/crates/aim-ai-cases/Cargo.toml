@@ -1,0 +1,21 @@
+[package]
+name = "aim-ai-cases"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM AI — eval case validator (CV1). YAML schema check for AIM_EVAL_CASES_DIR. Rust port of AI/ai/case_validator.py."
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+serde_yaml = "0.9"
+glob = "0.3"
+
+[[bin]]
+name = "aim-ai-cases"
+path = "src/main.rs"
+
+[dev-dependencies]
+tempfile = "3"

@@ -1,0 +1,24 @@
+[Unit]
+Description=AIM LLM router (Rust :8770)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=oem
+WorkingDirectory=/home/oem/Desktop/LongevityCommon/AIM/rust-core
+EnvironmentFile=-/home/oem/.aim_env
+Environment="RUST_LOG=info"
+Environment="AIM_ENV=prod"
+ExecStart=/home/oem/Desktop/LongevityCommon/AIM/rust-core/target/release/aim-llm
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/home/oem/Desktop/LongevityCommon/AIM
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

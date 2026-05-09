@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIM Hive — Federated Collective Intelligence</title>
+<meta name="description" content="AIM Hive: federated collective intelligence — workers (bees) accumulate experience, queen distills patterns, distributes back. Hosted by Georgia Longevity Alliance.">
+<link rel="stylesheet" href="/style.css">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐝</text></svg>">
+<script src="https://longevity.ge/eco-inject.js?v=29" defer></script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a href="/" class="logo">🐝 AIM Hive</a>
+    <nav class="topnav">
+      <a href="/">Home</a>
+      <a href="/#how">How it works</a>
+      <a href="/#docs">Docs</a>
+      <a href="/healthz" class="api-link">Health</a>
+      <a href="https://longevity.ge" class="ext">↗ longevity.ge</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<section class="hero">
+  <div class="container">
+    <h1>Federated collective intelligence for AIM agents</h1>
+    <p class="lead">
+      Workers (bees) run AIM locally. The queen distills cross-worker
+      patterns into eval-gated skill updates. Workers pull, verify, install.
+      <strong>Each bee is fully functional offline.</strong>
+    </p>
+    <div class="hero-meta">
+      <span class="badge">v1</span>
+      <span class="badge">MIT-style internal</span>
+      <span class="badge">Hosted by GLA · Reg. №404506520</span>
+    </div>
+  </div>
+</section>
+
+<section id="how" class="how">
+  <div class="container">
+    <h2>How it works</h2>
+    <ol class="steps">
+      <li>
+        <strong>Worker (bee)</strong> runs AIM locally. Accumulates
+        diagnostic runs, reflexion themes, skill usage, eval results.
+      </li>
+      <li>
+        Periodically packages an <strong>anonymized signal</strong> —
+        L_PRIVACY filter strips emails, phones, paths, names, PMIDs,
+        DOIs before send. Posts to <code>/v1/hive/contribute</code>.
+      </li>
+      <li>
+        <strong>Queen</strong> aggregates across workers. Detects
+        cross-worker patterns: compliance drift, theme convergence,
+        recurring failure clusters.
+      </li>
+      <li>
+        Each candidate is <strong>eval-gated</strong>: Δscore ≥ 0.05,
+        p ≤ 0.05, no regression on existing cases.
+      </li>
+      <li>
+        Approved updates are <strong>signed and published</strong> to
+        <code>/v1/hive/updates</code>. Workers pull, run three local
+        gates: L_CONSENT (opt-out), signature integrity,
+        L_VERIFIABILITY (re-eval).
+      </li>
+      <li>
+        If all three pass — install. Otherwise log, continue offline.
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section class="contract">
+  <div class="container">
+    <h2>Privacy contract</h2>
+    <div class="grid two">
+      <div>
+        <h3 class="ok">Workers send</h3>
+        <ul>
+          <li>aggregate counters (run count, retry rate)</li>
+          <li>numeric metrics (compliance %, avg crit)</li>
+          <li>anonymized theme labels (category words only)</li>
+          <li>hashed prompt fingerprint (sha256, never body)</li>
+          <li>worker_id (hash of hostname × per-install random salt)</li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="bad">Workers NEVER send</h3>
+        <ul>
+          <li>emails / phone numbers / contact info</li>
+          <li>file paths / project names</li>
+          <li>patient or clinical data</li>
+          <li>prompt/response content (only counts)</li>
+          <li>finding text (only file:line refs counted)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="install" class="install">
+  <div class="container">
+    <h2>Install AIM locally</h2>
+    <p class="lead-sm">
+      Each worker runs AIM on its own machine. We detected your OS;
+      the command below clones the source from GitHub and bootstraps
+      a local node (Ollama + venv + <code>~/.aim_env</code>).
+    </p>
+    <div class="os-tabs">
+      <button type="button" data-os="linux">🐧 Linux</button>
+      <button type="button" data-os="mac">🍎 macOS</button>
+      <button type="button" data-os="windows">🪟 Windows</button>
+    </div>
+    <pre id="install-cmd" data-os="linux"><code>curl -L -o aim.tar.gz https://github.com/djabbat/AIM-public/releases/latest/download/aim-0.1.0-linux.tar.gz
+tar -xzf aim.tar.gz
+cd aim-0.1.0-linux
+bash scripts/install_node.sh</code></pre>
+    <pre id="install-cmd-mac" data-os="mac" hidden><code>curl -L -o aim.tar.gz https://github.com/djabbat/AIM-public/releases/latest/download/aim-0.1.0-macos.tar.gz
+tar -xzf aim.tar.gz
+cd aim-0.1.0-macos
+bash scripts/install_node.sh</code></pre>
+    <pre id="install-cmd-win" data-os="windows" hidden><code>Invoke-WebRequest -Uri https://github.com/djabbat/AIM-public/releases/latest/download/aim-0.1.0-windows.zip -OutFile aim.zip
+Expand-Archive aim.zip
+cd aim-0.1.0-windows
+powershell -ExecutionPolicy Bypass -File scripts\install_node.ps1</code></pre>
+    <p class="os-note muted">
+      Detected: <span id="os-detected">…</span>.
+      Releases: <a href="https://github.com/djabbat/AIM-public/releases" target="_blank" rel="noopener">djabbat/AIM-public</a> ·
+      Source clone: <code>git clone https://github.com/djabbat/AIM-public.git</code>.
+    </p>
+  </div>
+</section>
+
+<section id="docs" class="docs">
+  <div class="container">
+    <h2>Connect to the hive</h2>
+    <pre><code># 1. Confirm DEEPSEEK_API_KEY etc. set in ~/.aim_env
+aim setup-key
+
+# 2. Add the queen URL
+echo 'AIM_HIVE_QUEEN_URL=https://hive.longevity.ge' &gt;&gt; ~/.aim_env
+
+# 3. Preview what would send (dry run, NOTHING transmitted)
+aim diag --hive-preview
+
+# 4. Status
+aim diag --hive-status</code></pre>
+
+    <h2>For maintainers</h2>
+    <ul class="links">
+      <li><a href="https://github.com/djabbat/LongevityCommon" class="ext">↗ source code on GitHub</a> (private repo)</li>
+      <li><code>POST /v1/hive/contribute</code> — worker submission</li>
+      <li><code>GET /v1/hive/updates?since=&lt;ts&gt;</code> — pull latest</li>
+      <li><code>POST /v1/hive/distill</code> — admin trigger</li>
+      <li><code>GET /v1/hive/status</code> — admin metrics</li>
+    </ul>
+  </div>
+</section>
+
+<section class="donate-cta">
+  <div class="container">
+    <h2>Support AIM Hive</h2>
+    <p>
+      The Hive infrastructure is hosted on community-funded servers operated by
+      Georgia Longevity Alliance (a registered non-profit, Reg. №404506520).
+      Every donation keeps the queen up and the workers free for everyone.
+    </p>
+    <a class="donate-button" href="https://longevity.ge/#donate" target="_blank" rel="noopener">
+      ♥ Donate to GLA
+    </a>
+  </div>
+</section>
+
+<section class="cta">
+  <div class="container">
+    <h2>Sister projects</h2>
+    <div class="grid three">
+      <a href="https://longevity.ge" class="card ext">
+        <h3>longevity.ge</h3>
+        <p>Georgia Longevity Alliance — research umbrella</p>
+      </a>
+      <a href="https://longevity.ge/rescience/" class="card ext">
+        <h3>Annals of Rejuvenation Science</h3>
+        <p>Diamond-OA journal · e-ISSN 3088-439X</p>
+      </a>
+      <a href="https://longevity.ge/longhoriz/" class="card ext">
+        <h3>Longevity Horizon</h3>
+        <p>Companion journal · ISSN 3088-4063</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p>
+      <strong>AIM Hive</strong> hosted by Georgia Longevity Alliance
+      (კავშირი დღეგრძელობა, Reg. №404506520, Tbilisi).
+      Operated under L_PRIVACY / L_CONSENT / L_VERIFIABILITY contracts.
+    </p>
+    <p class="muted">
+      Status:
+      <span id="health-status">checking…</span>
+    </p>
+  </div>
+</footer>
+
+<script>
+fetch('/healthz').then(r => r.json()).then(j => {
+  const el = document.getElementById('health-status');
+  if (j.status === 'ok') {
+    el.textContent = '🟢 queen up · ' + j.ts;
+    el.className = 'ok';
+  } else {
+    el.textContent = '🟡 unknown';
+  }
+}).catch(() => {
+  document.getElementById('health-status').textContent = '🔴 unreachable';
+});
+
+// OS detection — show matching install command.
+(function(){
+  var ua = navigator.userAgent || "";
+  var p  = navigator.platform || "";
+  var os = "linux";
+  if (/Mac|iPhone|iPad/i.test(ua) || /Mac/i.test(p)) os = "mac";
+  else if (/Windows|Win32|Win64/i.test(ua) || /Win/i.test(p)) os = "windows";
+  function show(target){
+    document.querySelectorAll('#install pre[data-os]').forEach(function(pre){
+      pre.hidden = pre.getAttribute('data-os') !== target;
+    });
+    document.querySelectorAll('.os-tabs button').forEach(function(btn){
+      btn.classList.toggle('active', btn.getAttribute('data-os') === target);
+    });
+    var label = {linux: "Linux", mac: "macOS", windows: "Windows"}[target];
+    var det = document.getElementById('os-detected');
+    if (det) det.textContent = label;
+  }
+  show(os);
+  document.querySelectorAll('.os-tabs button').forEach(function(btn){
+    btn.addEventListener('click', function(){ show(btn.getAttribute('data-os')); });
+  });
+})();
+</script>
+
+</body>
+</html>

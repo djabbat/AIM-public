@@ -1,0 +1,27 @@
+[Unit]
+Description=AIM Hive worker — periodic anonymized telemetry contribution
+Documentation=file:///home/oem/Desktop/LongevityCommon/AIM/AI/HIVE_ARCHITECTURE.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=oem
+WorkingDirectory=/home/oem/Desktop/LongevityCommon/AIM
+EnvironmentFile=-/home/oem/.aim_env
+# Required env vars (set in ~/.aim_env):
+#   AIM_HIVE_QUEEN_URL=https://hive.longevity.ge   (or http://127.0.0.1:8090 for local)
+#   AIM_USER_TOKEN=...                              (optional unless queen requires auth)
+#   AIM_DP_BUDGET=...                               (optional; default applies)
+Environment="RUST_LOG=info"
+ExecStart=/home/oem/Desktop/LongevityCommon/AIM/rust-core/target/release/aim-hive-telemetry contribute
+# Track last successful contribute timestamp (consumed by /admin LiveView).
+ExecStartPost=/usr/bin/touch /home/oem/.cache/aim/hive_last_contribute.txt
+StandardOutput=journal
+StandardError=journal
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/home/oem/.cache/aim /home/oem/Desktop/LongevityCommon/AIM
+
+[Install]
+WantedBy=multi-user.target

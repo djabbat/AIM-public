@@ -1,0 +1,37 @@
+[package]
+name = "aim-ai-dashboard"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM AI — consolidated dashboard (DB1). Stitches every available summary from sibling AI crates into one text/json view. Rust port of AI/ai/dashboard.py."
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "aim-ai-dashboard"
+path = "src/bin/dashboard.rs"
+
+[dependencies]
+aim-ai-ledger = { path = "../aim-ai-ledger" }
+aim-ai-regression = { path = "../aim-ai-regression" }
+aim-ai-health = { path = "../aim-ai-health" }
+aim-ai-prompt-versions = { path = "../aim-ai-prompt-versions" }
+aim-ai-cases = { path = "../aim-ai-cases" }
+aim-ai-safety-gate = { path = "../aim-ai-safety-gate" }
+aim-ai-suppressions = { path = "../aim-ai-suppressions" }
+aim-ai-prompt-impact = { path = "../aim-ai-prompt-impact" }
+aim-ai-compliance-promoter = { path = "../aim-ai-compliance-promoter" }
+aim-ai-distillation = { path = "../aim-ai-distillation" }
+aim-ai-gap-detector = { path = "../aim-ai-gap-detector" }
+aim-ai-reflexion = { path = "../aim-ai-reflexion" }
+aim-ai-doctor = { path = "../aim-ai-doctor" }
+aim-ai-explainer = { path = "../aim-ai-explainer" }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"

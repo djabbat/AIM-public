@@ -1,0 +1,21 @@
+[Unit]
+Description=AIM medical knowledge base (Rust :8772)
+After=network-online.target
+
+[Service]
+Type=simple
+User=oem
+WorkingDirectory=/home/oem/Desktop/LongevityCommon/AIM/rust-core
+EnvironmentFile=-/home/oem/.aim_env
+Environment="RUST_LOG=info"
+Environment="AIM_ENV=prod"
+ExecStart=/home/oem/Desktop/LongevityCommon/AIM/rust-core/target/release/aim-medkb
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/home/oem/Desktop/LongevityCommon/AIM
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,18 @@
+[package]
+name = "aim-ai-skill-standard"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM AI — agentskills.io interop (HV4). Bidirectional adapter between AIM internal skill format and the open agentskills.io schema. Rust port of AI/ai/skill_standard.py."
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[[bin]]
+name = "aim-ai-skill-standard"
+path = "src/main.rs"
+
+[dev-dependencies]
+tempfile = "3"

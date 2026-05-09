@@ -1,0 +1,25 @@
+# Sources index
+
+- Виноградов · 01_chest_pain → `vinogradov_01_chest_pain.md`
+- Виноградов · 02_dyspnea_cough_hemoptysis → `vinogradov_02_dyspnea_cough_hemoptysis.md`
+- Виноградов · 03_abdominal_pain → `vinogradov_03_abdominal_pain.md`
+- Виноградов · 04_jaundice_hepatomegaly → `vinogradov_04_jaundice_hepatomegaly.md`
+- Виноградов · 05_fever_FUO → `vinogradov_05_fever_FUO.md`
+- Виноградов · 06_lymphadenopathy_splenomegaly → `vinogradov_06_lymphadenopathy_splenomegaly.md`
+- Виноградов · 07_anemia_cytopenias → `vinogradov_07_anemia_cytopenias.md`
+- Виноградов · 08_proteinuria_hematuria_renal → `vinogradov_08_proteinuria_hematuria_renal.md`
+- Виноградов · 09_hypertension_hypotension_shock → `vinogradov_09_hypertension_hypotension_shock.md`
+- Виноградов · 10_edema_ascites_pleural → `vinogradov_10_edema_ascites_pleural.md`
+- Виноградов · 11_arthralgia_myalgia → `vinogradov_11_arthralgia_myalgia.md`
+- Виноградов · 12_endocrine_metabolic → `vinogradov_12_endocrine_metabolic.md`
+- Виноградов · 13_neurological_syndromes → `vinogradov_13_neurological_syndromes.md`
+- Taylor · 01_cardiovascular → `taylor_01_cardiovascular.md`
+- Taylor · 02_pulmonary → `taylor_02_pulmonary.md`
+- Taylor · 03_gi_hepatobiliary → `taylor_03_gi_hepatobiliary.md`
+- Taylor · 04_renal_genitourinary → `taylor_04_renal_genitourinary.md`
+- Taylor · 05_endocrine_metabolic → `taylor_05_endocrine_metabolic.md`
+- Taylor · 06_hematology_oncology → `taylor_06_hematology_oncology.md`
+- Taylor · 07_infectious_disease → `taylor_07_infectious_disease.md`
+- Taylor · 08_rheumatology_immunology → `taylor_08_rheumatology_immunology.md`
+- Taylor · 09_neurology → `taylor_09_neurology.md`
+- Taylor · 10_dermatology_psychiatry_misc → `taylor_10_dermatology_psychiatry_misc.md`

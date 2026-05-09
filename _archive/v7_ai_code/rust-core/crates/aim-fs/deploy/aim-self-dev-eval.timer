@@ -1,0 +1,12 @@
+[Unit]
+Description=Run AIM self-dev eval daily at 03:30
+Requires=aim-self-dev-eval.service
+
+[Timer]
+OnCalendar=*-*-* 03:30:00
+RandomizedDelaySec=20min
+Persistent=true
+Unit=aim-self-dev-eval.service
+
+[Install]
+WantedBy=timers.target

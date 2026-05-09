@@ -1,0 +1,21 @@
+[package]
+name = "aim-ai-gap-detector"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM AI — capability-gap detector (S11). Walk session JSONL logs for surrender patterns; cluster into gaps; suggest next steps. Rust port of AI/ai/gap_detector.py."
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+chrono = { workspace = true }
+regex = "1"
+once_cell = "1"
+
+[[bin]]
+name = "aim-ai-gap-detector"
+path = "src/main.rs"
+
+[dev-dependencies]
+tempfile = "3"

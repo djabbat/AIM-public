@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang={Atom.to_string(assigns[:locale] || :en)} dir={if AimWeb.I18n.rtl?(assigns[:locale] || :en), do: "rtl", else: "ltr"}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content={Plug.CSRFProtection.get_csrf_token()} />
+    <title><%= AimWeb.I18n.t("app.title", assigns[:locale] || :en) %> · LongevityCommon</title>
+    <link rel="icon" type="image/svg+xml"
+          href="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2248%22%20fill%3D%22%23e0e7ff%22/%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2232%22%20fill%3D%22%23312e81%22/%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2214%22%20fill%3D%22%23a5b4fc%22/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+    <style>
+      *, *::before, *::after { box-sizing: border-box; }
+      :root {
+        --c-text: #0f172a;
+        --c-text-soft: #475569;
+        --c-text-muted: #64748b;
+        --c-bg: #f8fafc;
+        --c-card: #ffffff;
+        --c-border: #e2e8f0;
+        --c-border-strong: #cbd5e1;
+        --c-accent: #4f46e5;
+        --c-accent-soft: #eef2ff;
+        --c-success: #10b981;
+        --c-warning: #f59e0b;
+        --c-danger: #ef4444;
+        --radius: 12px;
+        --radius-lg: 16px;
+        --shadow-sm: 0 1px 2px rgba(15,23,42,0.04);
+        --shadow-md: 0 4px 12px rgba(15,23,42,0.06);
+        --shadow-lg: 0 12px 28px rgba(15,23,42,0.08);
+      }
+      html { font-size: 16px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; background: var(--c-bg); }
+      body {
+        margin: 0;
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+        background: var(--c-bg);
+        color: var(--c-text);
+        line-height: 1.6;
+      }
+      a { color: var(--c-accent); text-decoration: none; transition: color 0.15s; }
+      a:hover { color: #6366f1; }
+      h1, h2, h3, h4 { color: var(--c-text); margin-top: 0; letter-spacing: -0.02em; }
+      h1 { font-size: 1.75rem; font-weight: 700; }
+      h2 { font-size: 1.45rem; font-weight: 700; margin: 2.5rem 0 0.5rem; }
+      h3 { font-size: 1.1875rem; font-weight: 700; }
+      code { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.875em; background: #f1f5f9; padding: 0.125rem 0.375rem; border-radius: 4px; color: #1e293b; }
+
+      /* ── eco-bar (SAME structure & classes as eco-inject.js v=31) ─── */
+      .eco-bar-injected {
+        position: sticky !important; top: 0 !important; z-index: 100 !important;
+        background: rgba(15,23,42,0.97) !important;
+        backdrop-filter: blur(8px) !important;
+        border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+        font-family: Inter, -apple-system, system-ui, sans-serif !important;
+        font-size: 15px !important; line-height: 1.4 !important;
+        width: 100% !important; box-sizing: border-box !important; margin: 0 !important;
+      }
+      .eco-inner-i {
+        max-width: 1100px !important; margin: 0 auto !important;
+        padding: 12px 32px !important;
+        display: flex !important; align-items: center !important;
+        justify-content: space-between !important; gap: 16px !important;
+        flex-wrap: wrap !important; box-sizing: border-box !important; width: 100% !important;
+      }
+      .eco-brand-i { font-weight: 700 !important; font-size: 15px !important; color: #fff !important; letter-spacing: -0.01em !important; line-height: 1.2 !important; }
+      .eco-brand-i::before { content: "\25CF" !important; color: #4f46e5 !important; margin-right: 8px !important; font-size: 10px !important; vertical-align: middle !important; }
+      .eco-nav-i { display: flex !important; gap: 2px !important; flex-wrap: wrap !important; align-items: center !important; font-size: 13px !important; background: transparent !important; border: none !important; position: static !important; }
+      .eco-nav-i a { color: #cbd5e1 !important; padding: 6px 12px !important; border-radius: 6px !important; font-size: 13px !important; font-weight: 500 !important; transition: all 0.15s !important; text-decoration: none !important; line-height: 1.2 !important; background: transparent !important; border: none !important; }
+      .eco-nav-i a:hover { background: rgba(255,255,255,0.08) !important; color: #fff !important; }
+      .eco-nav-i a.active { background: #4f46e5 !important; color: #fff !important; }
+      .eco-nav-i a.donate-cta { background: #dc2626 !important; color: #fff !important; font-weight: 600 !important; padding: 6px 14px !important; border-radius: 6px !important; box-shadow: 0 1px 3px rgba(220,38,38,0.4) !important; }
+      .eco-nav-i a.donate-cta::before { content: "\2665 " !important; color: #fff !important; margin-right: 2px !important; }
+
+      /* ── AIM-internal subnav (light, like home) ──────────────────── */
+      .aim-subnav {
+        background: var(--c-card);
+        border-bottom: 1px solid var(--c-border);
+      }
+      .aim-subnav-inner {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 12px 32px;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      .aim-subnav .brand {
+        font-weight: 800;
+        color: var(--c-text);
+        font-size: 1.125rem;
+        letter-spacing: -0.02em;
+      }
+      .aim-subnav .brand .logo { color: var(--c-accent); margin-right: 0.4rem; font-size: 1.25rem; }
+      .aim-subnav nav { display: flex; gap: 0.4rem; flex-wrap: wrap; flex: 1; }
+      .aim-subnav nav a {
+        color: var(--c-text-soft);
+        font-size: 0.9rem;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: 500;
+      }
+      .aim-subnav nav a:hover { background: var(--c-accent-soft); color: var(--c-accent); text-decoration: none; }
+      .aim-subnav nav a.active { background: var(--c-accent); color: #fff; }
+      .aim-subnav .lang-switcher select {
+        background: #fff;
+        color: var(--c-text);
+        border: 1px solid var(--c-border-strong);
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 0.875rem;
+        cursor: pointer;
+        font-family: inherit;
+      }
+
+      /* ── HERO (matches home.longevity.ge) ────────────────────────── */
+      .hero {
+        background: linear-gradient(135deg, #1e1b4b 0%, #312e81 35%, #4338ca 75%, #6366f1 100%);
+        color: white;
+        padding: 4rem 2.5rem;
+        position: relative;
+        overflow: hidden;
+      }
+      .hero::before {
+        content: "";
+        position: absolute;
+        top: 0; right: 0;
+        width: 60%; height: 100%;
+        background: radial-gradient(circle at top right, rgba(167, 139, 250, 0.25), transparent 60%);
+        pointer-events: none;
+      }
+      .hero-inner { max-width: 1100px; margin: 0 auto; padding: 1rem 2rem; position: relative; }
+      .hero-pill {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.18);
+        padding: 0.4375rem 1rem;
+        border-radius: 999px;
+        font-size: 0.75rem; font-weight: 600;
+        letter-spacing: 0.08em; text-transform: uppercase;
+        margin-bottom: 1.25rem; backdrop-filter: blur(4px);
+      }
+      .hero-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #34d399; box-shadow: 0 0 8px #34d399; }
+      .hero-title { font-size: clamp(2.5rem, 5vw, 3.75rem); font-weight: 800; line-height: 1.05; margin: 0 0 1rem 0; letter-spacing: -0.025em; color: white; }
+      .hero-subtitle { font-size: clamp(1rem, 1.5vw, 1.1875rem); line-height: 1.55; opacity: 0.92; max-width: 48rem; margin: 0 0 1.75rem 0; }
+      .hero-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin: 2rem 0 1.75rem 0; }
+      @media(max-width:900px){ .hero-stats { grid-template-columns: repeat(3, 1fr); } }
+      @media(max-width:520px){ .hero-stats { grid-template-columns: repeat(2, 1fr); } }
+      .hero-stats .s {
+        background: rgba(255,255,255,0.07);
+        padding: 0.55rem 0.7rem;
+        border-radius: 8px;
+        border: 1px solid rgba(255,255,255,0.10);
+      }
+      .hero-stats .s .k { font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.72; font-weight: 500; }
+      .hero-stats .s .v { font-size: 0.875rem; font-weight: 700; margin-top: 0.2rem; }
+      .hero-cta { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.5rem; }
+
+      .btn {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.75rem 1.375rem; border-radius: 999px;
+        font-weight: 600; font-size: 0.9375rem;
+        text-decoration: none;
+        transition: transform 0.15s, box-shadow 0.15s;
+        cursor: pointer; border: none; font-family: inherit;
+      }
+      .btn-primary { background: white; color: #312e81; box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+      .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.18); color: #312e81; text-decoration: none; }
+      .btn-ghost { background: transparent; color: white; border: 1.5px solid rgba(255,255,255,0.4); }
+      .btn-ghost:hover { background: rgba(255,255,255,0.10); color: white; text-decoration: none; }
+
+      /* ── Container ────────────────────────────────────────────── */
+      .container { max-width: 1100px; margin: 0 auto; padding: 4.5rem 2rem; }
+      .section-title { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.015em; margin: 3rem 0 0.5rem 0; }
+      .section-lead { color: var(--c-text-soft); font-size: 1rem; margin: 0 0 1.5rem 0; max-width: 48rem; }
+
+      /* ── Grid + Cards (light) ─────────────────────────────────── */
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem; }
+      .card {
+        background: var(--c-card);
+        border: 1px solid var(--c-border);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+        display: flex; flex-direction: column;
+      }
+      .card.link { cursor: pointer; }
+      .card.link:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--c-accent); text-decoration: none; }
+      .card .role { font-size: 0.6875rem; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 0.5rem; }
+      .card h3 { margin: 0 0 0.625rem 0; font-size: 1.1875rem; font-weight: 700; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; color: var(--c-text); }
+      .card h3 .arrow { color: var(--c-accent); font-weight: 600; transition: transform 0.18s; }
+      .card.link:hover h3 .arrow { transform: translateX(4px); }
+      .card p { margin: 0.625rem 0; font-size: 0.9375rem; color: var(--c-text-soft); line-height: 1.55; }
+
+      /* ── Badges ───────────────────────────────────────────────── */
+      .badge { display: inline-flex; align-items: center; font-size: 0.6875rem; font-weight: 600; padding: 0.1875rem 0.625rem; border-radius: 999px; letter-spacing: 0.02em; }
+      .badge.green  { background: #d1fae5; color: #065f46; }
+      .badge.blue   { background: #dbeafe; color: #1e40af; }
+      .badge.purple { background: #ede9fe; color: #5b21b6; }
+      .badge.gray   { background: #f1f5f9; color: #475569; }
+      .badge.warn   { background: #fef3c7; color: #92400e; }
+      .badge.red    { background: #fee2e2; color: #991b1b; }
+
+      /* ── Dashboard ────────────────────────────────────────────── */
+      .aim-dashboard { max-width: 1100px; margin: 0 auto; padding: 3rem 2rem; }
+      .aim-dashboard section { margin-bottom: 2rem; }
+      .aim-dashboard ul { list-style: none; padding: 0; }
+      .aim-dashboard li {
+        padding: 0.75rem 1rem;
+        background: var(--c-card);
+        border: 1px solid var(--c-border);
+        border-radius: var(--radius);
+        margin-bottom: 0.5rem;
+      }
+      .status { padding: 0.2rem 0.625rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+      .status-ok, .status-starting { background: #d1fae5; color: #065f46; }
+      .status-warning { background: #fef3c7; color: #92400e; }
+      .status-down, .status-critical { background: #fee2e2; color: #991b1b; }
+
+      /* ── Drug interactions ────────────────────────────────────── */
+      .aim-drug-check { max-width: 1100px; margin: 0 auto; padding: 3rem 2rem; }
+      .aim-drug-check form {
+        background: var(--c-card);
+        padding: 1.5rem;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--c-border);
+        margin-bottom: 1.5rem;
+      }
+      .aim-drug-check textarea {
+        width: 100%; background: #fff; color: var(--c-text);
+        border: 1px solid var(--c-border-strong); border-radius: 8px;
+        padding: 0.75rem; font-family: inherit; font-size: 0.95rem;
+        margin-bottom: 0.75rem; resize: vertical;
+      }
+      .aim-drug-check .actions { display: flex; gap: 0.6rem; }
+      .aim-drug-check button {
+        padding: 0.55rem 1.25rem; border-radius: 999px;
+        border: 1px solid var(--c-border-strong); background: #fff;
+        color: var(--c-text); cursor: pointer; font-weight: 600;
+        font-family: inherit;
+      }
+      .aim-drug-check button[type="submit"] { background: var(--c-accent); color: #fff; border-color: var(--c-accent); }
+      .aim-drug-check button[type="submit"]:hover { background: #4338ca; }
+      .aim-drug-check button:disabled { opacity: 0.5; cursor: not-allowed; }
+      .drug-list { list-style: none; padding: 0; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+      .drug-list li {
+        background: var(--c-accent-soft); border: 1px solid #c7d2fe;
+        color: #4338ca; padding: 0.3rem 0.75rem; border-radius: 999px; font-size: 0.875rem; font-weight: 500;
+      }
+      .findings table { width: 100%; border-collapse: collapse; margin-top: 0.7rem; }
+      .findings th, .findings td { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--c-border); }
+      .findings th { color: var(--c-text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+      .sev-major { color: var(--c-danger); font-weight: 600; }
+      .sev-moderate { color: var(--c-warning); font-weight: 600; }
+      .sev-minor { color: var(--c-text-muted); }
+      .report { background: #f1f5f9; border: 1px solid var(--c-border); border-radius: var(--radius); padding: 1rem; white-space: pre-wrap; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.8125rem; color: #1e293b; }
+
+      /* ── Settings ─────────────────────────────────────────────── */
+      .aim-settings { max-width: 1100px; margin: 0 auto; padding: 3rem 2rem; }
+      .aim-settings .hint { color: var(--c-text-soft); font-size: 0.9375rem; max-width: 720px; margin-bottom: 1rem; }
+      .provider-list { list-style: none; padding: 0; }
+      .provider-list > li {
+        display: flex; align-items: center; gap: 0.8rem;
+        padding: 0.85rem 1rem; background: var(--c-card);
+        border: 1px solid var(--c-border); border-radius: var(--radius);
+        margin-bottom: 0.5rem; flex-wrap: wrap;
+      }
+      .provider-name { min-width: 120px; font-weight: 600; color: var(--c-text); }
+      .key-form { display: flex; gap: 0.5rem; flex: 1; }
+      .key-form input[type="password"] {
+        flex: 1; background: #fff; color: var(--c-text);
+        border: 1px solid var(--c-border-strong); border-radius: 8px;
+        padding: 0.45rem 0.7rem; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.875rem;
+      }
+      .key-form button, .clear, .clear-all {
+        padding: 0.45rem 1rem; background: #fff;
+        color: var(--c-text); border: 1px solid var(--c-border-strong);
+        border-radius: 999px; cursor: pointer; font-size: 0.875rem; font-weight: 600;
+        font-family: inherit;
+      }
+      .key-form button:hover { background: var(--c-accent-soft); border-color: var(--c-accent); color: var(--c-accent); }
+      .clear { color: var(--c-text-muted); }
+      .clear-all { margin-top: 0.8rem; color: var(--c-danger); border-color: #fca5a5; }
+      .clear-all:hover { background: #fef2f2; }
+      p.status-ok { padding: 0.55rem 0.85rem; border-radius: var(--radius); background: #d1fae5; color: #065f46; }
+      p.status-error { padding: 0.55rem 0.85rem; border-radius: var(--radius); background: #fee2e2; color: #991b1b; }
+
+      /* ── Footer ───────────────────────────────────────────────── */
+      .aim-footer {
+        background: var(--c-card);
+        border-top: 1px solid var(--c-border);
+        margin-top: 4rem;
+        padding: 2rem 2rem;
+        color: var(--c-text-muted);
+        font-size: 0.875rem;
+        text-align: center;
+      }
+      .aim-footer a { color: var(--c-accent); }
+
+      /* ── Theme toggle button (eco-bar) ────────────────────────── */
+      .theme-toggle-i {
+        background: transparent !important;
+        border: 1px solid rgba(255,255,255,0.35) !important;
+        color: #fff !important;
+        cursor: pointer !important;
+        padding: 4px 10px !important;
+        border-radius: 4px !important;
+        font-size: 16px !important;
+        margin-left: 12px !important;
+        line-height: 1 !important;
+      }
+      .theme-toggle-i:hover { background: rgba(255,255,255,0.12) !important; }
+
+      /* ── DARK THEME — toggled via html[data-theme="dark"] ──────── */
+      html[data-theme="dark"] {
+        background: #0f1117;
+      }
+      html[data-theme="dark"] body {
+        background: #0f1117;
+        color: #e0e3eb;
+      }
+      html[data-theme="dark"] {
+        --c-text: #e0e3eb;
+        --c-text-soft: #c8ccd5;
+        --c-text-muted: #a0a8b5;
+        --c-bg: #0f1117;
+        --c-card: #15171f;
+        --c-border: #2a2f40;
+        --c-border-strong: #3a4055;
+        --c-accent: #88a8ff;
+        --c-accent-soft: #1a2440;
+      }
+      html[data-theme="dark"] h1,
+      html[data-theme="dark"] h2,
+      html[data-theme="dark"] h3,
+      html[data-theme="dark"] h4 { color: #fff; }
+      html[data-theme="dark"] code { background: #2a2f40; color: #e0e3eb; }
+      html[data-theme="dark"] a { color: #88a8ff; }
+      html[data-theme="dark"] .eco-bar-injected { background: rgba(6,8,15,0.97) !important; }
+      html[data-theme="dark"] .aim-subnav { background: #15171f; border-bottom-color: #2a2f40; }
+      html[data-theme="dark"] .aim-subnav .brand { color: #fff; }
+      html[data-theme="dark"] .aim-subnav nav a { color: #cbd5e1; }
+      html[data-theme="dark"] .aim-subnav nav a:hover { background: #1a2440; color: #fff; }
+      html[data-theme="dark"] .aim-subnav .lang-switcher select {
+        background: #1a1d28; color: #e0e3eb; border-color: #2a2f40;
+      }
+      html[data-theme="dark"] .card,
+      html[data-theme="dark"] .aim-dashboard li,
+      html[data-theme="dark"] .aim-drug-check form,
+      html[data-theme="dark"] .provider-list > li {
+        background: #15171f; border-color: #2a2f40; color: #d8dce4;
+      }
+      html[data-theme="dark"] .card p,
+      html[data-theme="dark"] .section-lead,
+      html[data-theme="dark"] .aim-settings .hint { color: #c8ccd5; }
+      html[data-theme="dark"] .aim-drug-check textarea,
+      html[data-theme="dark"] .aim-drug-check button,
+      html[data-theme="dark"] .key-form input[type="password"],
+      html[data-theme="dark"] .key-form button,
+      html[data-theme="dark"] .clear,
+      html[data-theme="dark"] .clear-all {
+        background: #1a1d28; color: #e0e3eb; border-color: #2a2f40;
+      }
+      html[data-theme="dark"] .aim-drug-check button[type="submit"] { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+      html[data-theme="dark"] .key-form button:hover { background: #1a2440; color: #88a8ff; border-color: #88a8ff; }
+      html[data-theme="dark"] .drug-list li { background: #1a2440; border-color: #4f46e5; color: #fff; }
+      html[data-theme="dark"] .report { background: #0f1117; color: #d8dce4; border-color: #2a2f40; }
+      html[data-theme="dark"] .findings th,
+      html[data-theme="dark"] .findings td { border-color: #2a2f40; }
+      html[data-theme="dark"] .findings th { color: #c8ccd5; }
+      html[data-theme="dark"] .aim-footer { background: #15171f; border-color: #2a2f40; color: #c8ccd5; }
+      html[data-theme="dark"] .badge.green  { background: rgba(74,222,128,0.18); color: #4ade80; }
+      html[data-theme="dark"] .badge.blue   { background: rgba(96,165,250,0.18); color: #60a5fa; }
+      html[data-theme="dark"] .badge.purple { background: rgba(167,139,250,0.18); color: #a78bfa; }
+      html[data-theme="dark"] .badge.gray   { background: #2a2f40; color: #c8ccd5; }
+      html[data-theme="dark"] .badge.warn   { background: rgba(251,191,36,0.18); color: #fbbf24; }
+      html[data-theme="dark"] .badge.red    { background: rgba(239,68,68,0.18); color: #f87171; }
+      html[data-theme="dark"] .status-ok, html[data-theme="dark"] .status-starting { background: rgba(74,222,128,0.18); color: #4ade80; }
+      html[data-theme="dark"] .status-warning { background: rgba(251,191,36,0.18); color: #fbbf24; }
+      html[data-theme="dark"] .status-down, html[data-theme="dark"] .status-critical { background: rgba(239,68,68,0.18); color: #f87171; }
+      html[data-theme="dark"] p.status-error { background: rgba(239,68,68,0.18); color: #f87171; }
+      html[data-theme="dark"] p.status-ok { background: rgba(74,222,128,0.18); color: #4ade80; }
+
+      /* Hero stays BLUE in dark mode (matches longevity.ge home) */
+      html[data-theme="dark"] .hero {
+        background: linear-gradient(135deg, #1e1b4b 0%, #312e81 35%, #4338ca 75%, #6366f1 100%) !important;
+        color: #fff !important;
+      }
+      html[data-theme="dark"] .hero h1,
+      html[data-theme="dark"] .hero .hero-title { color: #fff !important; }
+      html[data-theme="dark"] .hero p,
+      html[data-theme="dark"] .hero .hero-subtitle { color: #fff !important; opacity: 0.92; }
+      html[data-theme="dark"] .hero-pill {
+        background: rgba(255,255,255,0.08) !important;
+        border-color: rgba(255,255,255,0.18) !important;
+        color: #fff !important;
+      }
+      html[data-theme="dark"] .hero-stats .s {
+        background: rgba(255,255,255,0.07) !important;
+        border-color: rgba(255,255,255,0.10) !important;
+      }
+      html[data-theme="dark"] .hero-stats .s .k,
+      html[data-theme="dark"] .hero-stats .s .v { color: #fff !important; }
+      html[data-theme="dark"] .btn-primary { background: #fff !important; color: #312e81 !important; }
+      html[data-theme="dark"] .btn-ghost { color: #fff !important; border-color: rgba(255,255,255,0.4) !important; }
+
+      /* ─── Cornerstone routes (Phase 4 + Fix #3, 2026-05-07) ───────────── */
+      .aim-pam, .aim-codesign, .aim-disagreement, .aim-activation,
+      .aim-coaching, .about-page {
+        max-width: 1100px;
+        margin: 24px auto;
+        padding: 0 24px 48px;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        color: #1f2937;
+      }
+      html[data-theme="dark"] .aim-pam,
+      html[data-theme="dark"] .aim-codesign,
+      html[data-theme="dark"] .aim-disagreement,
+      html[data-theme="dark"] .aim-activation,
+      html[data-theme="dark"] .aim-coaching,
+      html[data-theme="dark"] .about-page { color: #e5e7eb; }
+
+      .aim-pam h1, .aim-codesign h1, .aim-disagreement h1,
+      .aim-activation h1, .aim-coaching h1, .about-page h1 {
+        font-size: 1.7rem;
+        margin: 24px 0 16px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      .about-page p.lead {
+        font-size: 1.1rem; line-height: 1.6;
+        color: #374151; margin-bottom: 24px;
+      }
+      html[data-theme="dark"] .about-page p.lead { color: #d1d5db; }
+
+      .aim-pam .empty, .aim-codesign .empty, .aim-coaching .hint,
+      .about-page .muted {
+        color: #6b7280; font-style: italic;
+      }
+      html[data-theme="dark"] .aim-pam .empty,
+      html[data-theme="dark"] .aim-codesign .empty,
+      html[data-theme="dark"] .aim-coaching .hint,
+      html[data-theme="dark"] .about-page .muted { color: #9ca3af; }
+
+      /* PAM cohort + history tables */
+      .pam-cohort, .pam-history, .activation-funnel, .about-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 16px 0;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      html[data-theme="dark"] .pam-cohort,
+      html[data-theme="dark"] .pam-history,
+      html[data-theme="dark"] .activation-funnel,
+      html[data-theme="dark"] .about-table {
+        background: #1f2937; border-color: #374151;
+      }
+      .pam-cohort th, .pam-history th, .activation-funnel th, .about-table th {
+        background: #f3f4f6;
+        text-align: left;
+        padding: 10px 14px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #374151;
+      }
+      html[data-theme="dark"] .pam-cohort th,
+      html[data-theme="dark"] .pam-history th,
+      html[data-theme="dark"] .activation-funnel th,
+      html[data-theme="dark"] .about-table th {
+        background: #111827; color: #f3f4f6;
+      }
+      .pam-cohort td, .pam-history td, .activation-funnel td, .about-table td {
+        padding: 10px 14px;
+        border-top: 1px solid #e5e7eb;
+        font-size: 0.95rem;
+      }
+      html[data-theme="dark"] .pam-cohort td,
+      html[data-theme="dark"] .pam-history td,
+      html[data-theme="dark"] .activation-funnel td,
+      html[data-theme="dark"] .about-table td { border-color: #374151; }
+
+      /* PAM-13 level color coding */
+      .level-1 { background: rgba(239,68,68,0.06); }    /* red — disengaged */
+      .level-2 { background: rgba(245,158,11,0.06); }   /* amber — becoming aware */
+      .level-3 { background: rgba(59,130,246,0.06); }   /* blue — taking action */
+      .level-4 { background: rgba(16,185,129,0.06); }   /* green — maintaining */
+      html[data-theme="dark"] .level-1 { background: rgba(239,68,68,0.18); }
+      html[data-theme="dark"] .level-2 { background: rgba(245,158,11,0.18); }
+      html[data-theme="dark"] .level-3 { background: rgba(59,130,246,0.18); }
+      html[data-theme="dark"] .level-4 { background: rgba(16,185,129,0.18); }
+
+      /* Co-design event log */
+      .codesign-events { list-style: none; padding: 0; }
+      .codesign-events li {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 12px;
+      }
+      html[data-theme="dark"] .codesign-events li {
+        background: #1f2937; border-color: #374151;
+      }
+      .codesign-events li.kind-agreed { border-left: 4px solid #10b981; }
+      .codesign-events li.kind-modified { border-left: 4px solid #3b82f6; }
+      .codesign-events li.kind-refused { border-left: 4px solid #ef4444; }
+      .codesign-events li.kind-consulted { border-left: 4px solid #6b7280; }
+      .codesign-events li.kind-alternative { border-left: 4px solid #f59e0b; }
+      .codesign-events header {
+        display: flex; gap: 12px; flex-wrap: wrap;
+        font-size: 0.9rem; color: #6b7280; margin-bottom: 6px;
+      }
+      .codesign-events .kind { font-weight: 600; }
+      .codesign-events .topic { margin: 4px 0; }
+
+      /* Disagreement classifier form */
+      .disagreement-form {
+        background: #fff; border: 1px solid #e5e7eb;
+        border-radius: 8px; padding: 20px; margin-bottom: 16px;
+      }
+      html[data-theme="dark"] .disagreement-form {
+        background: #1f2937; border-color: #374151;
+      }
+      .disagreement-form label {
+        display: block; margin-bottom: 16px;
+        font-size: 0.95rem;
+      }
+      .disagreement-form input[type="range"] { width: 100%; margin-top: 6px; }
+      .outcome {
+        padding: 16px; border-radius: 8px; margin: 16px 0;
+        background: #f3f4f6;
+      }
+      html[data-theme="dark"] .outcome { background: #111827; }
+      .outcome.zone-aligned { border-left: 4px solid #10b981; }
+      .outcome.zone-ai_leads { border-left: 4px solid #3b82f6; }
+      .outcome.zone-clinician_leads { border-left: 4px solid #8b5cf6; }
+      .outcome.zone-escalate { border-left: 4px solid #f59e0b; }
+      .outcome.zone-conflict_high_stakes { border-left: 4px solid #ef4444; }
+      .outcome h2 { margin: 0 0 8px; font-size: 1.1rem; }
+
+      /* Coaching form */
+      .coach-form {
+        display: flex; gap: 8px; flex-wrap: wrap;
+        background: #fff; border: 1px solid #e5e7eb;
+        border-radius: 8px; padding: 16px; margin: 16px 0;
+      }
+      html[data-theme="dark"] .coach-form {
+        background: #1f2937; border-color: #374151;
+      }
+      .coach-form label { flex: 1; min-width: 240px; }
+      .coach-form input[type="text"] {
+        width: 100%; padding: 8px 12px;
+        border: 1px solid #d1d5db; border-radius: 6px;
+        font-size: 0.95rem;
+      }
+      html[data-theme="dark"] .coach-form input[type="text"] {
+        background: #111827; border-color: #374151; color: #e5e7eb;
+      }
+      .coach-form button {
+        padding: 8px 16px; border-radius: 6px;
+        background: #4f46e5; color: #fff; border: none; cursor: pointer;
+        font-size: 0.95rem;
+      }
+      .coach-form button[type="button"] { background: #6b7280; }
+      .coach-result {
+        background: #eef2ff; padding: 16px;
+        border-radius: 8px; border-left: 4px solid #4f46e5;
+      }
+      html[data-theme="dark"] .coach-result {
+        background: #1e1b4b; color: #e0e7ff;
+      }
+      .coach-result .hint { color: #4b5563; font-size: 0.9rem; }
+
+      /* Legend / reference blocks shared across cornerstone */
+      .legend {
+        background: #f9fafb; padding: 16px;
+        border-radius: 8px; margin-top: 24px;
+        border: 1px solid #e5e7eb;
+      }
+      html[data-theme="dark"] .legend {
+        background: #111827; border-color: #374151;
+      }
+      .legend h3 { margin: 0 0 8px; font-size: 1rem; }
+      .legend ul { margin: 0; padding-left: 20px; }
+      .legend li { margin-bottom: 4px; font-size: 0.9rem; }
+
+      /* About page sections */
+      .about-section {
+        margin: 32px 0;
+        padding: 24px;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+      }
+      html[data-theme="dark"] .about-section {
+        background: #1f2937; border-color: #374151;
+      }
+      .about-section h2 {
+        margin: 0 0 14px;
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #111827;
+      }
+      html[data-theme="dark"] .about-section h2 { color: #f9fafb; }
+      .about-section h3 {
+        margin: 16px 0 8px;
+        font-size: 1.05rem;
+        color: #374151;
+      }
+      html[data-theme="dark"] .about-section h3 { color: #e5e7eb; }
+      .about-section p { margin: 0 0 12px; line-height: 1.6; }
+      .about-section ul, .about-section ol { margin: 0 0 12px 20px; line-height: 1.6; }
+      .about-section li { margin-bottom: 4px; }
+      .about-section pre {
+        background: #f3f4f6; padding: 12px;
+        border-radius: 6px; overflow-x: auto;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.9rem;
+      }
+      html[data-theme="dark"] .about-section pre { background: #0f172a; color: #e2e8f0; }
+      .about-section code {
+        background: #f3f4f6; padding: 2px 6px;
+        border-radius: 3px; font-family: 'JetBrains Mono', monospace;
+        font-size: 0.88em;
+      }
+      html[data-theme="dark"] .about-section code {
+        background: #0f172a; color: #e2e8f0;
+      }
+      .about-section pre code { background: transparent; padding: 0; }
+      .about-page .back { margin-top: 32px; }
+      .about-page .back a {
+        display: inline-block; padding: 8px 16px;
+        background: #4f46e5; color: #fff;
+        border-radius: 6px; text-decoration: none;
+      }
+
+      /* Footer block on cornerstone pages */
+      .aim-pam footer, .aim-codesign footer, .aim-coaching footer,
+      .aim-disagreement footer, .aim-activation footer {
+        margin-top: 32px; padding-top: 16px;
+        border-top: 1px solid #e5e7eb;
+        color: #6b7280; font-size: 0.85rem;
+      }
+      html[data-theme="dark"] .aim-pam footer,
+      html[data-theme="dark"] .aim-codesign footer,
+      html[data-theme="dark"] .aim-coaching footer,
+      html[data-theme="dark"] .aim-disagreement footer,
+      html[data-theme="dark"] .aim-activation footer {
+        border-color: #374151; color: #9ca3af;
+      }
+    </style>
+
+    <script defer src="/assets/phoenix.min.js"></script>
+    <script defer src="/assets/phoenix_live_view.min.js"></script>
+    <script defer>
+      // Initialise LiveSocket once dependencies are loaded. The bundles are
+      // symlinked from deps/{phoenix,phoenix_live_view}/priv/static into
+      // apps/aim_web/priv/static/assets and exposed via Plug.Static.
+      window.addEventListener("DOMContentLoaded", function(){
+        if (!window.Phoenix || !window.LiveView) {
+          console.error("[aim] phoenix / phoenix_live_view bundles missing — chat & live updates disabled");
+          return;
+        }
+        var meta = document.querySelector("meta[name='csrf-token']");
+        var csrf = meta ? meta.getAttribute("content") : null;
+        var liveSocket = new window.LiveView.LiveSocket("/live", window.Phoenix.Socket, {
+          params: { _csrf_token: csrf }
+        });
+        liveSocket.connect();
+        window.liveSocket = liveSocket;
+      });
+    </script>
+    <script src="https://longevity.ge/eco-inject.js?v=61" defer></script>
+    <script>
+      // Robust theme toggle that survives:
+      //   * LiveView morphdom replacing the eco-bar / button on every patch
+      //   * eco-inject.js loading before/after this script (or not at all)
+      //   * 127.0.0.1 dev (cookie with domain=.longevity.ge silently rejected)
+      // Strategy: event delegation on document + apply data-theme on every
+      // phx LV update + dual cookie write (host-only AND .longevity.ge).
+      (function(){
+        function getTheme(){
+          var m = document.cookie.match(/(?:^|; )lc_theme=([^;]+)/);
+          if (m) return decodeURIComponent(m[1]);
+          try { return localStorage.getItem("theme"); } catch(e){ return null; }
+        }
+        function setTheme(v){
+          var d = new Date(); d.setTime(d.getTime() + 365*24*60*60*1000);
+          var exp = d.toUTCString();
+          // Host-only cookie — works on 127.0.0.1, localhost, and any
+          // *.longevity.ge subdomain (browser stores it for the current host).
+          document.cookie = "lc_theme=" + encodeURIComponent(v) +
+                            "; expires=" + exp + "; path=/; SameSite=Lax";
+          // Cross-subdomain cookie — succeeds only when host matches
+          // .longevity.ge; silently dropped on 127.0.0.1, which is fine.
+          if (/\.longevity\.ge$/i.test(location.hostname)) {
+            document.cookie = "lc_theme=" + encodeURIComponent(v) +
+                              "; expires=" + exp +
+                              "; path=/; domain=.longevity.ge; SameSite=Lax";
+          }
+          try { localStorage.setItem("theme", v); } catch(e){}
+        }
+        function applyTheme(){
+          var t = getTheme();
+          if (t === "dark") document.documentElement.setAttribute("data-theme", "dark");
+          else document.documentElement.removeAttribute("data-theme");
+          syncAllIcons();
+        }
+        function syncAllIcons(){
+          var dark = document.documentElement.getAttribute("data-theme") === "dark";
+          var btns = document.querySelectorAll(".theme-toggle-i");
+          for (var i = 0; i < btns.length; i++) btns[i].textContent = dark ? "☀" : "☾";
+        }
+        // 1) Pre-paint apply (before first render to avoid FOUC).
+        applyTheme();
+
+        // 2) Event delegation — survives any DOM replacement (LV morphdom,
+        //    eco-inject.js rewrites, etc.). One handler for the lifetime of
+        //    the document.
+        document.addEventListener("click", function(e){
+          var btn = e.target && e.target.closest && e.target.closest(".theme-toggle-i");
+          if (!btn) return;
+          e.preventDefault();
+          // Capture-phase + stopImmediatePropagation: eco-inject.js also
+          // attaches a click listener directly on the button (target phase)
+          // that toggles data-theme. Without stopping, both fire and the
+          // toggles cancel out — visible: nothing happens.
+          e.stopImmediatePropagation();
+          e.stopPropagation();
+          var dark = document.documentElement.getAttribute("data-theme") === "dark";
+          if (dark) {
+            document.documentElement.removeAttribute("data-theme");
+            setTheme("light");
+          } else {
+            document.documentElement.setAttribute("data-theme", "dark");
+            setTheme("dark");
+          }
+          syncAllIcons();
+        }, true);
+
+        // 3) Re-sync icon after any LiveView update / page-loading transition.
+        function reapply(){ syncAllIcons(); }
+        document.addEventListener("DOMContentLoaded", reapply);
+        window.addEventListener("phx:page-loading-stop", reapply);
+        window.addEventListener("phx:update", reapply);
+      })();
+
+      // ── ChatLive UX helpers ─────────────────────────────────────────────
+      // Enter sends, Shift+Enter inserts newline. Delegated so it survives
+      // LV morphdom replacing the textarea.
+      document.addEventListener("keydown", function(e){
+        if (e.key !== "Enter" || e.shiftKey || e.isComposing) return;
+        var t = e.target;
+        if (!t || t.tagName !== "TEXTAREA") return;
+        var form = t.form;
+        if (!form || !form.classList.contains("aim-chat-form")) return;
+        e.preventDefault();
+        if (typeof form.requestSubmit === "function") form.requestSubmit();
+        else form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      }, true);
+
+      // Auto-scroll #aim-chat-log to bottom on any DOM mutation. One-shot
+      // observer attachment per element via __aim_obs flag.
+      (function(){
+        function bind(){
+          var el = document.getElementById("aim-chat-log");
+          if (!el || el.__aim_obs) return;
+          el.__aim_obs = true;
+          el.scrollTop = el.scrollHeight;
+          new MutationObserver(function(){ el.scrollTop = el.scrollHeight; })
+            .observe(el, { childList: true, subtree: true, characterData: true });
+        }
+        document.addEventListener("DOMContentLoaded", bind);
+        window.addEventListener("phx:page-loading-stop", bind);
+        window.addEventListener("phx:update", bind);
+      })();
+    </script>
+  </head>
+  <body>
+    <%= @inner_content %>
+  </body>
+</html>

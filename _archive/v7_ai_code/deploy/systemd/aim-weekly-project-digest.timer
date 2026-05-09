@@ -1,0 +1,14 @@
+[Unit]
+Description=Run AIM weekly project digest every Sunday at 10:00
+Requires=aim-weekly-project-digest.service
+
+[Timer]
+# 10:00 — час после aim-weekly-digest.timer (09:00) чтобы не сталкиваться
+# с AIM-self digest на одной минуте; cargo build / aim-self-improvement
+# имеет приоритет.
+OnCalendar=Sun *-*-* 10:00:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

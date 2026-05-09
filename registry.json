@@ -1,0 +1,278 @@
+{
+  "meta": {
+    "version": "8.0.0",
+    "generated": "2026-05-09",
+    "description": "Canonical project registry of LongevityCommon ecosystem — single source of truth"
+  },
+  "projects": {
+    "mcoa": {
+      "name": "MCOA — Multi-Counter Architecture of Organismal Aging",
+      "path": "../MCOA/",
+      "layer": "theoretical",
+      "role": "meta_theory",
+      "counter": null,
+      "status": "submitted",
+      "status_detail": "Submitted to Nature Aging (NATAGING-P13741), not peer-reviewed",
+      "version": "1.0",
+      "date": "2026-04-21",
+      "dependencies": [],
+      "dependents": ["cdata", "telomere", "mitoros", "epigenetic_drift", "proteostasis"],
+      "key_params": {
+        "axioms": ["M1", "M2", "M3", "M4"],
+        "falsification_threshold": "partial r² < 0.05 at N≥2000, α=0.001"
+      }
+    },
+    "cdata": {
+      "name": "CDATA — Centriolar Damage Accumulation Theory",
+      "path": "../CDATA/",
+      "layer": "molecular_cellular",
+      "role": "counter_1",
+      "counter": 1,
+      "counter_label": "Centriolar (polyGlu PTM)",
+      "status": "inconclusive",
+      "status_detail": "ABL-2 paradox: R²_no_α=0.833 > full=0.778, p=0.12 nested CV",
+      "version": "5.2",
+      "date": "2026-05-07",
+      "dependencies": ["mcoa"],
+      "dependents": ["cell_lineage_tree", "automated_microscopy"],
+      "key_params": {
+        "equation": "D_centriole(n,t) = D_0 + α·(n/n*) + β·(t/τ) + γ·I(others)",
+        "r_squared": 0.745,
+        "loo_cv_mean": -0.093
+      }
+    },
+    "telomere": {
+      "name": "Telomere Shortening Counter",
+      "path": "../Telomere/",
+      "layer": "molecular_cellular",
+      "role": "counter_2",
+      "counter": 2,
+      "counter_label": "Telomere shortening",
+      "status": "concept",
+      "status_detail": "Concept-stage; equation defined, empirical validation pending",
+      "version": "1.0",
+      "date": "2026-04-21",
+      "dependencies": ["mcoa"],
+      "dependents": [],
+      "key_params": {
+        "equation": "D₂(n,t) = D₂,₀ + α₂·(n/n₂*) + β₂·(t/τ₂)",
+        "primary_measure": "qPCR / Flow-FISH telomere length"
+      }
+    },
+    "mitoros": {
+      "name": "Mitochondrial ROS and mtDNA Damage Counter",
+      "path": "../MitoROS/",
+      "layer": "molecular_cellular",
+      "role": "counter_3",
+      "counter": 3,
+      "counter_label": "Mitochondrial ROS + mtDNA damage",
+      "status": "concept",
+      "status_detail": "Concept-stage; 24 studies meta-analysis basis; τ₃ hypothetical",
+      "version": "1.0",
+      "date": "2026-04-21",
+      "dependencies": ["mcoa"],
+      "dependents": [],
+      "key_params": {
+        "equation": "D₃(n,t) = D₃,₀ + α₃·(n/n₃*) + β₃·(t/τ₃) + γ₃·I(others)",
+        "tau_3_range": "0.1–0.3/year (estimated)"
+      }
+    },
+    "epigenetic_drift": {
+      "name": "Epigenetic Drift Counter",
+      "path": "../EpigeneticDrift/",
+      "layer": "molecular_cellular",
+      "role": "counter_4",
+      "counter": 4,
+      "counter_label": "Epigenetic drift (methylation + chromatin)",
+      "status": "concept",
+      "status_detail": "Concept-stage; time-dominant; grounded in epigenetic clocks meta-analysis",
+      "version": "1.0",
+      "date": "2026-04-21",
+      "dependencies": ["mcoa"],
+      "dependents": [],
+      "key_params": {
+        "equation": "D₄(n,t) = D₄,₀ + β₄·(t/τ₄) + α₄·(n/n₄*) + γ₄·I(others)",
+        "primary_measure": "DNA methylation arrays (Horvath, GrimAge, DunedinPACE)",
+        "note": "Time-dominant (β₄ >> α₄)"
+      }
+    },
+    "proteostasis": {
+      "name": "Proteostasis Collapse Counter",
+      "path": "../Proteostasis/",
+      "layer": "molecular_cellular",
+      "role": "counter_5",
+      "counter": 5,
+      "counter_label": "Proteostasis collapse (chaperones, UPS, autophagy)",
+      "status": "concept",
+      "status_detail": "Concept-stage; placeholder parameters; pre-registration planned 2026-09-30",
+      "version": "1.0",
+      "date": "2026-04-21",
+      "dependencies": ["mcoa"],
+      "dependents": [],
+      "key_params": {
+        "equation": "D₅(n,t) = D₅,₀ + α₅·(n/n₅*) + β₅·(t/τ₅)",
+        "osf_pre_reg": "osf.io/TBD (placeholder)"
+      }
+    },
+    "ze_theory": {
+      "name": "Ze Theory — бинарное переключение состояний",
+      "path": "../Ze/",
+      "layer": "mathematical",
+      "role": "theory",
+      "counter": null,
+      "status": "active",
+      "status_detail": "Активная разработка 2024–2026; v6; статья в разработке; pre-registered tests NULL для v1 univariate",
+      "version": "6.0",
+      "date": "2026-04-06",
+      "dependencies": [],
+      "dependents": ["biosense", "poincare"],
+      "key_params": {
+        "v_star": 0.45631,
+        "v_star_article_form": -0.08738,
+        "chi_ze_formula": "χ_Ze = 1 − |v − v*| / max(v*, 1−v*)",
+        "ansatz": "dτ_Ze/dt = −α·I(Z) — POSTULATED (not derived)"
+      }
+    },
+    "poincare": {
+      "name": "Poincaré — интуиция через Ze Theory",
+      "path": "../Ze/Poincare/",
+      "layer": "mathematical",
+      "role": "philosophy_of_science",
+      "counter": null,
+      "status": "active",
+      "status_detail": "Phase 3 готов; статья «Poincaré and Ze-theory»",
+      "version": "5.0",
+      "date": "2026-04-03",
+      "dependencies": ["ze_theory"],
+      "dependents": [],
+      "key_params": {}
+    },
+    "biosense": {
+      "name": "BioSense — мультисенсорная носимая платформа",
+      "path": "../BioSense/",
+      "layer": "applied",
+      "role": "wearable_platform",
+      "counter": null,
+      "status": "active",
+      "status_detail": "ЭЭГ модуль валидирован; ВСР и ольфакция — проектирование; v3.1",
+      "version": "3.1",
+      "date": "2026-04-01",
+      "dependencies": ["ze_theory"],
+      "dependents": ["fclc"],
+      "key_params": {
+        "channels": ["EEG", "HRV/RR", "Olfaction/VOC"],
+        "v_star_optimal": "0.451 (95% CI 0.443-0.459) on All-of-Us N=500"
+      }
+    },
+    "automated_microscopy": {
+      "name": "AutomatedMicroscopy — AI-управляемый микроскоп",
+      "path": "../AutomatedMicroscopy/",
+      "layer": "infrastructure",
+      "role": "lab_automation",
+      "counter": null,
+      "status": "active",
+      "status_detail": "Zeiss IM 35 retrofit; BOM $4,500; Claude Code night-shift mode",
+      "version": "1.0",
+      "date": "2026-04-21",
+      "dependencies": [],
+      "dependents": ["cell_lineage_tree"],
+      "key_params": {
+        "microscope": "Zeiss IM 35 inverted",
+        "camera": "FLIR Blackfly S USB3",
+        "bom_usd": 4500
+      }
+    },
+    "cell_lineage_tree": {
+      "name": "CDLT — Centriole Damage in Lineage Tree",
+      "path": "../CellLineageTree/",
+      "layer": "molecular_cellular",
+      "role": "experimental_platform",
+      "counter": 1,
+      "status": "concept",
+      "status_detail": "48h proof-of-principle pilot in BJ-hTERT; merged from sub-subprojects",
+      "version": "5.2",
+      "date": "2026-05-09",
+      "dependencies": ["cdata", "automated_microscopy"],
+      "dependents": [],
+      "key_params": {
+        "cell_line": "BJ-hTERT fibroblasts",
+        "pilot_duration": "48h",
+        "molecular_clock": "Cre-ER^T2 / 4-OHT inducible mCherry→GFP",
+        "subprojects": ["AnalysisStack", "ImagingControl", "LiveImagingPipeline"]
+      }
+    },
+    "fclc": {
+      "name": "FCLC — Federated Learning + Differential Privacy",
+      "path": "../FCLC/",
+      "layer": "infrastructure",
+      "role": "privacy_stack",
+      "counter": null,
+      "status": "active",
+      "status_detail": "v13.4 PASS; ε_total ≈ 0.43; semi-honest server model; GDPR Art. 9 blocker",
+      "version": "13.4",
+      "date": "2026-04-21",
+      "dependencies": ["biosense"],
+      "dependents": [],
+      "key_params": {
+        "epsilon_total": 0.43,
+        "sigma": 1.5,
+        "q": 0.013,
+        "T": 5,
+        "threat_model": "Semi-honest server + Byzantine-robust ≤25% (Krum)",
+        "gdpr_blocker": "Art. 9 (special category data) — requires v14 malicious-secure"
+      }
+    },
+    "hap": {
+      "name": "HAP — HepatoEmotions",
+      "path": "../HAP/",
+      "layer": "theory",
+      "role": "independent_theory",
+      "counter": null,
+      "status": "active",
+      "status_detail": "v4.0 STRONG; принята к публикации (Biological Reviews, IF ~10)",
+      "version": "4.0",
+      "date": "2026-04-14",
+      "dependencies": [],
+      "dependents": [],
+      "key_params": {
+        "hypothesis": "Гепатический орган онтогенетически необходим для аффективных состояний",
+        "mechanism": "Жёлчные кислоты → BBB → ядерные рецепторы"
+      }
+    },
+    "iqalto": {
+      "name": "Iqalto — онлайн-академия живых знаний",
+      "path": "../../Iqalto/",
+      "layer": "external",
+      "role": "education_platform",
+      "counter": null,
+      "status": "peer_review_required",
+      "status_detail": "v1.0 концепция; модель Икалтойской академии XI–XII вв.",
+      "version": "1.0",
+      "date": "2026-04-08",
+      "dependencies": [],
+      "dependents": ["korkoti"],
+      "key_params": {
+        "model": "Тривиум → Квадривиум → ремёсла",
+        "languages": ["ka", "en"]
+      }
+    },
+    "korkoti": {
+      "name": "Korkoti — ферментация антинутриентов",
+      "path": "../../Iqalto/Aqtivirebuli/",
+      "layer": "external",
+      "role": "food_technology",
+      "counter": null,
+      "status": "concept",
+      "status_detail": "Концепция; твердофазная ферментация зерна; борьба с железодефицитом",
+      "version": "1.0",
+      "date": "2026-04-17",
+      "dependencies": ["iqalto"],
+      "dependents": [],
+      "key_params": {
+        "phytate_reduction": "60–95%",
+        "iron_bioavailability_increase": "3–5×",
+        "cost_per_sample": "25 GEL (~$9)"
+      }
+    }
+  }
+}

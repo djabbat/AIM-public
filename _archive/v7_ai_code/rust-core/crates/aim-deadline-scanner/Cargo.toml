@@ -1,0 +1,16 @@
+[package]
+name = "aim-deadline-scanner"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM — calendar-aware deadline scanner (P2). Walk memory + project core .md for YYYY-MM-DD dates, classify by horizon, filter historical events. Rust port of agents/deadline_scanner.py."
+
+[dependencies]
+serde = { workspace = true }
+thiserror = { workspace = true }
+chrono = { workspace = true }
+regex = "1"
+once_cell = "1"
+
+[dev-dependencies]
+tempfile = "3"

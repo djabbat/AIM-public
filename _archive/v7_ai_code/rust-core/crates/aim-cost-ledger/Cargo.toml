@@ -1,0 +1,15 @@
+[package]
+name = "aim-cost-ledger"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM — daily/weekly/monthly $ budget tracking on top of cost_monitor's call log. Rust port of agents/cost_ledger.py + minimal cost_monitor record() path."
+
+[dependencies]
+serde = { workspace = true }
+thiserror = { workspace = true }
+chrono = { workspace = true }
+rusqlite = { version = "0.31", features = ["bundled"] }
+
+[dev-dependencies]
+tempfile = "3"

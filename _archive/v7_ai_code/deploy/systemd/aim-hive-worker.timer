@@ -1,0 +1,14 @@
+[Unit]
+Description=AIM Hive worker timer — fire aim-hive-worker.service every hour
+Documentation=file:///home/oem/Desktop/LongevityCommon/AIM/AI/HIVE_ARCHITECTURE.md
+
+[Timer]
+# Fire 5 minutes after boot, then every 60 minutes thereafter.
+OnBootSec=5min
+OnUnitActiveSec=60min
+# Persist missed firings (e.g. laptop sleep) — fire ASAP on resume.
+Persistent=true
+Unit=aim-hive-worker.service
+
+[Install]
+WantedBy=timers.target

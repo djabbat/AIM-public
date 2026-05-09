@@ -1,0 +1,18 @@
+[package]
+name = "aim-verify"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM verify-doi / verify-pmid Rust port (Phase 10 first PyO3-hybrid tool, 2026-05-07). Used by tools/literature.py shim."
+
+[[bin]]
+name = "aim-verify"
+path = "src/main.rs"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+reqwest = { workspace = true, features = ["blocking", "json"] }
+regex = "1"
+once_cell = "1"

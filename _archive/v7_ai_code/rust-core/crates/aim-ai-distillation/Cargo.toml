@@ -1,0 +1,15 @@
+[package]
+name = "aim-ai-distillation"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM AI — distillation tracker (S9). Per-tier model performance matrix; downgrade-safety recommender. Rust port of AI/ai/distillation_tracker.py."
+
+[dependencies]
+serde = { workspace = true }
+thiserror = { workspace = true }
+chrono = { workspace = true }
+rusqlite = { version = "0.31", features = ["bundled"] }
+
+[dev-dependencies]
+tempfile = "3"

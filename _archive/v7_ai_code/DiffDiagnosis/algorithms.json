@@ -1,0 +1,146 @@
+[
+  {
+    "id": "vinogradov.chest_pain",
+    "source": "vinogradov_01_chest_pain.md",
+    "system": "vinogradov",
+    "presenting_complaint": "боль в груди",
+    "keywords": ["боль", "грудь", "грудной", "загрудинная", "кардиалгия"],
+    "nodes": [],
+    "differentials": [
+      {
+        "name": "Острый инфаркт миокарда",
+        "probability_class": "red_flag",
+        "keywords": ["иррадиация", "потливость", "тошнота", "нитроглицерин не помогает", "более 20 минут"],
+        "evidence_for": [],
+        "evidence_against": []
+      },
+      {
+        "name": "Стабильная стенокардия",
+        "probability_class": "common",
+        "keywords": ["при нагрузке", "купируется покоем", "нитроглицерин помогает", "до 5 минут"],
+        "evidence_for": [],
+        "evidence_against": []
+      },
+      {
+        "name": "ТЭЛА",
+        "probability_class": "red_flag",
+        "keywords": ["одышка", "тахикардия", "иммобилизация", "тромбоз вен"],
+        "evidence_for": [],
+        "evidence_against": []
+      },
+      {
+        "name": "Расслоение аорты",
+        "probability_class": "red_flag",
+        "keywords": ["разрывающая", "между лопаток", "ассимметрия пульса"],
+        "evidence_for": [],
+        "evidence_against": []
+      },
+      {
+        "name": "ГЭРБ",
+        "probability_class": "common",
+        "keywords": ["изжога", "после еды", "лёжа", "связь с пищей"],
+        "evidence_for": [],
+        "evidence_against": []
+      },
+      {
+        "name": "Перикардит",
+        "probability_class": "common",
+        "keywords": ["шум трения перикарда", "связь с дыханием", "сидя легче"],
+        "evidence_for": [],
+        "evidence_against": []
+      },
+      {
+        "name": "Межрёберная невралгия",
+        "probability_class": "rare",
+        "keywords": ["при пальпации", "при движении", "локальная"],
+        "evidence_for": [],
+        "evidence_against": []
+      }
+    ],
+    "red_flags": [
+      "иррадиация в обе руки или челюсть",
+      "длительность более 20 минут",
+      "сопровождается обмороком",
+      "ассимметрия пульса/АД",
+      "одышка с тахикардией"
+    ]
+  },
+  {
+    "id": "taylor.fever_returning_traveler",
+    "source": "taylor_07_infectious_disease.md",
+    "system": "taylor",
+    "presenting_complaint": "лихорадка у вернувшегося путешественника",
+    "keywords": ["лихорадка", "путешествие", "тропики", "температура"],
+    "nodes": [],
+    "differentials": [
+      {
+        "name": "Малярия",
+        "probability_class": "red_flag",
+        "keywords": ["африка", "плазмодий", "пароксизмы", "тропики"],
+        "evidence_for": [],
+        "evidence_against": []
+      },
+      {
+        "name": "Брюшной тиф",
+        "probability_class": "common",
+        "keywords": ["азия", "брадикардия", "розеолы", "запоры"],
+        "evidence_for": [],
+        "evidence_against": []
+      },
+      {
+        "name": "Денге",
+        "probability_class": "common",
+        "keywords": ["карибы", "юго-восточная азия", "ретробульбарная боль", "сыпь"],
+        "evidence_for": [],
+        "evidence_against": []
+      },
+      {
+        "name": "Острый ВИЧ",
+        "probability_class": "rare",
+        "keywords": ["лимфаденопатия", "фарингит", "сыпь"],
+        "evidence_for": [],
+        "evidence_against": []
+      }
+    ],
+    "red_flags": ["возврат из субсахарской Африки <3 мес", "цитопения", "падение АД"]
+  },
+  {
+    "id": "vinogradov.jaundice",
+    "source": "vinogradov_04_jaundice_hepatomegaly.md",
+    "system": "vinogradov",
+    "presenting_complaint": "желтуха",
+    "keywords": ["желтуха", "иктеричность", "билирубин"],
+    "nodes": [],
+    "differentials": [
+      {
+        "name": "Гемолитическая желтуха",
+        "probability_class": "common",
+        "keywords": ["непрямой билирубин", "анемия", "ретикулоцитоз"],
+        "evidence_for": [],
+        "evidence_against": []
+      },
+      {
+        "name": "Острый вирусный гепатит",
+        "probability_class": "common",
+        "keywords": ["AЛT", "АСT", "продромальный", "контакт"],
+        "evidence_for": [],
+        "evidence_against": []
+      },
+      {
+        "name": "Холедохолитиаз",
+        "probability_class": "common",
+        "keywords": ["боль в правом подреберье", "симптом курвуазье", "колика"],
+        "evidence_for": [],
+        "evidence_against": []
+      },
+      {
+        "name": "Опухоль головки поджелудочной железы",
+        "probability_class": "red_flag",
+        "keywords": ["похудание", "безболевая желтуха", "симптом курвуазье"],
+        "evidence_for": [],
+        "evidence_against": []
+      }
+    ],
+    "red_flags": ["безболевая прогрессирующая желтуха", "печёночная энцефалопатия"]
+  }
+]

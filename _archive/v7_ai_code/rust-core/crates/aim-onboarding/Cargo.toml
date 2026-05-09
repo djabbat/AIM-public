@@ -1,0 +1,27 @@
+[package]
+name = "aim-onboarding"
+version = "0.1.0"
+edition = "2021"
+description = "Guided onboarding for AIM_FS — interactive question templates for project / patient / self-dev creation."
+
+[dependencies]
+aim-fs = { path = "../aim-fs" }
+serde = { version = "1", features = ["derive"] }
+serde_yaml = "0.9"
+serde_json = "1"
+regex = "1"
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "1"
+ulid = "1"
+uuid = { version = "1", features = ["v4"] }
+anyhow = "1"
+
+[dev-dependencies]
+tempfile = "3"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "aim-onboard"
+path = "src/bin/aim_onboard.rs"

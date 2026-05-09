@@ -1,0 +1,106 @@
+# ════════════════════════════════════
+# AIM — .gitignore
+# ПАЦИЕНТСКИЕ ДАННЫЕ НИКОГДА НЕ КОММИТЯТСЯ
+# ════════════════════════════════════
+
+# ── Данные пациентов (СТРОГО) ─────
+Patients/
+!Patients/.gitkeep
+
+# ── База данных SQLite (содержит пациентские данные) ──
+*.db
+*.db-shm
+*.db-wal
+
+# ── Логи ──────────────────────────
+logs/
+*.log
+
+# ── Сессионные и кэш-файлы ────────
+chat_history.json
+projects_memory.json
+processed_files.json
+medical_knowledge.json
+chroma_db/
+
+# ── Бэкапы ────────────────────────
+backups/
+# Time-stamped agent snapshots created by ad-hoc scripts
+# (agents.bak.YYYYMMDD, agents.bak.YYYYMMDD_HHMMSS). They pollute grep
+# results during self-audit and bloat the working tree; never tracked.
+# If you need a snapshot, use a git branch or `git stash` instead.
+*.bak/
+*.bak.*/
+agents.bak*/
+
+# ── Python ────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# ── Секреты ───────────────────────
+.env
+.aim_env
+
+# ── IDE ───────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-*
+
+# ── OS ────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Временные файлы ───────────────
+*.tmp
+*.temp
+search_results/
+trend_reports/
+reports/
+
+# ── AIM v6.0 specifics ────────────
+aim.db
+aim_tenant_*.db
+media/
+
+# ── USER layer (персональные данные врача, не для public репо) ──
+USER/
+!USER/README.md
+!USER/.gitkeep
+
+# Phase 3 journal — preview artifact (orchestrator scratch)
+_journal/STAGES.md.preview
+
+# ── Rust (cargo) ──────────────────
+target/
+**/target/
+Cargo.lock.bak
+
+# ── Phoenix / Elixir ──────────────
+_build/
+**/_build/
+deps/
+**/deps/
+*.beam
+erl_crash.dump
+
+# ── Node / asset bundlers ─────────
+node_modules/
+**/node_modules/
+
+# ── Archived / superseded snapshots (per audit 2026-05-07) ────
+_archive/
+
+# ── Diagnostic outputs (operational reports timestamped) ────
+docs/operational/diagnostic_*.md
+!docs/operational/diagnostic_latest.md

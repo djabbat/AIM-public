@@ -1,0 +1,17 @@
+[package]
+name = "aim-worktree"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM — git worktree isolation for self-modifying flows. Throwaway branch + dir; opt-in merge; orphan cleanup. Rust port of agents/worktree.py."
+
+[dependencies]
+serde = { workspace = true }
+thiserror = { workspace = true }
+chrono = { workspace = true }
+regex = "1"
+once_cell = "1"
+rand = "0.8"
+
+[dev-dependencies]
+tempfile = "3"

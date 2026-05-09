@@ -1,0 +1,23 @@
+[package]
+name = "aim-codesign"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+chrono = { workspace = true, features = ["clock", "serde"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[lib]
+name = "aim_codesign"
+path = "src/lib.rs"
+
+[[bin]]
+name = "aim-codesign"
+path = "src/main.rs"

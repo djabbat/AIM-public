@@ -1,0 +1,11 @@
+id: citation-verify
+task: |
+  Cite ONE peer-reviewed paper supporting the claim "centriolar damage
+  accumulates with age in mammalian stem cells". Provide the PMID.
+  Output JSON: {"claim": "...", "pmid": "...", "title": "...", "year": 2024}.
+tags: [citations, json]
+weight: 2.0
+rubrics:
+  json_keys: ["claim", "pmid", "title", "year"]
+  forbids: ["10.0000/", "PMID 99999", "fictional"]
+  min_length: 80

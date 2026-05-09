@@ -1,0 +1,64 @@
+# /etc/caddy/Caddyfile
+#
+# AIM TLS reverse proxy via Caddy v2 (auto-cert via ACME).
+#
+# Replace aim.example.com with your real hostname; Caddy provisions certs
+# automatically.
+
+aim.example.com {
+    encode zstd gzip
+
+    header {
+        Strict-Transport-Security "max-age=63072000; includeSubDomains"
+        X-Frame-Options DENY
+        X-Content-Type-Options nosniff
+        Referrer-Policy strict-origin-when-cross-origin
+        -Server
+    }
+
+    # Per-IP rate limit (requires caddy-ratelimit plugin).
+    # rate_limit {
+    #     zone aim_api {
+    #         match { path /api/* }
+    #         key   {remote_host}
+    #         events 600
+    #         window 1m
+    #     }
+    # }
+
+    # Internal endpoints not exposed.
+    @internal {
+        path /metrics /metrics/*
+    }
+    handle @internal {
+        respond 404
+    }
+
+    # API + Telegram webhook.
+    handle /api/* {
+        reverse_proxy 127.0.0.1:4003 {
+            transport http {
+                read_timeout 180s
+                keepalive 32
+            }
+            header_up X-Forwarded-Proto https
+            header_up X-Real-IP {remote_host}
+        }
+    }
+
+    # LiveView WebSocket.
+    handle /live* {
+        reverse_proxy 127.0.0.1:4002 {
+            transport http { read_timeout 24h }
+            header_up X-Forwarded-Proto https
+        }
+    }
+
+    # Everything else → aim_web.
+    handle {
+        reverse_proxy 127.0.0.1:4002 {
+            header_up X-Forwarded-Proto https
+            header_up X-Real-IP {remote_host}
+        }
+    }
+}

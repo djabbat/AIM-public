@@ -1,0 +1,27 @@
+[package]
+name = "aim-ai-morning-brief"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM AI — morning brief (MB1). Single-shot wake-up briefing of AI subproject state. Rust port of AI/ai/morning_brief.py."
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "aim-ai-brief"
+path = "src/bin/brief.rs"
+
+[dependencies]
+aim-ai-ledger = { path = "../aim-ai-ledger" }
+aim-ai-regression = { path = "../aim-ai-regression" }
+aim-ai-case-archiver = { path = "../aim-ai-case-archiver" }
+aim-deadline-scanner = { path = "../aim-deadline-scanner" }
+chrono = { workspace = true }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"

@@ -1,0 +1,167 @@
+id: patient
+title: "Регистрация нового пациента"
+version: 1
+intent: |
+  AIM создаст папку пациента под
+  ~/.aim_fs/users/<doctor>/patients/<surname>_<name>_<dob>/, заполнит
+  ANAMNESIS.md, identity.toml, consent.json + первый visit/intake.md.
+  Все клинические выводы AIM (диагнозы, рецепты) после этого пойдут в
+  `_inbox/` пациента и потребуют approve в AIM Inbox UI.
+
+# Куда положить файлы. Ключевая особенность: путь зависит от ответов
+# (surname/name/dob), поэтому используем target_dir_template.
+target_dir_template: "users/{{user_id}}/patients/{{surname}}_{{name}}_{{dob}}"
+
+questions:
+  - id: surname
+    prompt: "Фамилия (Latin, как в паспорте)"
+    type: text
+    required: true
+    validate_regex: "^[A-Za-z\\-]+$"
+
+  - id: name
+    prompt: "Имя (Latin)"
+    type: text
+    required: true
+    validate_regex: "^[A-Za-z\\-]+$"
+
+  - id: dob
+    prompt: "Дата рождения (YYYY_MM_DD; если неизвестна — 2000_01_01 как placeholder)"
+    type: text
+    required: true
+    validate_regex: "^\\d{4}_\\d{2}_\\d{2}$"
+    default: "2000_01_01"
+
+  - id: phone
+    prompt: "Телефон (E.164, опц.)"
+    type: text
+    optional: true
+
+  - id: telegram_handle
+    prompt: "Telegram (@..., опц.)"
+    type: text
+    optional: true
+
+  - id: allergies
+    prompt: "Аллергии (по строке; пустая — нет)"
+    type: list
+    optional: true
+    multiline: true
+
+  - id: chronic_conditions
+    prompt: "Хронические заболевания (по строке)"
+    type: list
+    optional: true
+    multiline: true
+
+  - id: current_medications
+    prompt: "Текущие препараты (name=dose, по строке)"
+    type: list
+    optional: true
+    multiline: true
+
+  - id: initial_complaint
+    prompt: "Жалоба при первичном обращении"
+    type: text
+    multiline: true
+    required: true
+
+  - id: consent_data_storage
+    prompt: "Согласен ли пациент на хранение персональных данных в системе"
+    type: bool
+    required: true
+
+  - id: consent_telegram_comms
+    prompt: "Согласен ли на коммуникацию через Telegram"
+    type: bool
+    optional: true
+
+file_targets:
+  - path: identity.toml
+    template: |
+      # Immutable identity (mutate only via guarded `change_identity` proposal).
+      surname  = "{{surname}}"
+      name     = "{{name}}"
+      dob      = "{{dob}}"
+      phone    = "{{phone}}"
+      telegram = "{{telegram_handle}}"
+      created_at  = "{{created_at}}"
+      created_by  = "{{user_id}}"
+
+  - path: ANAMNESIS.md
+    template: |
+      # Анамнез — {{surname}} {{name}} ({{dob}})
+
+      **Создан:** {{created_at}}
+      **Doctor:** {{user_id}}
+
+      ## Жалоба при обращении
+
+      {{initial_complaint}}
+
+      {% if allergies %}
+      ## Аллергии
+
+      {% for a in allergies %}- {{a}}
+      {% endfor %}
+      {% endif %}
+
+      {% if chronic_conditions %}
+      ## Хронические заболевания
+
+      {% for c in chronic_conditions %}- {{c}}
+      {% endfor %}
+      {% endif %}
+
+      {% if current_medications %}
+      ## Текущие препараты
+
+      {% for m in current_medications %}- {{m.name}} — {{m.value}}
+      {% endfor %}
+      {% endif %}
+
+  - path: consent.json
+    template: |
+      {
+        "data_storage": {{consent_data_storage}},
+        "telegram_comms": {{consent_telegram_comms}},
+        "recorded_at": "{{created_at}}",
+        "recorded_by": "{{user_id}}"
+      }
+
+  - path: visits/_first_intake.md
+    template: |
+      # Первичный приём — {{created_at}}
+
+      ## Жалоба
+
+      {{initial_complaint}}
+
+      ## Объективно
+
+      _Заполнить врачом._
+
+      ## План обследования
+
+      _AIM SSA / DiffDiagnosis после ввода CBC._
+
+memory_proposals:
+  - schema: contact_v1
+    title_template: "Пациент {{surname}} {{name}} ({{dob}})"
+    body_template: |
+      Pacient под наблюдением AIM. Phone: {{phone}}. TG: {{telegram_handle}}.
+      Создан {{created_at}}.
+    tags: [contact, patient]
+    scope_patient_ids: ["{{surname}}_{{name}}_{{dob}}"]
+
+  - schema: patient_anamnesis_v1
+    title_template: "Initial anamnesis: {{surname}} {{name}}"
+    body_template: |
+      Initial complaint:
+      {{initial_complaint}}
+
+      Allergies: {{allergies}}.
+      Chronic: {{chronic_conditions}}.
+      Meds: {{current_medications}}.
+    tags: [anamnesis, initial_visit]
+    scope_patient_ids: ["{{surname}}_{{name}}_{{dob}}"]

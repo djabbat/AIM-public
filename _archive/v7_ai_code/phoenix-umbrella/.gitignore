@@ -1,0 +1,21 @@
+# Build artefacts
+/_build/
+/cover/
+/deps/
+/doc/
+/.fetch
+*.beam
+*.ez
+erl_crash.dump
+
+# Generated assets
+/apps/*/priv/static/assets/
+/apps/*/_build/
+/apps/*/cover/
+/apps/*/deps/
+/apps/*/doc/
+/apps/*/.fetch
+/apps/*/erl_crash.dump
+
+# Local secrets
+*.secret.exs

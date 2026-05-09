@@ -1,0 +1,27 @@
+# AIM v8.0 — gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Temp
+*.tmp
+*.swp
+*.swo
+
+# AI-code archive (v7.0 — kept for reference)
+# _archive/ is tracked for now
+
+# Benchmarks
+.benchmarks/

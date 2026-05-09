@@ -1,0 +1,21 @@
+[package]
+name = "aim-ai-reflexion"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM AI — reflexion clusterer (S10). Group failure-theme notes by Jaccard token similarity; one prompt-patch hint per cluster. Rust port of AI/ai/reflexion_cluster.py."
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+regex = "1"
+once_cell = "1"
+chrono = { workspace = true }
+
+[[bin]]
+name = "aim-ai-reflexion"
+path = "src/main.rs"
+
+[dev-dependencies]
+tempfile = "3"

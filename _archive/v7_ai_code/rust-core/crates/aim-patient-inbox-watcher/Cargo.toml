@@ -1,0 +1,17 @@
+[package]
+name = "aim-patient-inbox-watcher"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+regex = "1"
+once_cell = "1"
+
+[dev-dependencies]

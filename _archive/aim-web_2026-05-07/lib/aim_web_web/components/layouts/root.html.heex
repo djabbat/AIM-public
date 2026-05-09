@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content={get_csrf_token()} />
+    <.live_title default="AimWeb" suffix=" · Phoenix Framework">
+      {assigns[:page_title]}
+    </.live_title>
+    <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
+    </script>
+    <script>
+      (() => {
+        const setTheme = (theme) => {
+          if (theme === "system") {
+            localStorage.removeItem("phx:theme");
+            document.documentElement.removeAttribute("data-theme");
+          } else {
+            localStorage.setItem("phx:theme", theme);
+            document.documentElement.setAttribute("data-theme", theme);
+          }
+        };
+        if (!document.documentElement.hasAttribute("data-theme")) {
+          setTheme(localStorage.getItem("phx:theme") || "system");
+        }
+        window.addEventListener("storage", (e) => e.key === "phx:theme" && setTheme(e.newValue || "system"));
+        
+        window.addEventListener("phx:set-theme", (e) => setTheme(e.target.dataset.phxTheme));
+      })();
+    </script>
+  </head>
+  <body>
+    <nav class="aim-topbar">
+      <a href={~p"/hive"} class="aim-topbar-brand">🐝 AIM</a>
+      <div class="aim-topbar-nav">
+        <a href={~p"/hive"}>Hive</a>
+        <a href={~p"/diag"}>Diagnostics</a>
+        <a href={~p"/dashboard"}>Dashboard</a>
+        <a href="https://longevity.ge" rel="noopener">Ecosystem</a>
+        <a href="https://longevity.ge/#donate" class="aim-donate-pill" rel="noopener" target="_blank">♥ Donate</a>
+      </div>
+    </nav>
+    {@inner_content}
+  </body>
+</html>

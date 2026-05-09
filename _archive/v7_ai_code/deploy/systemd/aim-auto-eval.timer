@@ -1,0 +1,11 @@
+[Unit]
+Description=Run AIM eval harness every night at 03:30
+Requires=aim-auto-eval.service
+
+[Timer]
+OnCalendar=*-*-* 03:30:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

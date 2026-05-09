@@ -1,0 +1,1119 @@
+{
+  "scanned_at": "2026-04-29T00:15:07",
+  "source_dir": "/home/oem/.claude/projects/-home-oem/memory",
+  "total_files": 119,
+  "total_size_kb": 350.1376953125,
+  "categories": {
+    "index": 1,
+    "contact": 3,
+    "fact": 1,
+    "feedback": 45,
+    "other": 2,
+    "project": 56,
+    "pubmed": 1,
+    "reference": 3,
+    "user": 7
+  },
+  "types": {
+    "reference": 10,
+    "feedback": 47,
+    "project": 54,
+    "user": 7
+  },
+  "with_frontmatter": 118,
+  "files": [
+    {
+      "file": "MEMORY.md",
+      "size_kb": 13.31,
+      "mtime": "2026-04-28T23:14:09",
+      "category": "index",
+      "type": "",
+      "name": "",
+      "description": ""
+    },
+    {
+      "file": "contact_tsomaia.md",
+      "size_kb": 1.22,
+      "mtime": "2026-04-27T15:52:36",
+      "category": "contact",
+      "type": "reference",
+      "name": "Tsomaia (Gakely) — FCLC co-PI contact",
+      "description": "мобильный +995 579 095 713 (НЕ Telegram — у Цомая мессенджеров нет, кроме Google Chat); co-PI FCLC project; критик \"ванильной\" концепции, предложил Rational Exc"
+    },
+    {
+      "file": "contact_tsu_admin.md",
+      "size_kb": 2.86,
+      "mtime": "2026-04-27T16:16:05",
+      "category": "contact",
+      "type": "reference",
+      "name": "TSU PhD admin contacts — Trapaidze + Dzidziguri",
+      "description": "Vazha Trapaidze (зам. декана по науке) и Diana Dzidziguri (рук. программы докторантуры) — ключевые admin-контакты для TSU PhD trek"
+    },
+    {
+      "file": "contact_zhvania_janke_geiger.md",
+      "size_kb": 3.04,
+      "mtime": "2026-04-27T16:46:23",
+      "category": "contact",
+      "type": "reference",
+      "name": "International CDATA collaborators — Zhvania, Janke, Geiger",
+      "description": "3 ключевых международных контакта для CDATA + EIC consortium (Phase A: Janke, Phase B: Geiger, Georgia thematic match: Zhvania)"
+    },
+    {
+      "file": "fact_chichinadze_deceased.md",
+      "size_kb": 1.53,
+      "mtime": "2026-04-19T01:35:57",
+      "category": "fact",
+      "type": "reference",
+      "name": "Konstantine (Kote) Chichinadze — deceased",
+      "description": "Co-author of 6 of 10 Tkemaladze PubMed papers. Refer to as \"late\" / \"ცხონებული\" in Georgian, \"покойный\" in Russian, \"the late\" in English when mentioning."
+    },
+    {
+      "file": "feedback_appeal_to_pubmed_only.md",
+      "size_kb": 2.03,
+      "mtime": "2026-04-26T02:24:29",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Appeal only to 10 PubMed-indexed publications, not all 149",
+      "description": "При запросах waiver/quality argument в академической переписке — апеллировать только к ~10 PubMed/MEDLINE-indexed публикациям, не к общему числу 149"
+    },
+    {
+      "file": "feedback_archive_rule.md",
+      "size_kb": 2.47,
+      "mtime": "2026-04-17T04:21:51",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "project_archive_rule",
+      "description": "When project moves to Completed or Deferred (or session ends): only final files in root, everything else → Archive/"
+    },
+    {
+      "file": "feedback_article_workflow.md",
+      "size_kb": 3.55,
+      "mtime": "2026-04-13T23:02:05",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Article publication workflow rules",
+      "description": "Two rules for article file management — cut-to-Desktop before publishing, NEEDWRITE location"
+    },
+    {
+      "file": "feedback_autonomous_choice.md",
+      "size_kb": 5.22,
+      "mtime": "2026-04-18T08:38:27",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Autonomous default choice — NEVER ASK user for routine decisions",
+      "description": "STRICT rule — for routine/low-stakes work, DO NOT ask user at all. Do not present numbered options. Just execute best action. Only interrupt for irreversible/st"
+    },
+    {
+      "file": "feedback_bradford_hill_rule.md",
+      "size_kb": 3.01,
+      "mtime": "2026-04-14T04:39:27",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "BHCA — Bradford-Hill Causal Analysis (фирменный метод)",
+      "description": "Официальное название метода валидации биологических теорий через критерии Брэдфорда-Хилла; обязателен для всех теорий"
+    },
+    {
+      "file": "feedback_cdata_docs_sync.md",
+      "size_kb": 0.77,
+      "mtime": "2026-03-29T18:04:32",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "CDATA documentation sync",
+      "description": "When changing CDATA code, always check if documentation (README, KNOWLEDGE, CONCEPT, PARAMETERS) needs updating and update it."
+    },
+    {
+      "file": "feedback_core_md_files.md",
+      "size_kb": 4.94,
+      "mtime": "2026-04-25T23:32:32",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Core .md files — 9-file ideal optimized scheme",
+      "description": "Standard 9-file core .md schema for all projects. Adopted 2026-04-25, replaces old 10-file scheme that had heavy duplication."
+    },
+    {
+      "file": "feedback_daily_strategic_check.md",
+      "size_kb": 3.63,
+      "mtime": "2026-04-25T23:32:32",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Daily strategic priorities check-in",
+      "description": "At each session start (or daily), remind user of strategic priority list and ask which item to tackle today."
+    },
+    {
+      "file": "feedback_deepseek_no_citations.md",
+      "size_kb": 2.71,
+      "mtime": "2026-04-17T04:07:04",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "DeepSeek hallucinates citations — never use for literature search",
+      "description": "DeepSeek-reasoner has NO web access. Always invents plausible-looking DOIs/PMIDs/authors. Use only for synthesis of already-found citations."
+    },
+    {
+      "file": "feedback_deepseek_primary.md",
+      "size_kb": 3.65,
+      "mtime": "2026-04-22T13:44:15",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "DeepSeek-first rule — route all writing/questions through DeepSeek API",
+      "description": "Работать через DeepSeek API по всем вопросам и проблемам (кроме literature search — там hallucinations). Код — Claude. Всё остальное — DeepSeek через ~/Desktop/"
+    },
+    {
+      "file": "feedback_desktop_folders_rule.md",
+      "size_kb": 1.86,
+      "mtime": "2026-04-26T20:41:37",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Desktop folders rule — only projects allowed",
+      "description": "Free files on Desktop are OK. Folders must be projects, unless user explicitly declares folder as service."
+    },
+    {
+      "file": "feedback_desktop_only_latest.md",
+      "size_kb": 1.59,
+      "mtime": "2026-04-20T18:30:43",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Desktop must contain only the LATEST version of each article",
+      "description": "When a new version of a paper is generated, remove old versions from Desktop. Keep only one .md per article — the freshest. Old versions go to Trash or Document"
+    },
+    {
+      "file": "feedback_docs_folder_rule.md",
+      "size_kb": 1.97,
+      "mtime": "2026-04-26T20:41:37",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "docs/ folder rule for peer reviews and emails",
+      "description": "Peer reviews, incoming/outgoing emails, concept notes must go in project/docs/ — never in project root, never pushed to public git"
+    },
+    {
+      "file": "feedback_figure_formulas.md",
+      "size_kb": 2.55,
+      "mtime": "2026-04-28T01:37:04",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "No formulas in generated figures (papers)",
+      "description": "При генерации фигур для научных статей — НЕ рендерить формулы внутри изображения; формулы только в тексте"
+    },
+    {
+      "file": "feedback_git_naming.md",
+      "size_kb": 1.76,
+      "mtime": "2026-04-13T23:02:05",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Git repository naming convention",
+      "description": "Private GitHub repos must end in -private, public repos in -public"
+    },
+    {
+      "file": "feedback_git_push_cdata.md",
+      "size_kb": 0.91,
+      "mtime": "2026-03-27T09:18:44",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "git_push_cdata_public_rule",
+      "description": "Правило для git push CDATA: public без CONCEPT/TODO/PROMPT, оба репо обновляют README перед push"
+    },
+    {
+      "file": "feedback_git_push_rule.md",
+      "size_kb": 0.86,
+      "mtime": "2026-04-02T05:01:01",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Git push — private only, no public repos",
+      "description": "All git pushes go to private repo only. No public repos. Never create or push to public."
+    },
+    {
+      "file": "feedback_journal_split_strategy.md",
+      "size_kb": 2.61,
+      "mtime": "2026-04-28T16:31:31",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Twin-journal split — Annals (selective, DOAJ) vs Horizon (broader, inclusive)",
+      "description": "GLA издаёт два журнала с РАЗНОЙ стратегией. Annals — селективный, готовится к DOAJ. Horizon — broader. Не объединять и не trimmить Horizon."
+    },
+    {
+      "file": "feedback_language.md",
+      "size_kb": 0.96,
+      "mtime": "2026-04-13T23:02:05",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Language rule — Russian only",
+      "description": "Всегда писать на русском языке в ответах пользователю"
+    },
+    {
+      "file": "feedback_mcoa_cdata_comparison.md",
+      "size_kb": 2.7,
+      "mtime": "2026-04-26T20:41:37",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "All MCOA counter simulators must be pairwise compared",
+      "description": "MCOA has 5 counter simulators (CDATA, Telomere, MitoROS, EpigeneticDrift, Proteostasis) + MCOA coordinator. Every simulation MUST be run across all applicable s"
+    },
+    {
+      "file": "feedback_new_project_rule.md",
+      "size_kb": 0.8,
+      "mtime": "2026-03-26T14:57:08",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "new_project_creation_rule",
+      "description": "When creating a new project: Desktop folder + CONCEPT + TODO; ask if within AIM scope"
+    },
+    {
+      "file": "feedback_nickname_gabro.md",
+      "size_kb": 0.92,
+      "mtime": "2026-04-28T06:19:14",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Nickname Gabro",
+      "description": "User prefers to call the assistant \"Gabro\" (renamed from \"Igor\" 2026-04-28)"
+    },
+    {
+      "file": "feedback_no_peer_reviews_on_desktop.md",
+      "size_kb": 1.33,
+      "mtime": "2026-04-20T17:35:02",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Peer review files must NOT be placed on Desktop",
+      "description": "Peer review documents (PEER_REVIEW_*, reviews of own papers) go to project docs folder OR ~/Documents/, never ~/Desktop/. Desktop is for active working document"
+    },
+    {
+      "file": "feedback_overnight_command.md",
+      "size_kb": 2.71,
+      "mtime": "2026-04-17T14:28:23",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "/overnight slash command",
+      "description": "Invoke autonomous overnight mode with orchestrator+retry_watcher+sleep-inhibit. Location ~/.claude/commands/overnight.md"
+    },
+    {
+      "file": "feedback_pandoc_math_delimiters.md",
+      "size_kb": 2.42,
+      "mtime": "2026-04-28T01:39:10",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "pandoc md→docx — обязательно tex_math_single_backslash",
+      "description": "При конвертации markdown→docx pandoc по дефолту НЕ парсит \\(...\\) и \\[...\\] как формулы; нужен флаг tex_math_single_backslash или преобразование в $/$$"
+    },
+    {
+      "file": "feedback_peer_review_until_accept.md",
+      "size_kb": 1.11,
+      "mtime": "2026-03-28T01:11:24",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "peer_review_until_accept",
+      "description": "DeepSeek peer review loops must run until ACCEPT verdict — no fixed round limit"
+    },
+    {
+      "file": "feedback_permissions_autoapprove.md",
+      "size_kb": 2.25,
+      "mtime": "2026-04-20T02:28:07",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Permissions auto-approve for overnight mode",
+      "description": "User repeatedly got stuck on Claude Code tool-permission prompts during overnight mode. Fix is permanent auto-allow config in ~/.claude/settings.json."
+    },
+    {
+      "file": "feedback_project_core.md",
+      "size_kb": 2.06,
+      "mtime": "2026-03-31T01:27:36",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Project core rule (ядро проекта)",
+      "description": "Every project must have an 11-file core. THEORY.md is immutable without direct user command. Check at startup, create from CONCEPT.md if missing."
+    },
+    {
+      "file": "feedback_project_structure_rule.md",
+      "size_kb": 1.39,
+      "mtime": "2026-03-27T21:23:47",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Project structure rule — CONCEPT + TODO + MAP required",
+      "description": "Every project must have CONCEPT.md, TODO.md, MAP.md; AIM core must list all projects and their connections"
+    },
+    {
+      "file": "feedback_projects_todo_tracking.md",
+      "size_kb": 1.17,
+      "mtime": "2026-03-31T22:49:36",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Projects tracked in service TODO",
+      "description": "All projects must be recorded in the service folder TODO; at every startup remind about their status and propose next steps"
+    },
+    {
+      "file": "feedback_push_core_sync.md",
+      "size_kb": 0.93,
+      "mtime": "2026-03-30T04:01:07",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Push core-files sync rule",
+      "description": "Before every git push, update relevant core files (README, KNOWLEDGE, PARAMETERS, UPGRADE, etc.) to reflect the changes being pushed"
+    },
+    {
+      "file": "feedback_service_files_location.md",
+      "size_kb": 1.19,
+      "mtime": "2026-03-28T14:03:42",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Service files location rule",
+      "description": "Service/ecosystem files live in ~/Desktop/Claude/ subfolders (git: djabbat/Claude private). Not in project folders, not in ~/.claude/"
+    },
+    {
+      "file": "feedback_session_grants_search.md",
+      "size_kb": 0.92,
+      "mtime": "2026-04-13T23:02:05",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Session start grants search rule",
+      "description": "At the start of each session, search for grant competitions across all relevant funds and update grants_funds.md"
+    },
+    {
+      "file": "feedback_session_resume.md",
+      "size_kb": 2.28,
+      "mtime": "2026-04-17T02:36:31",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Session Resume Protocol",
+      "description": "Always read SESSION_STATE.md FIRST at session start; update it every 3-5 actions to enable resume after limit/disconnect"
+    },
+    {
+      "file": "feedback_start_aim.md",
+      "size_kb": 0.98,
+      "mtime": "2026-03-26T22:55:50",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "\"start AIM\" means execute START.md protocol",
+      "description": "When user says \"start AIM\" or \"запусти START в AIM\" — execute all rules from ~/Desktop/AIM/START.md, NOT launch a process"
+    },
+    {
+      "file": "feedback_subproject_git_rule.md",
+      "size_kb": 0.92,
+      "mtime": "2026-04-26T20:41:37",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Subprojects included in root repo",
+      "description": "Subprojects must NOT be gitignored — push together with root project as monorepo"
+    },
+    {
+      "file": "feedback_sync_meaning.md",
+      "size_kb": 1.71,
+      "mtime": "2026-04-26T20:41:37",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Sync = desktop↔laptop synchronization via git",
+      "description": "\"sync\" in this user's workflow means git commit+push to synchronize work between desktop (Abastumani) and laptop (Tbilisi) when traveling"
+    },
+    {
+      "file": "feedback_tsu_correspondence_language.md",
+      "size_kb": 1.69,
+      "mtime": "2026-04-27T16:34:40",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "TSU correspondence language rule",
+      "description": "Official TSU correspondence — только на грузинском или английском. НЕ на русском."
+    },
+    {
+      "file": "feedback_unpublished.md",
+      "size_kb": 1.96,
+      "mtime": "2026-04-26T20:41:37",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Track written but unpublished articles",
+      "description": "Rule — written but not yet published articles must be recorded in memory/reminders"
+    },
+    {
+      "file": "feedback_upgrade_md_rule.md",
+      "size_kb": 1.19,
+      "mtime": "2026-03-31T16:46:14",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "UPGRADE.md in project core",
+      "description": "Every project must have UPGRADE.md in its core. Mark ✅ after every implemented point in code."
+    },
+    {
+      "file": "feedback_upgrade_peer_review_first.md",
+      "size_kb": 2.51,
+      "mtime": "2026-03-30T04:03:14",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "UPGRADE items require peer review before implementation",
+      "description": "Before starting any UPGRADE.md item, run strict deep peer review cycles until fully positive; all reports in Russian; present for user approval, then implement"
+    },
+    {
+      "file": "feedback_verify_references.md",
+      "size_kb": 3.47,
+      "mtime": "2026-04-19T15:18:43",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Verify all scientific references before adding to core files",
+      "description": "Before writing any PMID/DOI/citation into a core file (KNOWLEDGE.md, CONCEPT.md, dissertation, articles), verify via PubMed/DOI resolver that it is real and mat"
+    },
+    {
+      "file": "feedback_verify_references_scope.md",
+      "size_kb": 2.46,
+      "mtime": "2026-04-22T01:01:36",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Reference verification scope — clarified 2026-04-22",
+      "description": "Verify references по умолчанию — только когда они попадают в KNOWLEDGE.md, статьи (manuscripts), или файлы ядра (CONCEPT/PARAMETERS/etc.). Для вспомогательных д"
+    },
+    {
+      "file": "feedback_version_branch_rule.md",
+      "size_kb": 0.74,
+      "mtime": "2026-03-30T00:24:07",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "Version branch rule after UPGRADE implementation",
+      "description": "After implementing an UPGRADE.md item, increment patch version (3rd digit), create matching git branch, push there"
+    },
+    {
+      "file": "feedback_versioning.md",
+      "size_kb": 1.07,
+      "mtime": "2026-03-25T21:14:17",
+      "category": "feedback",
+      "type": "feedback",
+      "name": "versioning_rule_generated_files",
+      "description": "Rule for version labels in names of generated files — must match the generator script version"
+    },
+    {
+      "file": "format_scientific_paper.md",
+      "size_kb": 5.83,
+      "mtime": "2026-04-14T04:21:09",
+      "category": "other",
+      "type": "feedback",
+      "name": "Scientific Paper Formatting — Tkemaladze Style",
+      "description": "Exact DOCX formatting for all scientific papers (derived from \"Centriolar damage as a driver of aging.docx\")"
+    },
+    {
+      "file": "project_academic_upgrade.md",
+      "size_kb": 10.6,
+      "mtime": "2026-04-27T16:39:39",
+      "category": "project",
+      "type": "project",
+      "name": "Academic upgrade plan (Tkemaladze 2026)",
+      "description": "Pointer to formal academic upgrade plan with KPIs, journal strategy, grant strategy, PhD long path. Updated 2026-04-17."
+    },
+    {
+      "file": "project_aim_languages.md",
+      "size_kb": 1.29,
+      "mtime": "2026-04-15T22:45:57",
+      "category": "project",
+      "type": "project",
+      "name": "AIM supported languages — UN 6 + Georgian + Kazakh + Danish",
+      "description": "AIM supports 9 languages: UN official 6 (EN/FR/ES/AR/ZH/RU) + Georgian (KA) + Kazakh (KZ) + Danish (DA). Updated 2026-04-15."
+    },
+    {
+      "file": "project_annals_doaj_audit_2026-04-26.md",
+      "size_kb": 7.98,
+      "mtime": "2026-04-28T23:27:22",
+      "category": "project",
+      "type": "project",
+      "name": "Annals of Rejuvenation Science — DOAJ readiness audit 2026-04-26",
+      "description": "Полный аудит OJS-сайта https://longevity.ge/rescience/ (e-ISSN 3088-439X) на DOAJ-готовность. 3 критических блокера + 10 серьёзных проблем. Прогноз 5%→80% при п"
+    },
+    {
+      "file": "project_annals_outreach_wave1.md",
+      "size_kb": 6.12,
+      "mtime": "2026-04-28T23:42:40",
+      "category": "project",
+      "type": "project",
+      "name": "Annals of Rejuvenation Science — outreach wave 1 (Strategy 1)",
+      "description": "17 personal invitations sent 2026-04-28 to senior aging/centriole researchers for Annals contributions. Tracks status, bounce-prone addresses, monitoring schedu"
+    },
+    {
+      "file": "project_aubrey_collaboration.md",
+      "size_kb": 1.77,
+      "mtime": "2026-04-26T20:41:37",
+      "category": "project",
+      "type": "project",
+      "name": "Aubrey de Grey — active scientific dialog on CDATA",
+      "description": "Aubrey de Grey engaged with CDATA after a call. Proposed experimental framework (20% vs 3% O2 × hTERT × contact inhibition × PTM modulation) matches Dual-Counte"
+    },
+    {
+      "file": "project_bouquet_verborum.md",
+      "size_kb": 1.26,
+      "mtime": "2026-04-28T06:11:54",
+      "category": "project",
+      "type": "project",
+      "name": "Bouquet Verborum / Buket Slov",
+      "description": "Knowledge system project — minimalist monk-in-profile logo, turquoise + gold palette, infinity-beard motif"
+    },
+    {
+      "file": "project_caucasianlongevity.md",
+      "size_kb": 1.24,
+      "mtime": "2026-04-28T23:14:03",
+      "category": "project",
+      "type": "project",
+      "name": "CaucasianLongevity.com platform",
+      "description": "Longevity platform under caucasianlongevity.com — needs pitch deck, MVP architecture, technical docs incl. Legal/Clinical Ethics section"
+    },
+    {
+      "file": "project_caulong.md",
+      "size_kb": 0.75,
+      "mtime": "2026-04-28T23:13:55",
+      "category": "project",
+      "type": "project",
+      "name": "AIM project (Elixir/Phoenix stack)",
+      "description": "Elixir/Phoenix project formerly named \"caulong\" — renamed to AIM (CaucasianLongevity platform stack)"
+    },
+    {
+      "file": "project_cdata_copi_candidates.md",
+      "size_kb": 4.11,
+      "mtime": "2026-04-16T03:03:24",
+      "category": "project",
+      "type": "project",
+      "name": "CDATA co-PI candidates for HSC experiment",
+      "description": "Статус outreach всех кандидатов на co-PI (HSC experiment, Impetus LOI $75K, дедлайн 25.04.2026)"
+    },
+    {
+      "file": "project_cdata_daily_search.md",
+      "size_kb": 1.22,
+      "mtime": "2026-03-31T11:25:54",
+      "category": "project",
+      "type": "project",
+      "name": "CDATA scientific literature search at every START",
+      "description": "At EVERY session start (not just CDATA sessions), search PubMed/arXiv/bioRxiv for new CDATA-relevant papers. This is ПРАВИЛО 9 of START.md."
+    },
+    {
+      "file": "project_clinical_partner_shashviashvili.md",
+      "size_kb": 1.82,
+      "mtime": "2026-04-13T23:02:05",
+      "category": "project",
+      "type": "project",
+      "name": "Georgian Clinical Partner — Shashviashvili",
+      "description": "Потенциальный клинический партнёр для EIC Pathfinder WP3 (Грузия); ответ получен 2026-04-11"
+    },
+    {
+      "file": "project_deferred_folder.md",
+      "size_kb": 1.11,
+      "mtime": "2026-04-17T04:17:26",
+      "category": "project",
+      "type": "project",
+      "name": "AIM Deferred Projects folder",
+      "description": "Structure and rules for AIM/Deferred/ — suspended projects awaiting reactivation"
+    },
+    {
+      "file": "project_dissertation_centrioles.md",
+      "size_kb": 1.23,
+      "mtime": "2026-04-28T06:12:00",
+      "category": "project",
+      "type": "project",
+      "name": "Dissertation — influence of centrioles on differentiation",
+      "description": "Russian-language dissertation; intro written; focus = probable INFLUENCE of centrioles on differentiation (NOT centriole differentiation itself); experimental p"
+    },
+    {
+      "file": "project_doaj_for_GLA.md",
+      "size_kb": 6.57,
+      "mtime": "2026-04-26T01:44:14",
+      "category": "project",
+      "type": "project",
+      "name": "DOAJ for Georgia Longevity Alliance — strategy + action plan",
+      "description": "Стратегия publishing/indexing для Georgia Longevity Alliance (рег. №404506520) — DOAJ + альтернативы. Tier 1/2/3, action plan 2026-2027."
+    },
+    {
+      "file": "project_domains.md",
+      "size_kb": 0.8,
+      "mtime": "2026-03-26T21:25:15",
+      "category": "project",
+      "type": "reference",
+      "name": "Ecosystem Domain Map",
+      "description": "Production domains for all projects in the drjaba.com ecosystem"
+    },
+    {
+      "file": "project_drjaba_server_deploy.md",
+      "size_kb": 4.01,
+      "mtime": "2026-04-25T23:32:32",
+      "category": "project",
+      "type": "project",
+      "name": "drjaba.com server deployment — all 4 sites LIVE",
+      "description": "Server jaba@server hosts drjaba.com + 3 subdomains via nginx + Docker. All 4 sites LIVE as of 2026-04-25. Pending external API keys for full functionality."
+    },
+    {
+      "file": "project_ecosystem_structure.md",
+      "size_kb": 1.4,
+      "mtime": "2026-04-26T20:41:37",
+      "category": "project",
+      "type": "project",
+      "name": "LongevityCommon Ecosystem Structure",
+      "description": "LongevityCommon is the central platform; FCLC/Ze/CDATA/BioSense/Ontogenesis are subprojects inside LongevityCommon/ folder"
+    },
+    {
+      "file": "project_eic_umbrella.md",
+      "size_kb": 4.46,
+      "mtime": "2026-04-28T14:00:41",
+      "category": "project",
+      "type": "project",
+      "name": "EIC Pathfinder umbrella restructure (Variant C)",
+      "description": "2026-04-17 decision — EIC submitted as LongevityCommon umbrella with 5 WPs, not FCLC solo. WP1 FCLC, WP2 Ze, WP3 CDATA, WP4 BioSense, WP5 Aqtivirebuli."
+    },
+    {
+      "file": "project_fclc_copi.md",
+      "size_kb": 1.05,
+      "mtime": "2026-04-26T20:41:37",
+      "category": "project",
+      "type": "project",
+      "name": "FCLC co-PI meeting April 7",
+      "description": "Meeting with potential co-PI on 2026-04-07; all FCLC org questions on hold until 2026-04-09"
+    },
+    {
+      "file": "project_fclc_deferred_2027.md",
+      "size_kb": 3.29,
+      "mtime": "2026-04-26T20:41:37",
+      "category": "project",
+      "type": "project",
+      "name": "FCLC / LongevityCommon EIC Pathfinder — deferred to 2027 (per 2026-04-21 audit)",
+      "description": "EIC Pathfinder 2026-05-12 is NOT submitted. Deep audit 2026-04-21 identified 4 structural blockers; umbrella LongevityCommon submission formally deferred to Hor"
+    },
+    {
+      "file": "project_fclc_peer_review.md",
+      "size_kb": 5.37,
+      "mtime": "2026-04-27T19:47:48",
+      "category": "project",
+      "type": "project",
+      "name": "FCLC peer review cycle progress",
+      "description": "Running log of LongevityCommon FCLC ultra-strict peer review cycles — scores, verdicts, what was fixed each round"
+    },
+    {
+      "file": "project_fclc_server_workflow.md",
+      "size_kb": 3.87,
+      "mtime": "2026-04-27T17:54:47",
+      "category": "project",
+      "type": "project",
+      "name": "FCLC workflow — desktop dev, server deploy-target (UPDATED 2026-04-27)",
+      "description": "ОБНОВЛЕНО 2026-04-27 — server не справляется с разработкой; разработка возвращена на desktop, server остаётся deploy-target only"
+    },
+    {
+      "file": "project_geiger_los_2026-04-23.md",
+      "size_kb": 3.38,
+      "mtime": "2026-04-27T16:55:25",
+      "category": "project",
+      "type": "project",
+      "name": "Geiger Letter of Support — Phase B Co-PI confirmed (2026-04-23)",
+      "description": "Hartmut Geiger formally committed as Phase B Co-PI for Impetus Grants proposal \"AI-Directed Pure-Lineage Test of Counter #1 (Centriolar)\"; signed LoS на letterh"
+    },
+    {
+      "file": "project_github_repos.md",
+      "size_kb": 0.95,
+      "mtime": "2026-04-02T05:08:59",
+      "category": "project",
+      "type": "project",
+      "name": "GitHub repo map — private only",
+      "description": "Each project uses a single private GitHub repo. No public repos. All pushes go to private."
+    },
+    {
+      "file": "project_grant_subprojects.md",
+      "size_kb": 2.89,
+      "mtime": "2026-04-28T04:08:54",
+      "category": "project",
+      "type": "project",
+      "name": "Грантовые подпроекты LongevityCommon",
+      "description": "Какие подпроекты усиливают EIC Pathfinder Challenges 2026 (deadline 2026-10-28) — core / supporting / toxic. Использовать при работе с любым подпроектом"
+    },
+    {
+      "file": "project_hap_halt_2026-04-21.md",
+      "size_kb": 1.78,
+      "mtime": "2026-04-26T20:41:37",
+      "category": "project",
+      "type": "project",
+      "name": "HAP — submission halted 2026-04-21 until EVIDENCE rebuild",
+      "description": "Deep audit 2026-04-21 found all 10 PMIDs in EVIDENCE.md fabricated + 56-taxa CSV missing + unsupported \"Accepted Biol Rev\" claim + BHCA 9.5/27 not 20/27. HALT e"
+    },
+    {
+      "file": "project_horizon_copi.md",
+      "size_kb": 0.79,
+      "mtime": "2026-03-26T23:36:30",
+      "category": "project",
+      "type": "project",
+      "name": "Horizon — co-PI и Beneficiary 2 TBD",
+      "description": "Спросить 2026-03-28 про нового партнёра/со-PI для Horizon EIC Pathfinder"
+    },
+    {
+      "file": "project_impetus_round4_pending.md",
+      "size_kb": 3.05,
+      "mtime": "2026-04-28T17:02:43",
+      "category": "project",
+      "type": "project",
+      "name": "Longevity Impetus Round 4 pending",
+      "description": "LOI v25 fully prepared, awaiting Round 4 announcement; date 2026-04-25 was internal placeholder, not real deadline"
+    },
+    {
+      "file": "project_integrative_closed.md",
+      "size_kb": 1.07,
+      "mtime": "2026-04-19T22:11:40",
+      "category": "project",
+      "type": "project",
+      "name": "Integrative book project officially closed",
+      "description": "Books/Integrative project closed on 2026-04-19 per user decision. Moved to ~/Documents/Archive/Books/Integrative_closed_2026-04-19/"
+    },
+    {
+      "file": "project_janke_curie_2026-04-28.md",
+      "size_kb": 3.1,
+      "mtime": "2026-04-28T13:42:43",
+      "category": "project",
+      "type": "project",
+      "name": "Carsten Janke (Institut Curie) — outcome 2026-04-28",
+      "description": "Janke сам отказал (CoI с другой заявкой), но открыл доступ к (1) advisory роли по polyglutamylation и (2) женщине-co-PI его лаборатории как real partner lab для"
+    },
+    {
+      "file": "project_longevity_georgia_ngo.md",
+      "size_kb": 6.42,
+      "mtime": "2026-04-21T17:16:19",
+      "category": "project",
+      "type": "project",
+      "name": "Georgia Longevity Alliance — регистрационные данные",
+      "description": "Подтверждённые данные Georgia Longevity Alliance (бывшая Longevity Georgia) для EIC Pathfinder Host Institution Agreement"
+    },
+    {
+      "file": "project_longevity_horizons.md",
+      "size_kb": 0.78,
+      "mtime": "2026-04-28T06:11:36",
+      "category": "project",
+      "type": "project",
+      "name": "Longevity Horizons / longevity.ge",
+      "description": "User affiliation — Longevity Horizons brand and longevity.ge website"
+    },
+    {
+      "file": "project_longevitycommon_news.md",
+      "size_kb": 1.34,
+      "mtime": "2026-04-26T20:41:37",
+      "category": "project",
+      "type": "project",
+      "name": "LongevityCommon NEWS.md",
+      "description": "Файл ядра для агрегации свежих научных новостей по всей LongevityCommon экосистеме; обновлять при каждой сессии"
+    },
+    {
+      "file": "project_mcoa_nature_correspondence.md",
+      "size_kb": 2.97,
+      "mtime": "2026-04-21T06:49:20",
+      "category": "project",
+      "type": "project",
+      "name": "MCOA Nature Aging NATAGING-P13741 — two pre-review corrections sent",
+      "description": "Manuscript submitted 2026-04-19; two pre-review correspondences sent to Nature Editorial Manager on 2026-04-21 (the second replaces v4 with v5 after a deep audi"
+    },
+    {
+      "file": "project_miguel_upf_meeting_2026-04-28.md",
+      "size_kb": 2.58,
+      "mtime": "2026-04-28T13:04:22",
+      "category": "project",
+      "type": "project",
+      "name": "Miguel Angel Gonzalez Ballester (UPF Barcelona) — встреча 2026-04-28",
+      "description": "Координатор Horizon Europe со стороны UPF Barcelona; встреча 28.04.2026 12:30 прошла, обещал подумать и ответить через несколько дней. Имя = Miguel, НЕ Joao."
+    },
+    {
+      "file": "project_needtowrite_daily.md",
+      "size_kb": 1.61,
+      "mtime": "2026-03-26T02:44:51",
+      "category": "project",
+      "type": "feedback",
+      "name": "Daily article suggestion — ideational papers",
+      "description": "At every session start, suggest writing one ideational article from NEEDTOWRITE.md 🔥 section"
+    },
+    {
+      "file": "project_ojs_server_rule.md",
+      "size_kb": 1.53,
+      "mtime": "2026-04-17T15:19:24",
+      "category": "project",
+      "type": "project",
+      "name": "OJS server workflow rule",
+      "description": "OJS project lives on remote server; work via SSH + Claude; download core files before exit"
+    },
+    {
+      "file": "project_ontogenesis_halt_2026-04-21.md",
+      "size_kb": 1.98,
+      "mtime": "2026-04-26T20:41:37",
+      "category": "project",
+      "type": "project",
+      "name": "Ontogenesis — submission halted 2026-04-21 until PMIDs fixed",
+      "description": "Deep audit 2026-04-21 found 6/6 PMIDs in KNOWLEDGE.md fabricated + Bethlehem 2022 omission disqualifying + UK Biobank pediatric arm does not exist. HALT enforce"
+    },
+    {
+      "file": "project_orcid_monitor_routine.md",
+      "size_kb": 2.67,
+      "mtime": "2026-04-28T19:23:37",
+      "category": "project",
+      "type": "project",
+      "name": "ORCID Crossref auto-update monitor — облачная routine",
+      "description": "Cloud routine каждые 4ч проверяет рост ORCID works через публичный API; шлёт email при delta>0 и финальный когда достигнет 86/86"
+    },
+    {
+      "file": "project_orcid_ojs_setup.md",
+      "size_kb": 5.7,
+      "mtime": "2026-04-28T19:17:29",
+      "category": "project",
+      "type": "project",
+      "name": "ORCID auto-update в OJS — Annals + Horizon",
+      "description": "ORCID-интеграция для автоматического появления статей в профилях авторов после публикации в Annals/Horizon"
+    },
+    {
+      "file": "project_parrish_commitments.md",
+      "size_kb": 2.82,
+      "mtime": "2026-04-22T04:04:15",
+      "category": "project",
+      "type": "project",
+      "name": "Parrish Support Letter Commitments (Impetus 2026)",
+      "description": "Commitments Jaba made to Liz Parrish in the signed Impetus Strategic Co-PI letter (signed 2026-04-22); what must be delivered over 18 months"
+    },
+    {
+      "file": "project_phd_alternatives.md",
+      "size_kb": 4.01,
+      "mtime": "2026-04-25T23:32:32",
+      "category": "project",
+      "type": "project",
+      "name": "PhD program alternatives — Gelashvili/SJSU Akhaltsikhe (ACTIVE)",
+      "description": "Parallel/backup track to TSU/Лежава — in-person meeting with Tina Gelashvili (Samtskhe-Javakheti SU, Akhaltsikhe). Decided 2026-04-24."
+    },
+    {
+      "file": "project_phd_bsu_baratashvili.md",
+      "size_kb": 2.54,
+      "mtime": "2026-04-27T14:52:43",
+      "category": "project",
+      "type": "project",
+      "name": "PhD trek BSU Batumi — debuleba received, Baratashvili contact",
+      "description": "BSU прислал debuleba 2026-04-26; зав. биологии Davit Baratashvili 577465454; срок Form N1 истекает; B2 English остаётся главным блокером"
+    },
+    {
+      "file": "project_phd_europe_audit_2026-04-26.md",
+      "size_kb": 7.59,
+      "mtime": "2026-04-27T16:34:32",
+      "category": "project",
+      "type": "project",
+      "name": "PhD programs Europe + post-Soviet — deep audit 2026-04-26",
+      "description": "Расширенный аудит PhD-программ ВНЕ Грузии для Tkemaladze (CDATA). 3 агента (DeepSeek-reasoner). Жёсткие фильтры: distance + cheap (≤$2k/yr) + no-EN-exam. Tier 1"
+    },
+    {
+      "file": "project_phd_lezhava.md",
+      "size_kb": 6.05,
+      "mtime": "2026-04-28T23:30:51",
+      "category": "project",
+      "type": "project",
+      "name": "PhD path via Lezhava at TSU",
+      "description": "✅ Lezhava CONSENTED to supervise — TSU PhD track active. Follow-up package with full texts of publications sent 2026-04-24."
+    },
+    {
+      "file": "project_phd_programs_georgia.md",
+      "size_kb": 5.08,
+      "mtime": "2026-04-25T23:32:32",
+      "category": "project",
+      "type": "project",
+      "name": "PhD programs across Georgia — full map for backup planning",
+      "description": "Карта докторантур по Грузии для backup к TSU/Лежава. Язык/бюджет/дистант. Primary track = TSU/Лежава CDATA (confirmed 2026-04-24)."
+    },
+    {
+      "file": "project_phd_programs_georgia_audit_2026-04-26.md",
+      "size_kb": 8.03,
+      "mtime": "2026-04-27T16:18:42",
+      "category": "project",
+      "type": "project",
+      "name": "PhD programs Georgia — deep audit 2026-04-26",
+      "description": "Глубокий аудит ВСЕХ грузинских PhD-программ для Tkemaladze (CDATA), с тарифами, контактами, оценкой по жёстким ограничениям (no-English, ≤$1000/yr, дистант). Ti"
+    },
+    {
+      "file": "project_phd_ran.md",
+      "size_kb": 2.58,
+      "mtime": "2026-04-27T15:48:19",
+      "category": "project",
+      "type": "project",
+      "name": "PhD ИНЦ РАН СПб — реактивирован 2026-04-27",
+      "description": "Институт цитологии РАН — тематически идеален (школа Надеждиной по центросоме), но политический+бюджетный риски; Gmail draft на inc@incras.ru готов"
+    },
+    {
+      "file": "project_phd_stipendium_hungaricum.md",
+      "size_kb": 2.03,
+      "mtime": "2026-04-27T14:42:41",
+      "category": "project",
+      "type": "project",
+      "name": "Stipendium Hungaricum — план для 2027/28 (closed for 2026/27)",
+      "description": "SH 2026/27 закрыт (deadline 15 янв 2026); call 2027/28 ожидается ноябрь 2026; план в ~/Desktop/PhD/stipendium_hungaricum/PLAN_2027_28.md"
+    },
+    {
+      "file": "project_phd_uned.md",
+      "size_kb": 3.09,
+      "mtime": "2026-04-28T13:09:31",
+      "category": "project",
+      "type": "project",
+      "name": "PhD UNED Madrid — Doctorado en Ciencias Biomédicas y Salud Pública (programa 9620)",
+      "description": "HOT окно 2026/27 preinscripción 4 мая - 4 июня; ~365 EUR/год; tesis por compendio accepted; Pastrana confirms Georgia EHEA-exempt"
+    },
+    {
+      "file": "project_rejuvenation_lab.md",
+      "size_kb": 1.68,
+      "mtime": "2026-04-28T06:12:09",
+      "category": "project",
+      "type": "project",
+      "name": "Tkemaladze rejuvenation lab — concept",
+      "description": "Lab tech for rejuvenation via young adult stem cells (umbilical/placental); current focus = pet transplantation"
+    },
+    {
+      "file": "project_server_offloaded_repos.md",
+      "size_kb": 2.08,
+      "mtime": "2026-04-26T21:42:08",
+      "category": "project",
+      "type": "project",
+      "name": "Repos offloaded to server (not on desktop)",
+      "description": "Space, kSystem, DrJaba, SpellCheckerKa, FCLC moved to server — do not expect them in ~/Desktop on desktop machine"
+    },
+    {
+      "file": "project_session_state_2026-04-26.md",
+      "size_kb": 10.05,
+      "mtime": "2026-04-27T16:40:08",
+      "category": "project",
+      "type": "project",
+      "name": "Session state — 2026-04-26 (PhD search + JCAL/Annals DOAJ + sync home)",
+      "description": "Где остановились в большой сессии 25-26 апреля 2026. Что сделано, что ждёт ответа, что запланировано. Использовать для возобновления работы в следующей сессии."
+    },
+    {
+      "file": "project_tsomaia_E0_design.md",
+      "size_kb": 6.24,
+      "mtime": "2026-04-27T04:37:59",
+      "category": "project",
+      "type": "project",
+      "name": "Tsomaia E0 design — phased validation + 3-objective architecture",
+      "description": "E0 проект (CDATA Kaede ablation rig) — canonical Tsomaia 2026-04-27 принципы — phased gateway ordering + 3-objective system без dichroic cascade"
+    },
+    {
+      "file": "project_ze_stack.md",
+      "size_kb": 1.67,
+      "mtime": "2026-04-28T06:11:47",
+      "category": "project",
+      "type": "project",
+      "name": "Ze project stack",
+      "description": "Ze = Go core (beginning.go, inversely.go, .bin outputs) + Python visualisation/ subdir; ported from earlier ze.py"
+    },
+    {
+      "file": "project_zheleznov_hsc_simulator.md",
+      "size_kb": 4.79,
+      "mtime": "2026-04-26T20:41:37",
+      "category": "project",
+      "type": "project",
+      "name": "Илья Железнов — HSC-симулятор и сотрудничество",
+      "description": "Ilia Zheleznov (Тбилиси, Open University, Biology of Ageing/ECR) — разрабатывает Python-симулятор гемопоэза с центриольным наследованием; rotation-уровень для P"
+    },
+    {
+      "file": "publications.md",
+      "size_kb": 10.44,
+      "mtime": "2026-04-28T13:57:55",
+      "category": "other",
+      "type": "reference",
+      "name": "Tkemaladze Publications List",
+      "description": "Full list of 151 publications by Jaba Tkemaladze — use for contextual self-citation (max 15%) in all new papers"
+    },
+    {
+      "file": "pubmed_authoritative.md",
+      "size_kb": 2.8,
+      "mtime": "2026-04-19T01:16:16",
+      "category": "pubmed",
+      "type": "reference",
+      "name": "Authoritative PubMed peer-reviewed publications (10)",
+      "description": "The ONLY 10 publications Tkemaladze counts as serious peer-reviewed. Longevity Horizon and Georgian Scientists do NOT count as serious peer review."
+    },
+    {
+      "file": "reference_active_git_repos.md",
+      "size_kb": 3.63,
+      "mtime": "2026-04-26T20:41:37",
+      "category": "reference",
+      "type": "reference",
+      "name": "Active git repos for Desktop projects",
+      "description": "Map of Desktop project directories to their private GitHub remotes; clone/pull commands for laptop↔desktop sync"
+    },
+    {
+      "file": "reference_georgia_phd_contacts.md",
+      "size_kb": 8.77,
+      "mtime": "2026-04-26T03:43:22",
+      "category": "reference",
+      "type": "reference",
+      "name": "Georgia PhD programs — verified email contacts",
+      "description": "Реальные email-адреса вузов, факультетов и конкретных людей в Грузии для PhD-связи Tkemaladze. Проверено через официальные сайты 2026-04-26."
+    },
+    {
+      "file": "reference_reviewers.md",
+      "size_kb": 0.97,
+      "mtime": "2026-04-26T20:41:37",
+      "category": "reference",
+      "type": "reference",
+      "name": "Potential Reviewers List",
+      "description": "Список потенциальных рецензентов для указания при подаче статей в журналы — файл ~/Desktop/Claude/REVIEWERS.md"
+    },
+    {
+      "file": "user_adona_translator.md",
+      "size_kb": 3.22,
+      "mtime": "2026-04-28T13:04:02",
+      "category": "user",
+      "type": "user",
+      "name": "Adona — переводчик Jaba на встречах с англоязычными коллегами",
+      "description": "Adona работает переводчиком на English-speaking встречах Jaba. Она НЕ учёный. Материалы для неё писать простым человеческим языком, без формул и жаргона."
+    },
+    {
+      "file": "user_arbitrary_workday.md",
+      "size_kb": 2.4,
+      "mtime": "2026-04-21T20:47:25",
+      "category": "user",
+      "type": "user",
+      "name": "User's \"day\" is arbitrary, not solar — sutki ≠ 24h",
+      "description": "Jaba's рабочие дни не привязаны к Земному 24-часовому циклу. \"Новый день\" = arbitrary session boundary, не \"завтра утром\". Работает и ночью, и днём, по собствен"
+    },
+    {
+      "file": "user_brother_china.md",
+      "size_kb": 1.53,
+      "mtime": "2026-04-19T02:52:10",
+      "category": "user",
+      "type": "user",
+      "name": "User has brother in China",
+      "description": "User's brother lives in China, can buy items from Chinese domestic marketplaces (Taobao, JD.com, Pinduoduo) and ship to Georgia — much cheaper than import."
+    },
+    {
+      "file": "user_email.md",
+      "size_kb": 0.52,
+      "mtime": "2026-04-15T14:08:40",
+      "category": "user",
+      "type": "user",
+      "name": "User email and credentials",
+      "description": "Canonical email and title for Jaba Tkemaladze — jaba@longevity.ge, title MD (not PhD)"
+    },
+    {
+      "file": "user_location_abastumani.md",
+      "size_kb": 3.75,
+      "mtime": "2026-04-21T17:39:05",
+      "category": "user",
+      "type": "user",
+      "name": "User living & working at Kurort Abastumani (mountain resort)",
+      "description": "Jaba lives and works at Kurort Abastumani most of the time. No government/commercial establishments there. Travels to Tbilisi only once per week, Fridays or Sat"
+    },
+    {
+      "file": "user_phone.md",
+      "size_kb": 0.99,
+      "mtime": "2026-04-27T15:27:35",
+      "category": "user",
+      "type": "user",
+      "name": "User phone / WhatsApp / Telegram",
+      "description": "Контактный номер Tkemaladze для всех каналов (звонки, WhatsApp, Telegram)"
+    },
+    {
+      "file": "user_tkemaladze_profile.md",
+      "size_kb": 7.15,
+      "mtime": "2026-04-28T14:35:00",
+      "category": "user",
+      "type": "user",
+      "name": "Tkemaladze professional identity",
+      "description": "Jaba Tkemaladze — professional profile, online identities, career stage, publication metrics. НЕТ PhD — критическое ограничение. Аффилиация: Georgia Longevity A"
+    }
+  ],
+  "samples": [
+    {
+      "file": "MEMORY.md",
+      "first_500_chars": "# MEMORY INDEX\n\n- [Language rule](feedback_language.md) — всегда отвечать на русском; исключения только для кода/цитат/шаблонов на другом языке\n- [Tkemaladze Publications List](publications.md) — 151 pubs total; use for contextual self-citation (≤15%) in all papers\n- [Track unpublished articles](feedback_unpublished.md) — written but not yet published articles must be noted in memory with \"NOT YET PUBLISHED\" flag immediately\n- [FCLC co-PI meeting](project_fclc_copi.md) — meeting 2026-04-07; all "
+    },
+    {
+      "file": "contact_tsomaia.md",
+      "first_500_chars": "---\nname: Tsomaia (Gakely) — FCLC co-PI contact\ndescription: мобильный +995 579 095 713 (НЕ Telegram — у Цомая мессенджеров нет, кроме Google Chat); co-PI FCLC project; критик \"ванильной\" концепции, предложил Rational Exchange model\ntype: reference\noriginSessionId: 35443f8a-23c1-4b5a-b821-5c1cf8b907f8\n---\n**Контакт:**\n- Имя в чатах: Gakely Gakely (псевдоним Tsomaia)\n- **Мобильный: +995 579 095 713** (получено 2026-04-27)\n- ⚠️ **Telegram/WhatsApp/Viber у Цомая НЕТ** — только Google Chat и звонки "
+    },
+    {
+      "file": "contact_tsu_admin.md",
+      "first_500_chars": "---\nname: TSU PhD admin contacts — Trapaidze + Dzidziguri\ndescription: Vazha Trapaidze (зам. декана по науке) и Diana Dzidziguri (рук. программы докторантуры) — ключевые admin-контакты для TSU PhD trek\ntype: reference\noriginSessionId: 35443f8a-23c1-4b5a-b821-5c1cf8b907f8\n---\n**Получено 2026-04-27 от звонка Vazha Trapaidze.**\n\n## 1. Vazha Trapaidze — зам. декана факультета по научной части (TSU)\n\n- **Vazha Trapaidze** (ვაჟა ტრაპაიძე)\n- **Mobile: +995 599 386 030**\n- Faculty of Exact and Natural S"
+    },
+    {
+      "file": "contact_zhvania_janke_geiger.md",
+      "first_500_chars": "---\nname: International CDATA collaborators — Zhvania, Janke, Geiger\ndescription: 3 ключевых международных контакта для CDATA + EIC consortium (Phase A: Janke, Phase B: Geiger, Georgia thematic match: Zhvania)\ntype: reference\noriginSessionId: 35443f8a-23c1-4b5a-b821-5c1cf8b907f8\n---\n## 1. Mzia Ia Zhvania (Ilia State + Beritashvili Center, Tbilisi)\n\n- **Email:** `mzia_zhvania@iliauni.edu.ge`\n- **Position:** Professor at Ilia State University (since 2009); Head of Laboratory of Neuron Ultrastructu"
+    },
+    {
+      "file": "fact_chichinadze_deceased.md",
+      "first_500_chars": "---\nname: Konstantine (Kote) Chichinadze — deceased\ndescription: Co-author of 6 of 10 Tkemaladze PubMed papers. Refer to as \"late\" / \"ცხონებული\" in Georgian, \"покойный\" in Russian, \"the late\" in English when mentioning.\ntype: reference\noriginSessionId: e2538056-e2d7-407d-9495-bf4b7d2b73eb\n---\n**Факт (подтверждён пользователем 2026-04-19):** Константин (Котэ) Чичинадзе — **покойный**. В письме к Лежава упомянут как \"ცხონებული კოტე ჭიჭინაძე\".\n\n**Why:** Чичинадзе — соавтор 6 из 10 PubMed-индексиров"
+    }
+  ]
+}

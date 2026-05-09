@@ -1,0 +1,18 @@
+[Unit]
+Description=AIM Hive worker (USER-MODE) — periodic anonymized telemetry contribution
+Documentation=file:///home/oem/Desktop/LongevityCommon/AIM/AI/HIVE_ARCHITECTURE.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/oem/Desktop/LongevityCommon/AIM
+EnvironmentFile=-/home/oem/.aim_env
+Environment="RUST_LOG=info"
+ExecStart=/home/oem/Desktop/LongevityCommon/AIM/rust-core/target/release/aim-hive-telemetry contribute
+ExecStartPost=/usr/bin/touch /home/oem/.cache/aim/hive_last_contribute.txt
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

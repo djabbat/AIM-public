@@ -1,0 +1,21 @@
+[package]
+name = "aim-ai-prompt-versions"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM AI — prompt versions (PV1). Track sha256/size of SELF_DIAGNOSTIC_PROMPT.md across revisions. Rust port of AI/ai/prompt_versions.py."
+
+[dependencies]
+aim-ai-ledger = { path = "../aim-ai-ledger" }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+rusqlite = { version = "0.31", features = ["bundled"] }
+sha2 = "0.10"
+hex = "0.4"
+
+[dev-dependencies]
+tempfile = "3"

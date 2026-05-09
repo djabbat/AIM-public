@@ -1,0 +1,162 @@
+id: research_project
+title: "Создание исследовательского проекта"
+version: 1
+intent: |
+  AIM поможет создать новый исследовательский / инженерный проект под
+  ~/.aim_fs/users/<doctor>/projects/<slug>/. Будет сгенерирован
+  11-file core (CONCEPT/THEORY/PARAMETERS/...) и предложены первичные
+  feedback-правила для inbox approval.
+
+questions:
+  - id: slug
+    prompt: "Slug проекта (snake_case, без пробелов)"
+    type: text
+    required: true
+    validate_regex: "^[a-z0-9_]+$"
+
+  - id: title
+    prompt: "Полное название"
+    type: text
+    required: true
+
+  - id: description
+    prompt: "Опиши проект 1-2 фразами (станет вступлением CONCEPT.md)"
+    type: text
+    required: true
+    multiline: true
+
+  - id: domain
+    prompt: "Область"
+    type: choice
+    options: [biology, software, clinical, theoretical, mixed]
+
+  - id: stack
+    prompt: "Стек (если код)"
+    type: multi_choice
+    options: [rust, phoenix, python_legacy, none]
+    depends_on:
+      - field: domain
+        not_in: [theoretical, clinical]
+
+  - id: parameters
+    prompt: "Ключевые параметры (name=value, по строке; пустая строка — конец)"
+    type: list
+    optional: true
+    multiline: true
+
+  - id: knowledge_anchor_pmids
+    prompt: "PMID или DOI якорных публикаций (через запятую, опц.)"
+    type: text
+    optional: true
+
+  - id: feedback_rules
+    prompt: "Правила работы для AI (по строке; например 'Verify PMID through PubMed')"
+    type: list
+    optional: true
+    multiline: true
+
+file_targets:
+  - path: CONCEPT.md
+    template: |
+      # {{title}}
+
+      **Slug:** `{{slug}}`
+      **Domain:** {{domain}}
+      **Created:** {{created_at}}
+
+      ## Описание
+
+      {{description}}
+
+      {% if stack %}
+      ## Стек
+
+      {{stack}}
+      {% endif %}
+
+  - path: THEORY.md
+    template: |
+      # {{title}} — Theory
+
+      <!-- immutable; теоретическое обоснование -->
+      <!-- Заполнить вручную или через follow-up onboarding-step -->
+
+  - path: PARAMETERS.md
+    template: |
+      # {{title}} — Parameters
+
+      {% if parameters %}
+      | name | value |
+      |------|-------|
+      {% for kv in parameters %}| {{kv.name}} | {{kv.value}} |
+      {% endfor %}
+      {% endif %}
+
+  - path: KNOWLEDGE.md
+    template: |
+      # {{title}} — Knowledge
+
+      {% if knowledge_anchor_pmids %}
+      Anchor publications: {{knowledge_anchor_pmids}}
+      <!-- TODO: verify через PubMed/Crossref -->
+      {% endif %}
+
+  - path: README.md
+    template: "# {{title}}\n\n{{description}}\n"
+
+  - path: STATE.md
+    template: |
+      # State
+
+      status: draft
+      created_at: {{created_at}}
+      created_by: {{user_id}}
+
+  - path: TODO.md
+    template: |
+      # TODO
+
+      - [ ] Заполнить THEORY.md
+      - [ ] Уточнить PARAMETERS.md (если есть параметры)
+      - [ ] Добавить EVIDENCE
+      - [ ] Связать с MCOA / CDATA если применимо
+
+  - path: UPGRADE.md
+    template: "# Upgrade plan\n\n_Будет заполнено по мере развития проекта._\n"
+
+  - path: MAP.md
+    template: "# Project file map\n\nСтандартный 11-file core.\n"
+
+  - path: CLAUDE.md
+    template: |
+      # Instructions for AI agents
+
+      Project **{{title}}** ({{slug}}). Domain: {{domain}}.
+
+      Source of truth: `CONCEPT.md`.
+
+  - path: EVIDENCE.md
+    template: "# Evidence base\n\n_Empty at creation; populate after literature review._\n"
+
+memory_proposals:
+  - schema: feedback_v1
+    title_template: "Project rule for {{slug}}"
+    body_template: |
+      **Why:** Specified during onboarding for project `{{slug}}`.
+      **How to apply:** When working on `{{slug}}` files / decisions.
+
+      Rule: {{rule}}
+    tags: [onboarding, project_rule]
+    scope_project_ids: ["{{slug}}"]
+    iterate_over: feedback_rules
+
+  - schema: project_state_v1
+    title_template: "Project {{slug}} created via onboarding"
+    body_template: |
+      Project `{{slug}}` ({{title}}) was created on {{created_at}} via guided
+      onboarding template `research_project`.  Domain: {{domain}}.
+
+      Description:
+      {{description}}
+    tags: [project, onboarding]
+    scope_project_ids: ["{{slug}}"]

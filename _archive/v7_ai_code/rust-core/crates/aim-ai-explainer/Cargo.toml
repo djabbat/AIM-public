@@ -1,0 +1,19 @@
+[package]
+name = "aim-ai-explainer"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM AI — score explainer (EX1). Per-component recovery suggestions for a Health score. Rust port of AI/ai/explainer.py."
+
+[dependencies]
+aim-ai-ledger = { path = "../aim-ai-ledger" }
+aim-ai-health = { path = "../aim-ai-health" }
+aim-ai-regression = { path = "../aim-ai-regression" }
+aim-ai-prompt-versions = { path = "../aim-ai-prompt-versions" }
+aim-ai-cases = { path = "../aim-ai-cases" }
+
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"

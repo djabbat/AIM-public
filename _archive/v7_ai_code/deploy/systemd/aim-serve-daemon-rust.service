@@ -1,0 +1,35 @@
+[Unit]
+Description=AIM long-running orchestrator — pure-Rust path (replaces Python serve_daemon)
+Documentation=file:///home/oem/Desktop/LongevityCommon/AIM/AUDIT_PROJECT_MANAGER_2026-05-06.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=-%h/.aim_env
+WorkingDirectory=%h/Desktop/LongevityCommon/AIM
+ExecStart=%h/Desktop/LongevityCommon/AIM/rust-core/target/release/aim-serve-daemon --tick-secs 60
+Restart=on-failure
+RestartSec=15
+StandardOutput=journal
+StandardError=journal
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=10
+
+# Default jobs:
+#   daily_brief             daily@09:00      → aim-daily-brief --telegram
+#   weekly_project_digest   weekly@sun@10:00 → aim-weekly-project-digest --telegram
+#
+# Python serve_daemon (`agents/serve_daemon.py`) handles 4 additional
+# jobs that need Python-only modules (escalation_engine, kpi_sync,
+# memory_scan, auto_eval). Run BOTH if you want full coverage — state
+# files are separate (serve_last_runs.json vs serve_rust_last_runs.json).
+#
+# To enable:
+#   cp deploy/systemd/aim-serve-daemon-rust.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now aim-serve-daemon-rust.service
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,11 @@
+id: translate-russian
+task: |
+  Translate this sentence to Russian, no preamble:
+  "Federated learning preserves patient privacy by keeping raw data on-device."
+tags: [translation, multilingual]
+rubrics:
+  contains_any: ["федеративное обучение", "федеративн"]
+  contains_all: ["приватн"]
+  forbids: ["как ИИ", "я не могу"]
+  min_length: 50
+  max_length: 500

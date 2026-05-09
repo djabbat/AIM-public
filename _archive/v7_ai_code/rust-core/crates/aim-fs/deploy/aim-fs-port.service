@@ -1,0 +1,21 @@
+[Unit]
+Description=AIM_FS Rust JSON Port (consumed by Phoenix AimMemory.FS.Port)
+After=network.target
+Documentation=file:///home/oem/Desktop/LongevityCommon/AIM/docs/AIM_FS/SPEC.md
+
+# NOTE: usually NOT enabled as a separate service. The Phoenix application
+# spawns the binary as an Erlang Port and owns its lifecycle. This unit is
+# provided for cases where Phoenix is on a different host than aim-fs and
+# you want a remote stdio bridge (e.g. exposed over socat).
+
+[Service]
+Type=simple
+Environment=AIM_FS_ROOT=%h/.aim_fs
+StandardInput=socket
+StandardOutput=socket
+ExecStart=/usr/local/bin/aim-fs
+Restart=on-failure
+RestartSec=2s
+
+[Install]
+WantedBy=default.target

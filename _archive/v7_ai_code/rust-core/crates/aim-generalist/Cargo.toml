@@ -1,0 +1,42 @@
+[package]
+name = "aim-generalist"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AIM generalist agent: ReAct tool-using executor (port of agents/generalist.py)"
+
+[lib]
+name = "aim_generalist"
+path = "src/lib.rs"
+
+[[bin]]
+name = "aim-generalist"
+path = "src/main.rs"
+
+[dependencies]
+aim-common = { workspace = true }
+axum = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "process", "fs", "signal"] }
+tower-http = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { workspace = true }
+glob = "0.3"
+regex = "1"
+uuid = { workspace = true }
+chrono = { workspace = true }
+tokio-stream = { version = "0.1", features = ["sync"] }
+futures = "0.3"
+parking_lot = { workspace = true }
+urlencoding = "2"
+base64 = "0.22"
+dashmap = "6"
+
+[dev-dependencies]
+tempdir = "0.3"
+serial_test = "3"
+mockito = "1"

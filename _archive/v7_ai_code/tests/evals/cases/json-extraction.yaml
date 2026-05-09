@@ -1,0 +1,12 @@
+id: json-extraction
+task: |
+  Extract the patient's name, age, and chief complaint from this note,
+  output as JSON only (no markdown fence, no commentary):
+
+    Female, 38 years old, Tinatin Beridze, presenting with persistent
+    headaches × 6 weeks, worse in the morning.
+tags: [structured, json, extraction]
+rubrics:
+  json_keys: ["name", "age", "chief_complaint"]
+  forbids: ["```", "Here is"]
+  min_length: 30

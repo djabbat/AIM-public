@@ -1,0 +1,32 @@
+[Unit]
+Description=AIM long-running orchestrator (escalation / kpi / memory / brief / digest / eval)
+Documentation=file:///home/oem/Desktop/LongevityCommon/AIM/AUDIT_PROJECT_MANAGER_2026-05-06.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=-%h/.aim_env
+WorkingDirectory=%h/Desktop/LongevityCommon/AIM
+ExecStart=%h/Desktop/LongevityCommon/AIM/venv/bin/python -m agents.serve_daemon --tick=60
+Restart=on-failure
+RestartSec=15
+StandardOutput=journal
+StandardError=journal
+KillMode=mixed
+KillSignal=SIGINT
+TimeoutStopSec=15
+
+# IMPORTANT: serve_daemon's default_jobs() includes daily_brief,
+# weekly_digest, auto_eval, kpi_sync, memory_scan, escalate. If you also
+# enable aim-daily-brief.timer / aim-auto-eval.timer / aim-weekly-digest.timer
+# they will fire DUPLICATELY (serve_daemon dedups internally via
+# last_run.json, but external timers do not).
+#
+# Recommended workflow:
+#   systemctl --user disable --now aim-daily-brief.timer aim-auto-eval.timer aim-weekly-digest.timer
+#   systemctl --user enable  --now aim-serve-daemon.service
+# Reverse if you want to roll back to discrete timers.
+
+[Install]
+WantedBy=default.target

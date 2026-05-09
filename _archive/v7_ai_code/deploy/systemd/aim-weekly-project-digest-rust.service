@@ -1,0 +1,17 @@
+[Unit]
+Description=AIM weekly project digest — pure-Rust path (no Python)
+Documentation=file:///home/oem/Desktop/LongevityCommon/AIM/AUDIT_PROJECT_MANAGER_2026-05-06.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-%h/.aim_env
+WorkingDirectory=%h/Desktop/LongevityCommon/AIM
+ExecStart=%h/Desktop/LongevityCommon/AIM/rust-core/target/release/aim-weekly-project-digest --telegram
+StandardOutput=journal
+StandardError=journal
+
+# Note: alternative to aim-weekly-project-digest.service (Python).
+# Requires `cargo build --release -p aim-weekly-project-digest`.
+# Both should NOT be enabled simultaneously.
